@@ -3,10 +3,12 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Exception;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
+use Session;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
@@ -94,4 +96,28 @@ class User extends Authenticatable
             'id'                              // Clave local en Negocio
         )->orderBy('negocio_id');
     }
+    public function getNegocioSeleccionadoAttribute()
+    {
+        // Si solo hay un negocio, retornar directamente
+        if ($this->negocios->count() === 1) {
+            return $this->negocios->first();
+        }
+
+        // Verificar si hay un negocio seleccionado en sesión
+        $negocioId = Session::get('negocio_seleccionado');
+
+        if (!$negocioId) {
+            throw new Exception("Debe seleccionar un negocio.");
+        }
+
+        // Buscar el negocio por ID
+        $negocio = Negocio::find($negocioId);
+
+        if (!$negocio) {
+            throw new Exception("El negocio seleccionado no existe.");
+        }
+
+        return $negocio;
+    }
+
 }

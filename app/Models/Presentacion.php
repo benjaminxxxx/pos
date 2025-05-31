@@ -14,7 +14,7 @@ class Presentacion extends Model
     protected $fillable = [
         'producto_id',
         'codigo_barra',
-        'unidad_id',
+        'unidad',
         'descripcion',
         'factor',
         'precio',
@@ -35,12 +35,5 @@ class Presentacion extends Model
         return $this->belongsTo(Producto::class, 'producto_id');
     }
 
-    /**
-     * Get the unit that owns the presentation.
-     */
-    public function unidad()
-    {
-        return $this->belongsTo(Unidad::class, 'unidad_id');
-    }
 }
 

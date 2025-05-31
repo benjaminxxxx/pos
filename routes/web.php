@@ -40,9 +40,13 @@ Route::middleware(['auth', 'role:dueno_tienda'])->prefix('mi-tienda')->group(fun
     Route::get('/servicios', App\Livewire\DuenoTienda\Servicios\GestionServicios::class)->name('dueno_tienda.servicios');
 });
 
-Route::get('/ventas', App\Livewire\VentaPanel\GestionVentas::class)
+Route::middleware(['auth'])->group(function () {
+    Route::get('/ventas', App\Livewire\VentaPanel\GestionVentas::class)
     ->name('vender')
     ->middleware('can:gestionar ventas');
+});
+
+
 
 Route::get('/ventaTest', function () {
     return ComprobanteService::generar(1);

@@ -15,28 +15,22 @@
 
     <x-table>
         <x-slot name="thead">
-            <x-table.th>ID</x-table.th>
-            <x-table.th>Nombre</x-table.th>
-            <x-table.th>Abreviatura</x-table.th>
-            <x-table.th>Tipo de Negocio</x-table.th>
-            <x-table.th>Presentaciones</x-table.th>
+            <x-table.th>Código</x-table.th>
+            <x-table.th>Descripción</x-table.th>
             <x-table.th>Acciones</x-table.th>
         </x-slot>
 
         <x-slot name="tbody">
             @forelse($unidades as $unidad)
                 <x-table.tr>
-                    <x-table.td>{{ $unidad->id }}</x-table.td>
-                    <x-table.td>{{ $unidad->nombre }}</x-table.td>
-                    <x-table.td>{{ $unidad->abreviatura }}</x-table.td>
-                    <x-table.td>{{ ucfirst($unidad->tipo_negocio) }}</x-table.td>
-                    <x-table.td>{{ $unidad->presentaciones_count }}</x-table.td>
+                    <x-table.td>{{ $unidad->codigo }}</x-table.td>
+                    <x-table.td>{{ $unidad->descripcion }}</x-table.td>
                     <x-table.td>
                         <x-flex class="justify-center">
-                            <flux:button wire:click="editar('{{ $unidad->uuid }}')" icon="pencil" size="sm">
+                            <flux:button wire:click="editar('{{ $unidad->codigo }}')" icon="pencil" size="sm">
                                 Editar
                             </flux:button>
-                            <flux:button variant="danger" wire:click="eliminar('{{ $unidad->uuid }}')"
+                            <flux:button variant="danger" wire:click="eliminar('{{ $unidad->codigo }}')"
                                 wire:confirm="¿Está seguro de eliminar este registro?" icon="trash" size="sm">
                                 Eliminar
                             </flux:button>

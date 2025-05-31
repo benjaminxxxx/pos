@@ -9,30 +9,25 @@ use Livewire\WithPagination;
 
 class GestionUnidades extends Component
 {
-    use WithPagination;
-    use LivewireAlerta;
+    use WithPagination, LivewireAlerta;
 
     public $isOpen = false;
-    public $unidadId;
-    public $uuid;
-    public $nombre;
-    public $abreviatura;
-    public $tipo_negocio;
-    public $activo = true;
+    public $estaEditando = false;
+
+    public $codigo;
+    public $descripcion;
+    public $alt;
     public $search = '';
-    public $tipoNegocioFilter = '';
 
     public function render()
     {
         $unidades = Unidad::query()
             ->when($this->search, function ($query) {
-                return $query->where('nombre', 'like', '%' . $this->search . '%')
-                    ->orWhere('abreviatura', 'like', '%' . $this->search . '%');
+                $searchTerm = '%' . $this->search . '%';
+                $query->where('codigo', 'like', $searchTerm)
+                      ->orWhere('descripcion', 'like', $searchTerm);
             })
-            ->when($this->tipoNegocioFilter, function ($query) {
-                return $query->where('tipo_negocio', $this->tipoNegocioFilter);
-            })
-            ->orderBy('nombre')
+            ->orderBy('descripcion')
             ->paginate(10);
 
         return view('livewire.superadmin.unidades.gestion-unidades', [
@@ -43,48 +38,45 @@ class GestionUnidades extends Component
     public function crear()
     {
         $this->resetValidation();
-        $this->reset(['unidadId', 'uuid', 'nombre', 'abreviatura', 'tipo_negocio']);
-        $this->activo = true;
+        $this->reset(['codigo', 'descripcion', 'alt']);
+        $this->estaEditando = false;
         $this->isOpen = true;
     }
 
-    public function editar($uuid)
+    public function editar($codigo)
     {
         $this->resetValidation();
-        $unidad = Unidad::where('uuid', $uuid)->firstOrFail();
-        $this->unidadId = $unidad->id;
-        $this->uuid = $unidad->uuid;
-        $this->nombre = $unidad->nombre;
-        $this->abreviatura = $unidad->abreviatura;
-        $this->tipo_negocio = $unidad->tipo_negocio;
-        $this->activo = $unidad->activo;
+
+        $unidad = Unidad::where('codigo', $codigo)->firstOrFail();
+
+        $this->codigo = $unidad->codigo;
+        $this->descripcion = $unidad->descripcion;
+        $this->alt = $unidad->alt;
+        $this->estaEditando = true;
         $this->isOpen = true;
     }
 
     public function guardar()
     {
         $this->validate([
-            'nombre' => 'required|string|max:255',
-            'abreviatura' => 'required|string|max:10',
-            'tipo_negocio' => 'nullable|string',
-            'activo' => 'boolean',
+            'codigo' => 'required|string|max:255',
+            'descripcion' => 'required|string|max:255',
+            'alt' => 'nullable|string|max:255',
         ]);
 
-        if ($this->unidadId) {
-            $unidad = Unidad::findOrFail($this->unidadId);
+        if ($this->estaEditando) {
+            // Solo se actualiza descripción y alt, no el código
+            $unidad = Unidad::where('codigo', $this->codigo)->firstOrFail();
             $unidad->update([
-                'nombre' => $this->nombre,
-                'abreviatura' => $this->abreviatura,
-                'tipo_negocio' => $this->tipo_negocio,
-                'activo' => $this->activo,
+                'descripcion' => $this->descripcion,
+                'alt' => $this->alt,
             ]);
             $this->alert('success', 'Unidad actualizada correctamente.');
         } else {
             Unidad::create([
-                'nombre' => $this->nombre,
-                'abreviatura' => $this->abreviatura,
-                'tipo_negocio' => $this->tipo_negocio,
-                'activo' => $this->activo,
+                'codigo' => $this->codigo,
+                'descripcion' => $this->descripcion,
+                'alt' => $this->alt,
             ]);
             $this->alert('success', 'Unidad creada correctamente.');
         }
@@ -92,18 +84,19 @@ class GestionUnidades extends Component
         $this->isOpen = false;
     }
 
-    public function eliminar($uuid)
+    public function eliminar($codigo)
     {
-        $unidad = Unidad::where('uuid', $uuid)->firstOrFail();
-        
-        // Verificar si tiene presentaciones
+        $this->alert('error', 'Por el momento no se puede eliminar.');
+        /*
+        $unidad = Unidad::where('codigo', $codigo)->firstOrFail();
+
         if ($unidad->presentaciones()->count() > 0) {
             $this->alert('error', 'No se puede eliminar la unidad porque tiene presentaciones asociadas.');
             return;
         }
-        
+
         $unidad->delete();
-        $this->alert('success', 'Unidad eliminada correctamente.');
+        $this->alert('success', 'Unidad eliminada correctamente.');*/
     }
 
     public function closeModal()
@@ -111,4 +104,3 @@ class GestionUnidades extends Component
         $this->isOpen = false;
     }
 }
-

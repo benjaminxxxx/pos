@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('producto_id')->constrained()->onDelete('cascade');
             $table->string('codigo_barra')->nullable();
-            $table->foreignId('unidad_id')->constrained('unidades');
+            $table->string('unidad',5);
             $table->string('descripcion');
             $table->decimal('factor', 10, 2);
             $table->decimal('precio', 10, 2);

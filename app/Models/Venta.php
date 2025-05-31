@@ -23,9 +23,17 @@ class Venta extends Model
         'sub_total',
         'redondeo',
         'monto_importe_venta',
+        
+
+        'monto_operaciones_gravadas',
+        'monto_operaciones_exoneradas',
+        'monto_operaciones_inafectas',
+        'monto_operaciones_exportacion',
+        'monto_operaciones_gratuitas',
         'monto_igv',
         'monto_igv_gratuito',
         'icbper',
+        'total_impuestos',
 
         'tipo_comprobante_codigo',
         'serie_comprobante',
@@ -67,46 +75,5 @@ class Venta extends Model
     {
         return $this->belongsTo(Sucursal::class)->withDefault();
     }
-    public function getMontoOperacionesGravadasAttribute()
-    {
-        return $this->detalles
-            ->where('tipo_afectacion_igv', 'gravada')
-            ->where('es_gratuita', false)
-            ->sum('subtotal');
-    }
-
-    // Solo productos exonerados que NO sean gratuitos
-    public function getMontoOperacionesExoneradasAttribute()
-    {
-        return $this->detalles
-            ->where('tipo_afectacion_igv', 'exonerada')
-            ->where('es_gratuita', false)
-            ->sum('subtotal');
-    }
-
-    // Solo productos inafectos que NO sean gratuitos
-    public function getMontoOperacionesInafectasAttribute()
-    {
-        return $this->detalles
-            ->where('tipo_afectacion_igv', 'inafecta')
-            ->where('es_gratuita', false)
-            ->sum('subtotal');
-    }
-
-    // Solo productos de exportación que NO sean gratuitos
-    public function getMontoOperacionesExportacionAttribute()
-    {
-        return $this->detalles
-            ->where('tipo_afectacion_igv', 'exportacion')
-            ->where('es_gratuita', false)
-            ->sum('subtotal');
-    }
-    public function getMontoOperacionesGratuitasAttribute()
-    {
-        return $this->detalles
-            ->filter(function ($item) {
-                return $item->es_gratuita || $item->tipo_afectacion_igv === 'gratuita';
-            })
-            ->sum('subtotal');
-    }
+   
 }

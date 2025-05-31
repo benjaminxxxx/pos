@@ -1,0 +1,21 @@
+Revisiones Funcionales
+
+1. Formulario de registro(seleccion de habilidades solo permite 1, debe tener un limite de 3).
+ya que debe tener maximo 3 habilidades es mas conveniente a largo plazo crear una tabla intermedia profesional_servicios
+para poder registrar 3 o mas servicio por profesional
+creamos primero el migrate
+- debemos modificar el modelo Profesional
+- modificamos el seeder para la nueva adaptacion
+- se modifico las variables de prrueba para postman
+- una vez testeado en postman procedemos a cambiar el lib de react que conecta como api
+- modificamos el componente select por un multiselect
+- modificamos el tipo de datos de profesionales para que acepte array
+- modificamos el api consumo de servicios ya que ahora es diferente
+- una vez testeado la lista de servicios procedimos a cambiar los archivos en react
+2. El campo de numero de WhatsApp debe aceptar el numero asi como se utiliza en el pais (sin necesidad del Código de pais, por ejemplo 0991447585) la Api necesita con el codigo de pais por lo que tendriamos que implementar una pequeña funcion que convierta por ejemplo: 0991447585 a +595991447585, que remplaze el primer "0" por "+595" para que la api lo pueda utilizar.
+
+3. Para el envio del codigo OTP debemos utilizar las plantillas de autenticacion preaprobadas de meta para asegurar que el codigo OTP se entregue.
+
+4. El campo de numero de WhatsApp debe estar en una seccion independiente de los otros primeros campos, una vez verificado el numero de WhatsApp se debe redirigir directamente a la pagina de obtencion de documentos 
+
+5. El formulario de solicitud no esta procesando el primer formulario

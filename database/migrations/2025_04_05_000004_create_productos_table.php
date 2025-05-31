@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
@@ -16,18 +15,30 @@ return new class extends Migration
             $table->uuid('uuid')->unique();
             $table->string('codigo_barra')->nullable()->unique();
             $table->string('sunat_code')->nullable();
-            $table->string('nombre_producto');
-            $table->text('descripcion')->nullable();
+
+            $table->text('descripcion'); // ← antes era 'nombre_producto'
+            $table->text('detalle')->nullable(); // ← antes era 'descripcion', para info extendida
+
             $table->string('imagen_path')->nullable();
-            $table->decimal('igv', 5, 2)->nullable();
-            $table->decimal('precio_base', 10, 2);
-            $table->decimal('precio_compra', 10, 2);
+
+            $table->decimal('porcentaje_igv', 5, 2)->nullable(); // ← antes era 'igv'
+            $table->decimal('monto_venta', 10, 2);
+            $table->decimal('monto_venta_sinigv', 10, 2);
+            $table->decimal('monto_compra', 10, 2); 
+            $table->decimal('monto_compra_sinigv', 10, 2); 
+
+            $table->string('unidad', 5);
+
             $table->foreignId('categoria_id')->nullable()->constrained('categorias_productos')->onDelete('set null');
             $table->foreignId('marca_id')->nullable()->constrained('marcas')->onDelete('set null');
             $table->foreignId('negocio_id')->constrained('negocios')->onDelete('cascade');
             $table->foreignId('creado_por')->constrained('users');
+
             $table->boolean('activo')->default(true);
-            $table->enum('tipo_afectacion_igv',['gravada','exonerada','inafecta','exportacion','gratuita'])->default('gravada');
+
+            $table->string('tipo_afectacion_igv', 2)->nullable(); // ← antes era 'tipo_afectacion_igv'
+            $table->foreign('tipo_afectacion_igv')->references('codigo')->on('sunat_catalogo_7')->nullOnDelete();
+
             $table->timestamps();
         });
     }

@@ -47,8 +47,15 @@
                         @agregarCantidad="aumentarCantidad" @quitarCantidad="reducirCantidad"
                         @editarPrecioUnitario="productoSeleccionado = $event" />
 
-                </div>
 
+                </div>
+                <Flex class="justify-end mt-4">
+                    <Spacing>
+                        <Button @click="verDetalle(ventaActiva)">
+                            <i class="fa fa-list"></i> Avanzado
+                        </Button>
+                    </Spacing>
+                </Flex>
                 <!-- Pie fijo al fondo -->
                 <div class="bg-neutral-200 border-t mt-auto">
                     <Spacing>
@@ -104,6 +111,9 @@
         <!-- Mostrar modal solo si hay un producto seleccionado -->
         <ModalCambiarPrecioUnitario v-if="productoSeleccionado" :producto="productoSeleccionado"
             @cerrarModal="productoSeleccionado = null" @guardarPrecio="guardarPrecio" />
+
+        
+        <PanelDetalle :venta="ventas[ventaActiva]" @cerrarModal="estaDetalleAbierto = false" v-model="estaDetalleAbierto" />
 
         <Modal v-model="procesarPago" maxWidth="full">
             <div class="flex h-screen bg-white text-black" style="max-height:90vh">
@@ -208,12 +218,14 @@ import ListaProductos from '@/components/ListaProductos.vue'
 import ModalCambiarPrecioUnitario from '@/components/ModalCambiarPrecioUnitario.vue'
 import PanelSeleccionadorCliente from '@/components/PanelSeleccionadorCliente.vue'
 import Spacing from '@/components/ui/Spacing.vue'
+import PanelDetalle from '@/components/PanelDetalle.vue'
 
 const ventas = ref([])
 const ventaActiva = ref(null)
 const productoSeleccionado = ref(null)
 const cliente = ref(null)
 const procesarPago = ref(false)
+const estaDetalleAbierto = ref(false)
 const ventaAPagar = ref(null)
 const fechaEmision = ref(null)
 const tipoComprobante = ref('factura')
@@ -293,7 +305,12 @@ const eliminarVenta = (index) => {
         ventaActiva.value = null // Si no quedan ventas, ponemos ventaActiva a null
     }
 }
-
+const verDetalle = (index) => {
+    estaDetalleAbierto.value = true;
+    const venta = ventas.value[index]
+    console.log(venta)
+    // Aquí puedes abrir un modal o hacer lo que necesites con la venta
+}
 const navegarVenta = (direccion) => {
     if (direccion === 'adelante' && ventaActiva.value < ventas.value.length - 1) {
         ventaActiva.value++
@@ -334,7 +351,7 @@ const agregarProducto = ({ producto, presentacion }) => {
             cantidad: 1,
             igv: producto.igv,
             presentacion_id: presentacion?.id ?? null,
-            tipo_afectacion_igv:producto.tipo_afectacion_igv,
+            tipo_afectacion_igv: producto.tipo_afectacion_igv,
             precio_sin_igv: 0,
             monto_igv: 0,
             subtotal: 0,
@@ -464,70 +481,7 @@ const procesarVenta = async () => {
     try {
         console.log(ventaAPagar.value, cliente.value, tipoComprobante.value, fechaEmision.value);
 
-        /*
-        ventaAPagar = {
-            id: 1744303230192,
-            fecha: "10/4/2025",
-            subtotal: "632.21",
-            igv: "113.79",
-            precio: "746.00",
-            productos: [
-                {
-                    producto_id: 1,
-                    nombre: "Fierrro de 2media calidad A1 WASH",
-                    descripcion: "Unidad",
-                    cantidad: 2,
-                    precio: "123.00",
-                    precio_sin_igv: 104.24,
-                    igv: "18.00",
-                    monto_igv: 18.76,
-                    subtotal: 246,
-                    presentacion_id: null,
-                    idUnico: "1-unidad"
-                },
-                {
-                    producto_id: 1,
-                    nombre: "Fierrro de 2media calidad A1 WASH",
-                    descripcion: "Caja x6",
-                    cantidad: 1,
-                    precio: "500.00",
-                    precio_sin_igv: 423.73,
-                    igv: "18.00",
-                    monto_igv: 76.27,
-                    subtotal: 500,
-                    presentacion_id: 1,
-                    idUnico: "1-1"
-                }
-            ]
-        }
-
-        cliente = {
-            id: 3,
-            nombre_completo: "asd ajsdjjasjdjasjasd",
-            numero_documento: "23423423423",
-            tipo_documento_id: "7",
-            tipo_cliente_id: "persona",
-            direccion: null,
-            direccion_facturacion: null,
-            departamento: null,
-            provincia: null,
-            distrito: null,
-            telefono: null,
-            email: null,
-            ruc_facturacion: null,
-            puntos: 0,
-            notas: null,
-            dueno_tienda_id: 2,
-            created_at: "2025-04-09T09:47:23.000000Z",
-            updated_at: "2025-04-09T09:47:23.000000Z"
-        }
-
-        tipoComprobante = "factura"
-        fechaEmision = "2025-04-09"
-        const sucursalSeleccionada = ref(localStorage.getItem('sucursalSeleccionada'))
-        */
-
-
+       
         const metodoAgregados = metodosPagoAgregados.value.map(metodo => ({
             codigo: metodo.codigo,
             monto: metodo.amount
@@ -570,7 +524,7 @@ const procesarVenta = async () => {
                 total_impuestos: p.total_impuestos,
                 igv: p.monto_igv ?? 0,
                 total: p.subtotal,
-                tipo_afectacion_igv:p.tipo_afectacion_igv
+                tipo_afectacion_igv: p.tipo_afectacion_igv
             }))
         };
 

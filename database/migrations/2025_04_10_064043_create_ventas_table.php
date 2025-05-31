@@ -25,13 +25,21 @@ return new class extends Migration
         
             $table->string('tipo_factura', 4)->nullable();
 
+            $table->decimal('monto_operaciones_gravadas', 12, 2)->default(0);
+            $table->decimal('monto_operaciones_exoneradas', 12, 2)->default(0);
+            $table->decimal('monto_operaciones_inafectas', 12, 2)->default(0);
+            $table->decimal('monto_operaciones_exportacion', 12, 2)->default(0);
+            $table->decimal('monto_operaciones_gratuitas', 12, 2)->default(0);
+            $table->decimal('monto_igv', 10, 2)->nullable();
+            $table->decimal('monto_igv_gratuito', 10, 2)->nullable();
+            $table->decimal('icbper', 10, 2)->nullable()->default(0);  
+            $table->decimal('total_impuestos', 10, 2)->nullable()->default(0);  
+            
+
             $table->decimal('valor_venta', 10, 2)->nullable();
             $table->decimal('sub_total', 10, 2)->nullable();
             $table->decimal('redondeo', 10, 2)->nullable();
-            $table->decimal('monto_importe_venta', 10, 2)->nullable();
-            $table->decimal('monto_igv', 10, 2)->nullable();
-            $table->decimal('monto_igv_gratuito', 10, 2)->nullable();
-            $table->decimal('icbper', 10, 2)->nullable()->default(0);            
+            $table->decimal('monto_importe_venta', 10, 2)->nullable();          
         
             $table->string('tipo_comprobante_codigo')->nullable();
             $table->string('serie_comprobante')->nullable();

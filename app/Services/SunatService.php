@@ -2,9 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\Negocio;
-use App\Models\InvoiceExtraInformation;
-use App\Models\SiteConfig;
 use DateTime;
 use Greenter\Model\Client\Client;
 use Greenter\Model\Company\Address;
@@ -22,23 +19,22 @@ use Illuminate\Support\Facades\Storage;
 
 class SunatService
 {
-    public function getSee($company)
+    public function getSee(string $certContent, string $ruc, string $solUser, string $solPass, bool $isProduction = false)
     {
         $see = new See();
-        $see->setCertificate(Storage::disk('public')->get($company->cert_path));
-        $see->setService($company->production ? SunatEndpoints::FE_PRODUCCION : SunatEndpoints::FE_BETA);
-        $see->setClaveSOL($company->ruc, $company->sol_user, $company->sol_pass);
-        //dd($company->sol_pass);
+        $see->setCertificate($certContent);
+        $see->setService($isProduction ? SunatEndpoints::FE_PRODUCCION : SunatEndpoints::FE_BETA);
+        $see->setClaveSOL($ruc, $solUser, $solPass);
 
         return $see;
     }
 
+
     public function getInvoice($data)
     {
-
-        return (new Invoice())
+        $invoice = (new Invoice())
             ->setUblVersion($data['ublVersion'] ?? '2.1')
-            ->setTipoOperacion($data['tipoOperacion'] ?? null) // Venta - Catalog. 51
+            ->setTipoOperacion(tipoOperacion: $data['tipoOperacion'] ?? null) // Venta - Catalog. 51
             ->setTipoDoc($data['tipoDoc'] ?? null) // Factura - Catalog. 01 
             ->setSerie($data['serie'] ?? null)
             ->setCorrelativo($data['correlativo'] ?? null)
@@ -64,7 +60,7 @@ class SunatService
             //Totales
             ->setValorVenta($data['valorVenta'])
             ->setSubTotal($data['subTotal'])
-            ->setRedondeo($data['redondeo'])
+
             ->setMtoImpVenta($data['mtoImpVenta'])
 
             //Productos
@@ -72,6 +68,11 @@ class SunatService
 
             //Leyendas
             ->setLegends($this->getLegends($data['legends']));
+
+        if (isset($data['redondeo'])) {
+            $invoice->setRedondeo($data['redondeo']);
+        }
+        return $invoice;
     }
 
     public function getCompany($company)
@@ -114,6 +115,7 @@ class SunatService
                 ->setUnidad($detail['unidad'] ?? null) // Unidad - Catalog. 03
                 ->setCantidad($detail['cantidad'] ?? null)
                 ->setMtoValorUnitario($detail['mtoValorUnitario'] ?? null)
+                ->setMtoValorGratuito($detail['mtoValorGratuito'] ?? null)
                 ->setDescripcion($detail['descripcion'] ?? null)
                 ->setMtoBaseIgv($detail['mtoBaseIgv'] ?? null)
                 ->setPorcentajeIgv($detail['porcentajeIgv'] ?? null) // 18%
@@ -172,82 +174,29 @@ class SunatService
 
     public function getHtmlReport($invoice)
     {
-        $templatePath = resource_path('views/documents');
-
-         // Opciones para el motor Twig
-         $twigOptions = [
-            'cache' => storage_path('app/cache/twig'), // Directorio donde guardar la caché de Twig
-            'strict_variables' => true,
-        ];
-
-        $report = new HtmlReport($templatePath, $twigOptions);
+        $report = new HtmlReport();
 
         $resolver = new DefaultTemplateResolver();
-        //$report->setTemplate($resolver->getTemplate($invoice));
-        $report->setTemplate('factura.html.twig');
+        $report->setTemplate($resolver->getTemplate($invoice));
 
         $ruc = $invoice->getCompany()->getRuc();
-        $company = Negocio::first();
-
-        $userData = [];
-        $informations = InvoiceExtraInformation::all();
-
-        // Inicializa los valores para el 'header', 'extras', y 'footer' vacíos
-        $headerText = '';
-        $footerText = '';
-        $extrasArray = [];
-        foreach ($informations as $info) {
-            if ($info->type === 'header') {
-                // Para el header: nombre : valor (en negrita) con <br/> al final
-                $headerText .= $info->name . ': <b>' . $info->value . '</b><br/>';
-            } elseif ($info->type === 'footer') {
-                // Para el footer: valor en el mismo formato que header
-                $footerText .= $info->name . ': <b>' . $info->value . '</b><br/>';
-            } elseif ($info->type === 'extra') {
-                // Para extra: guarda los valores en formato array
-                $extrasArray[] = [
-                    'name' => $info->name,
-                    'value' => $info->value,
-                ];
-            }
-        }
-
-        if ($headerText !== '' || $footerText !== '' || !empty($extrasArray)) {
-            $userData['user'] = [];
-
-            if ($headerText !== '') {
-                $userData['user']['header'] = $headerText;
-            }
-
-            if (!empty($extrasArray)) {
-                $userData['user']['extras'] = $extrasArray;
-            }
-
-            if ($footerText !== '') {
-                $userData['user']['footer'] = $footerText;
-            }
-        }
-        $logoPath = $company->logo;
-
-        // Obtén la configuración del sitio
-        $siteConfig = SiteConfig::first();
-        if ($siteConfig) {
-            // Obtén la ruta del logo desde la configuración
-            $logoPath = $siteConfig->site_logo_horizontal;
-        }
-
-
+        $company = ModelsCompany::where('ruc', $ruc)->first();
 
         $params = [
             'system' => [
-                'logo' => $logoPath ? Storage::disk('public')->get($logoPath) : null, // Logo de Empresa
-                //'hash' => 'qqnr2dN4p/HmaEA/CJuVGo7dv5g=', // Valor Resumen 
+                'logo' => Storage::get($company->logo_path), // Logo de Empresa
+                'hash' => 'qqnr2dN4p/HmaEA/CJuVGo7dv5g=', // Valor Resumen 
+            ],
+            'user' => [
+                'header' => 'Telf: <b>(01) 123375</b>', // Texto que se ubica debajo de la dirección de empresa
+                'extras' => [
+                    // Leyendas adicionales
+                    ['name' => 'CONDICION DE PAGO', 'value' => 'Efectivo'],
+                    ['name' => 'VENDEDOR', 'value' => 'GITHUB SELLER'],
+                ],
+                'footer' => '<p>Nro Resolucion: <b>3232323</b></p>'
             ]
         ];
-
-        if (!empty($userData)) {
-            $params = array_merge($params, $userData);
-        }
 
         return $report->render($invoice, $params);
     }
@@ -271,11 +220,11 @@ class SunatService
         $report->setBinPath(env('WKHTML_PDF_PATH'));
 
         $ruc = $invoice->getCompany()->getRuc();
-        $company = Negocio::where('ruc', $ruc)->first();
+        $company = ModelsCompany::where('ruc', $ruc)->first();
 
         $params = [
             'system' => [
-                'logo' => Storage::disk('public')->get('logos/' . $company->logo), // Logo de Empresa
+                'logo' => Storage::get($company->logo_path), // Logo de Empresa
                 'hash' => 'qqnr2dN4p/HmaEA/CJuVGo7dv5g=', // Valor Resumen 
             ],
             'user' => [

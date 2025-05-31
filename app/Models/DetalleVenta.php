@@ -9,26 +9,30 @@ class DetalleVenta extends Model
 {
     protected $fillable = [
         'venta_id',
-
         'producto_id',
-        'nombre_producto',
-        'categoria_producto',
-
         'unidad',
-        'factor',
-
-        'precio_unitario',
+        'descripcion',
         'cantidad',
-        'subtotal',
-        
+
+        'monto_valor_unitario',
+        'monto_valor_gratuito',
+        'monto_valor_venta',
+        'monto_base_igv',
+        'monto_precio_unitario',
+
         'porcentaje_igv',
-        'total_impuestos',
         'igv',
-        'total',
         'tipo_afectacion_igv',
+        'total_impuestos',
+
+        'categoria_producto',
+        'factor',
         'es_gratuita',
-        'es_icbper'
+        'es_icbper',
+        'icbper',
+        'factor_icbper'
     ];
+
 
     public function venta(): BelongsTo
     {

@@ -7,5 +7,6 @@ return [
         'panaderia' => 'Panadería',
         'libreria' => 'Librería',
         'polleria' => 'Pollería',
+        'restaurante'=>'Restaurante'
     ],
 ];

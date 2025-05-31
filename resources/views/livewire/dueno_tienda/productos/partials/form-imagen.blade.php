@@ -1,14 +1,23 @@
 <div class="mb-4">
     <flux:heading>Imagen del Producto:</flux:heading>
-    <x-subir-file wire:model="imagen" accept="image/*" :temp-url="$imagen_temp_url ?? null" :stored-url="$imagen_url ?? null" />
+
+    {{-- Vista previa cuando hay imagen temporal --}}
+    @if ($imagen)
+        <img src="{{ $imagen->temporaryUrl() }}" class="mb-2 max-w-xs max-h-[10rem] rounded-lg shadow-lg" alt="Vista previa de la imagen">
+        <flux:button wire:click="eliminarImagen" variant="danger" class="mt-2">Eliminar Imagen</flux:button>
+
+    {{-- Mostrar imagen ya guardada si no hay temporal --}}
+    @elseif ($imagen_url)
+        <img src="{{ Storage::disk('public')->url($imagen_url) }}" class="mb-2 max-w-xs max-h-[10rem] rounded-lg shadow-lg" alt="Imagen almacenada">
+        <flux:button wire:click="eliminarImagen" variant="danger" class="mt-2">Eliminar Imagen</flux:button>
+
+    {{-- Componente de subida si no hay imagen alguna --}}
+    @else
+        <x-subir-file wire:model="imagen" accept="image/*" />
+    @endif
+
     @error('imagen')
         <span class="text-red-500 text-xs">{{ $message }}</span>
     @enderror
 </div>
 
-@if (isset($imagen_url) && $imagen_url)
-    <div class="mb-4">
-        <p class="text-sm text-gray-600">Imagen actual:</p>
-        <img src="{{$imagen_url}}" alt="Imagen del producto" class="mt-2 max-w-xs">
-    </div>
-@endif

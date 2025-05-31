@@ -14,27 +14,27 @@ class Producto extends Model
         'uuid',
         'codigo_barra',
         'sunat_code',
-        'nombre_producto',
-        'descripcion',
+
+        'descripcion',    // ← antes era nombre_producto
+        'detalle',        // ← antes era descripcion
         'imagen_path',
-        'igv',
-        'precio_base',
-        'precio_compra',
+
+        'porcentaje_igv', // ← antes era igv
+        'monto_venta',
+        'monto_venta_sinigv',
+        'monto_compra',
+        'monto_compra_sinigv',
+
+        'unidad',
+
         'categoria_id',
         'marca_id',
         'negocio_id',
         'creado_por',
+
         'activo',
-        'tipo_afectacion_igv'
+        'tipo_afectacion_igv',
     ];
-
-    protected $casts = [
-        'igv' => 'decimal:2',
-        'precio_base' => 'decimal:2',
-        'precio_compra' => 'decimal:2',
-        'activo' => 'boolean',
-    ];
-
     /**
      * Boot the model.
      */

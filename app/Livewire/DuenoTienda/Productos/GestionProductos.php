@@ -4,82 +4,111 @@ namespace App\Livewire\DuenoTienda\Productos;
 
 use App\Models\CategoriaProducto;
 use App\Models\Marca;
-use App\Models\Producto;
-use App\Models\Stock;
 use App\Models\Sucursal;
-use App\Models\Unidad;
+use App\Services\ProductoServicio;
+use App\Traits\LivewireAlerta;
 use App\Traits\SeleccionaNegocio;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
-use Jantinnerezo\LivewireAlert\Facades\LivewireAlert;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use App\Traits\Sunat\AfectacionesIgvTrait;
+use App\Traits\Sunat\UnidadesTrait;
 
 
 class GestionProductos extends Component
 {
-    use WithPagination, WithFileUploads, SeleccionaNegocio;
+    use WithPagination, WithFileUploads, SeleccionaNegocio, AfectacionesIgvTrait, UnidadesTrait, LivewireAlerta;
 
-    // Propiedades para la lista
+    // ------------------------------
+    // Filtros y búsqueda
+    // ------------------------------
     public $search = '';
     public $categoriaFilter = '';
     public $marcaFilter = '';
     public $activoFilter = '';
+
+    // ------------------------------
+    // Control del modal y selección
+    // ------------------------------
     public $isOpen = false;
-    
-    // Propiedades para el formulario
     public $producto_id;
     public $uuid;
+
+    // ------------------------------
+    // Datos del producto
+    // ------------------------------
     public $codigo_barra;
     public $sunat_code;
-    public $nombre_producto;
-    public $descripcion;
-    public $imagen;
-    public $imagen_url;
-    public $imagen_temp_url;
-    public $imagen_path;
-    public $igv;
-    public $precio_base;
-    public $precio_compra;
+    public $descripcion; // antes nombre_producto
+    public $detalle;     // antes descripcion extendida
+    public $tipo_afectacion_igv; // sigue igual
+
+    public $porcentaje_igv; // antes igv
+    public $monto_venta; // antes precio_base
+    public $monto_venta_sinigv;
+    public $monto_compra; // antes precio_compra
+    public $monto_compra_sinigv;
+
     public $categoria_id;
     public $marca_id;
     public $negocio_id;
-    public $tipo_afectacion_igv;
+    public $unidad;
     public $activo = true;
-    
-    // Propiedades para presentaciones
+
+    // ------------------------------
+    // Imagen
+    // ------------------------------
+    public $imagen;
+    public $imagen_url; // Para imagen ya guardada
+    public $imagen_eliminada = false;
+    public $imagen_a_eliminar = null;
+
+    // ------------------------------
+    // Relaciones
+    // ------------------------------
     public $presentaciones = [];
-    
-    // Propiedades para stock
     public $stocks = [];
-    
-    // Propiedades para sucursales
     public $sucursales = [];
-    
+
+    // ------------------------------
+    // Datos auxiliares
+    // ------------------------------
+    public $afectaciones = [];
+    public $unidades = [];
+    public $aplicaIgv = true;
 
     public function mount()
     {
         // Inicializar la selección de negocio
         $this->mountSeleccionaNegocio();
-        
+        $this->afectaciones = $this->getAfectacionesIgv();
+        $this->unidades = $this->getUnidades();
+        $this->unidad = $this->getUnidadPreseleccionada();
+
         // Si hay un negocio seleccionado, cargar sus sucursales
         if ($this->negocioSeleccionado) {
             $this->negocio_id = $this->negocioSeleccionado->id;
             $this->cargarSucursales();
         }
     }
-    public function updatedTipoAfectacionIgv(){
+    public function updatedTipoAfectacionIgv()
+    {
         $this->igv = null;
+        //$this->afectaciones (codigo,aplica_igv (boolean))
+        $afectacion = collect($this->afectaciones)->firstWhere('codigo', $this->tipo_afectacion_igv);
+        if ($afectacion) {
+            $this->aplicaIgv = $afectacion['aplica_igv'];
+        } else {
+            $this->aplicaIgv = false; // Valor por defecto si no se encuentra la afectación
+        }
     }
     public function resetearComponente()
     {
         // Este método se llama cuando se cambia de negocio
         $this->reset(['search', 'categoriaFilter', 'marcaFilter', 'activoFilter']);
         $this->resetPage();
-        
+
         if ($this->negocioSeleccionado) {
             $this->negocio_id = $this->negocioSeleccionado->id;
             $this->cargarSucursales();
@@ -91,7 +120,7 @@ class GestionProductos extends Component
         if ($this->negocio_id) {
             $this->sucursales = Sucursal::where('negocio_id', $this->negocio_id)->get();
             $this->stocks = [];
-            
+
             foreach ($this->sucursales as $sucursal) {
                 $this->stocks[$sucursal->id] = [
                     'cantidad' => 0,
@@ -103,328 +132,210 @@ class GestionProductos extends Component
 
     public function render()
     {
-        // Si no hay negocio seleccionado, mostrar vista vacía con modal
         if (!$this->negocioSeleccionado) {
             return view('livewire.dueno_tienda.productos.gestion-productos', [
                 'productos' => collect(),
                 'categorias' => collect(),
-                'marcas' => collect(),
-                'unidades' => collect(),
+                'marcas' => collect()
             ]);
         }
-        
-        $productos = Producto::query()
-            ->where('negocio_id', $this->negocioSeleccionado->id)
-            ->when($this->search, function ($query) {
-                return $query->where(function ($q) {
-                    $q->where('nombre_producto', 'like', '%' . $this->search . '%')
-                      ->orWhere('codigo_barra', 'like', '%' . $this->search . '%')
-                      ->orWhere('descripcion', 'like', '%' . $this->search . '%');
-                });
-            })
-            ->when($this->categoriaFilter, function ($query) {
-                return $query->where('categoria_id', $this->categoriaFilter);
-            })
-            ->when($this->marcaFilter, function ($query) {
-                return $query->where('marca_id', $this->marcaFilter);
-            })
-            ->when($this->activoFilter !== '', function ($query) {
-                return $query->where('activo', $this->activoFilter);
-            })
-            ->orderBy('nombre_producto')
-            ->paginate(10);
 
-        $categorias = CategoriaProducto::where(function($query) {
+        $productos = ProductoServicio::buscar([
+            'negocio_id' => $this->negocioSeleccionado->id,
+            'search' => $this->search,
+            'categoria_id' => $this->categoriaFilter,
+            'marca_id' => $this->marcaFilter,
+            'activo' => $this->activoFilter,
+        ]);
+
+        $categorias = CategoriaProducto::where(function ($query) {
             $query->whereNull('tipo_negocio')
-                  ->orWhere('tipo_negocio', $this->negocioSeleccionado->tipo_negocio);
+                ->orWhere('tipo_negocio', $this->negocioSeleccionado->tipo_negocio);
         })->get();
-        
-        $marcas = Marca::where(function($query) {
+
+        $marcas = Marca::where(function ($query) {
             $query->whereNull('tipo_negocio')
-                  ->orWhere('tipo_negocio', $this->negocioSeleccionado->tipo_negocio);
+                ->orWhere('tipo_negocio', $this->negocioSeleccionado->tipo_negocio);
         })->get();
-        
-        $unidades = Unidad::where('activo', true)
-            ->where(function($query) {
-                $query->whereNull('tipo_negocio')
-                      ->orWhere('tipo_negocio', $this->negocioSeleccionado->tipo_negocio);
-            })->get();
 
         return view('livewire.dueno_tienda.productos.gestion-productos', [
             'productos' => $productos,
             'categorias' => $categorias,
-            'marcas' => $marcas,
-            'unidades' => $unidades,
+            'marcas' => $marcas
         ]);
+    }
+
+    public function resetFormulario()
+    {
+        $this->resetValidation();
+
+        $this->reset([
+            'producto_id',
+            'uuid',
+            'codigo_barra',
+            'sunat_code',
+            'descripcion',        // ← antes era nombre_producto
+            'detalle',            // ← antes era descripcion
+            'imagen',
+            'imagen_url',
+            'porcentaje_igv',     // ← antes era igv
+            'monto_venta',        // ← antes era precio_base
+            'monto_venta_sinigv',
+            'monto_compra',       // ← antes era precio_compra
+            'monto_compra_sinigv',
+            'categoria_id',
+            'marca_id',
+            'negocio_id',
+            'stocks',
+        ]);
+        $this->negocio_id = $this->negocioSeleccionado ? $this->negocioSeleccionado->id : null;
+        $this->tipo_afectacion_igv = $this->afectaciones[0]['codigo'] ?? null; // Preseleccionar la primera afectación
+        $this->aplicaIgv = $this->afectaciones[0]['aplica_igv'] ?? true; // Preseleccionar el primer valor de aplica_igv
+        $this->unidad = $this->getUnidadPreseleccionada();
+        $this->activo = true;
+        $this->presentaciones = [];
+        $this->cargarSucursales();
     }
 
     public function create()
     {
-        $this->resetValidation();
-        $this->reset(['producto_id', 'uuid', 'codigo_barra', 'sunat_code', 'nombre_producto', 'descripcion', 'imagen', 'imagen_path', 'igv','tipo_afectacion_igv', 'precio_base', 'precio_compra', 'categoria_id', 'marca_id']);
-        $this->activo = true;
-        $this->presentaciones = [];
-        $this->cargarSucursales();
+        $this->resetFormulario();
         $this->isOpen = true;
     }
 
     public function edit($uuid)
     {
-        $this->resetValidation();
-        $producto = Producto::where('uuid', $uuid)->firstOrFail();
-        
-        // Verificar permisos
-        if (Auth::user()->hasRole('vendedor') && $producto->creado_por != Auth::id()) {
-            if ($producto->tieneVentas()) {
-                LivewireAlert::text('No tienes permisos para editar este producto.')
-                ->error()
-                ->toast()
-                ->position('top-end')
-                ->show();
-                return;
+        $this->resetFormulario();
+        try {
+            $producto = ProductoServicio::obtenerProductoPorUuid($uuid);
+            $this->producto_id = $producto->id;
+            $this->uuid = $producto->uuid;
+            $this->codigo_barra = $producto->codigo_barra;
+            $this->sunat_code = $producto->sunat_code;
+            $this->descripcion = $producto->descripcion;
+            $this->detalle = $producto->detalle;
+            $this->imagen_url = $producto->imagen_path;
+            $this->imagen_a_eliminar = null;
+            $this->imagen_eliminada = false;
+            $this->imagen = null; // Reseteamos la imagen para evitar conflictos
+
+            $this->tipo_afectacion_igv = $producto->tipo_afectacion_igv;
+            $this->porcentaje_igv = $producto->porcentaje_igv;
+            $this->monto_venta = $producto->monto_venta;
+            $this->monto_venta_sinigv = $producto->monto_venta_sinigv;
+            $this->monto_compra = $producto->monto_compra;
+            $this->monto_compra_sinigv = $producto->monto_compra_sinigv;
+            $this->unidad = $producto->unidad;
+
+            $this->categoria_id = $producto->categoria_id;
+            $this->marca_id = $producto->marca_id;
+            $this->negocio_id = $producto->negocio_id;
+            $this->activo = $producto->activo;
+
+            // Cargar presentaciones (si las manejas aún)
+            $this->presentaciones = $producto->presentaciones()->get()->toArray();
+
+            // Cargar stocks
+            $this->cargarSucursales();
+            foreach ($producto->stocks as $stock) {
+                if (isset($this->stocks[$stock->sucursal_id])) {
+                    $this->stocks[$stock->sucursal_id]['cantidad'] = $stock->cantidad;
+                    $this->stocks[$stock->sucursal_id]['stock_minimo'] = $stock->stock_minimo;
+                }
             }
+
+            $this->isOpen = true;
+        } catch (\Throwable $th) {
+            $this->alert('error', $th->getMessage());
         }
-        
-        $this->producto_id = $producto->id;
-        $this->uuid = $producto->uuid;
-        $this->codigo_barra = $producto->codigo_barra;
-        $this->sunat_code = $producto->sunat_code;
-        $this->nombre_producto = $producto->nombre_producto;
-        $this->descripcion = $producto->descripcion;
-        $this->imagen_path = $producto->imagen_path;
-        $this->imagen_url = $producto->imagen_path ? Storage::disk('public')->url($producto->imagen_path) : null;
-        
-        $this->tipo_afectacion_igv = $producto->tipo_afectacion_igv;
-        $this->igv = $producto->igv;
-        $this->precio_base = $producto->precio_base;
-        $this->precio_compra = $producto->precio_compra;
-        $this->categoria_id = $producto->categoria_id;
-        $this->marca_id = $producto->marca_id;
-        $this->negocio_id = $producto->negocio_id;
-        $this->activo = $producto->activo;
-        
-        // Cargar presentaciones
-        $this->presentaciones = $producto->presentaciones()->get()->toArray();
-        
-        // Cargar stocks
-        $this->cargarSucursales();
-        foreach ($producto->stocks as $stock) {
-            if (isset($this->stocks[$stock->sucursal_id])) {
-                $this->stocks[$stock->sucursal_id]['cantidad'] = $stock->cantidad;
-                $this->stocks[$stock->sucursal_id]['stock_minimo'] = $stock->stock_minimo;
-            }
-        }
-        
-        $this->isOpen = true;
     }
 
     public function store()
     {
         $this->validate([
             'codigo_barra' => [
-                'nullable', 'string', 'max:255',
-                Rule::unique('productos', 'codigo_barra')->ignore($this->producto_id)
+                'nullable',
+                'string',
+                'max:255',
+                Rule::unique('productos', 'codigo_barra')->ignore($this->producto_id),
             ],
             'sunat_code' => 'nullable|string|max:255',
-            'nombre_producto' => 'required|string|max:255',
-            'descripcion' => 'nullable|string',
-            'imagen' => 'nullable|image|max:1024',
-            'igv' => 'required|min:0|max:20',
-            'tipo_afectacion_igv' => 'required',
-            'precio_base' => 'required|numeric|min:0',
-            'precio_compra' => 'required|numeric|min:0',
+            'descripcion' => 'required|string|max:1000',
+            'detalle' => 'nullable|string',
+            //'imagen' => 'nullable|image|max:1024',
+            'porcentaje_igv' => 'required|numeric|min:0|max:20',
+            'tipo_afectacion_igv' => 'required|exists:sunat_catalogo_7,codigo',
+            'monto_venta' => 'required|numeric|min:0',
+            'monto_compra' => 'required|numeric|min:0',
+            'unidad' => 'required|string|max:5',
             'categoria_id' => 'nullable|exists:categorias_productos,id',
             'marca_id' => 'nullable|exists:marcas,id',
             'negocio_id' => 'required|exists:negocios,id',
             'activo' => 'boolean',
-            'presentaciones.*.codigo_barra' => 'nullable|string|max:255',
-            'presentaciones.*.unidad_id' => 'required|exists:unidades,id',
-            'presentaciones.*.descripcion' => 'required|string|max:255',
-            'presentaciones.*.factor' => 'required|numeric|min:0.01',
-            'presentaciones.*.precio' => 'required|numeric|min:0',
             'stocks.*.cantidad' => 'required|numeric|min:0',
             'stocks.*.stock_minimo' => 'required|numeric|min:0',
-        ],[
-            'codigo_barra.unique' => 'Este código de barra ya está registrado.',
-            'codigo_barra.max' => 'El código de barra no puede tener más de 255 caracteres.',
-            'nombre_producto.required' => 'El nombre del producto es obligatorio.',
-            'nombre_producto.max' => 'El nombre del producto no puede tener más de 255 caracteres.',
-            'imagen.image' => 'El archivo debe ser una imagen.',
-            'imagen.max' => 'La imagen no debe superar 1MB.',
-            'precio_base.required' => 'El precio base es obligatorio.',
-            'precio_base.numeric' => 'El precio base debe ser numérico.',
-            'precio_compra.required' => 'El precio de compra es obligatorio.',
-            'precio_compra.numeric' => 'El precio de compra debe ser numérico.',
-            'categoria_id.exists' => 'La categoría seleccionada no es válida.',
-            'marca_id.exists' => 'La marca seleccionada no es válida.',
-            'negocio_id.required' => 'El negocio es obligatorio.',
-            'negocio_id.exists' => 'El negocio seleccionado no es válido.',
-            'activo.boolean' => 'El campo activo debe ser verdadero o falso.',
-    
-            'presentaciones.*.unidad_id.required' => 'La unidad es obligatoria en cada presentación.',
-            'presentaciones.*.unidad_id.exists' => 'La unidad seleccionada en una presentación no es válida.',
-            'presentaciones.*.descripcion.required' => 'La descripción de la presentación es obligatoria.',
-            'presentaciones.*.descripcion.max' => 'La descripción de la presentación no puede tener más de 255 caracteres.',
-            'presentaciones.*.factor.required' => 'El factor de conversión es obligatorio.',
-            'presentaciones.*.factor.numeric' => 'El factor de conversión debe ser un número.',
-            'presentaciones.*.factor.min' => 'El factor debe ser mayor que cero.',
-            'presentaciones.*.precio.required' => 'El precio de la presentación es obligatorio.',
-            'presentaciones.*.precio.numeric' => 'El precio de la presentación debe ser numérico.',
-    
-            'stocks.*.cantidad.required' => 'La cantidad en stock es obligatoria.',
-            'stocks.*.cantidad.numeric' => 'La cantidad debe ser numérica.',
-            'stocks.*.stock_minimo.required' => 'El stock mínimo es obligatorio.',
-            'stocks.*.stock_minimo.numeric' => 'El stock mínimo debe ser numérico.',
         ]);
-        
-        // Procesar imagen si existe
-        if ($this->imagen) {
-            $year = date('Y');
-            $month = date('m');
-            $path = "productos/{$year}/{$month}";
-            $filename = Str::random(20) . '.' . $this->imagen->getClientOriginalExtension();
-            $this->imagen_path = $this->imagen->storeAs($path, $filename, 'public');
-        }
-        
-        if ($this->producto_id) {
-            // Actualizar producto
-            $producto = Producto::findOrFail($this->producto_id);
-            $producto->update([
+
+        try {
+
+            $data = [
+                'producto_id' => $this->producto_id,
                 'codigo_barra' => $this->codigo_barra,
                 'sunat_code' => $this->sunat_code,
-                'nombre_producto' => $this->nombre_producto,
                 'descripcion' => $this->descripcion,
-                'imagen_path' => $this->imagen_path ?? $producto->imagen_path,
-                'igv' => $this->igv,
-                'tipo_afectacion_igv'=> $this->tipo_afectacion_igv,
-                'precio_base' => $this->precio_base,
-                'precio_compra' => $this->precio_compra,
+                'detalle' => $this->detalle,
+                'imagen' => $this->imagen,
+                'imagen_url'=> $this->imagen_url,
+                'imagen_eliminada' => $this->imagen_eliminada,
+                'imagen_a_eliminar' => $this->imagen_a_eliminar,
+                'porcentaje_igv' => $this->porcentaje_igv,
+                'monto_venta' => $this->monto_venta,
+                'monto_compra' => $this->monto_compra,
+                'unidad' => $this->unidad,
+                'tipo_afectacion_igv' => $this->tipo_afectacion_igv,
                 'categoria_id' => $this->categoria_id,
                 'marca_id' => $this->marca_id,
                 'negocio_id' => $this->negocio_id,
                 'activo' => $this->activo,
-            ]);
+                'stocks' => $this->stocks,
+                'presentaciones' => $this->presentaciones,
+            ];
             
-            // Actualizar presentaciones
-            $producto->presentaciones()->delete();
-            foreach ($this->presentaciones as $presentacion) {
-                $producto->presentaciones()->create([
-                    'codigo_barra' => $presentacion['codigo_barra'] ?? null,
-                    'unidad_id' => $presentacion['unidad_id'],
-                    'descripcion' => $presentacion['descripcion'],
-                    'factor' => $presentacion['factor'],
-                    'precio' => $presentacion['precio'],
-                    'activo' => true,
-                ]);
-            }
-            
-            // Actualizar stocks
-            foreach ($this->stocks as $sucursal_id => $stock) {
-                Stock::updateOrCreate(
-                    [
-                        'producto_id' => $producto->id,
-                        'sucursal_id' => $sucursal_id,
-                    ],
-                    [
-                        'cantidad' => $stock['cantidad'],
-                        'stock_minimo' => $stock['stock_minimo'],
-                    ]
-                );
-            }
-            
-            LivewireAlert::text('Producto actualizado correctamente.')
-                ->success()
-                ->toast()
-                ->position('top-end')
-                ->show();
-        } else {
-            // Crear producto
-            $producto = Producto::create([
-                'codigo_barra' => $this->codigo_barra,
-                'sunat_code' => $this->sunat_code,
-                'nombre_producto' => $this->nombre_producto,
-                'descripcion' => $this->descripcion,
-                'imagen_path' => $this->imagen_path,
-                'igv' => $this->igv,
-                'precio_base' => $this->precio_base,
-                'precio_compra' => $this->precio_compra,
-                'categoria_id' => $this->categoria_id,
-                'marca_id' => $this->marca_id,
-                'negocio_id' => $this->negocio_id,
-                'creado_por' => Auth::id(),
-                'activo' => $this->activo,
-            ]);
-            
-            // Crear presentaciones
-            foreach ($this->presentaciones as $presentacion) {
-                $producto->presentaciones()->create([
-                    'codigo_barra' => $presentacion['codigo_barra'] ?? null,
-                    'unidad_id' => $presentacion['unidad_id'],
-                    'descripcion' => $presentacion['descripcion'],
-                    'factor' => $presentacion['factor'],
-                    'precio' => $presentacion['precio'],
-                    'activo' => true,
-                ]);
-            }
-            
-            // Crear stocks
-            foreach ($this->stocks as $sucursal_id => $stock) {
-                Stock::create([
-                    'producto_id' => $producto->id,
-                    'sucursal_id' => $sucursal_id,
-                    'cantidad' => $stock['cantidad'],
-                    'stock_minimo' => $stock['stock_minimo'],
-                ]);
-            }
-            
-            LivewireAlert::text('Producto creado correctamente.')
-                ->success()
-                ->toast()
-                ->position('top-end')
-                ->show();
+            ProductoServicio::guardar($data);
+
+            $this->alert('success', $this->producto_id ? 'Producto actualizado correctamente.' : 'Producto creado correctamente.');
+            $this->closeModal();
+        } catch (\Throwable $th) {
+            $this->alert('error', $th->getMessage());
         }
-        
-        $this->closeModal();
     }
 
     public function delete($uuid)
     {
-        $producto = Producto::where('uuid', $uuid)->firstOrFail();
-        
-        // Verificar permisos
-        if (Auth::user()->hasRole('vendedor')) {
-            if ($producto->creado_por != Auth::id() || $producto->tieneVentas()) {
-                LivewireAlert::text('No tienes permisos para eliminar este producto.')
-                ->error()
-                ->toast()
-                ->position('top-end')
-                ->show();
-                return;
-            }
+        try {
+            ProductoServicio::eliminarProductoPorUuid($uuid);
+            $this->alert('success', 'Producto eliminado correctamente.');
+        } catch (\Illuminate\Validation\UnauthorizedException $e) {
+            $this->alert('error', $e->getMessage());
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            $this->alert('error', 'Producto no encontrado.');
+        } catch (\Exception $e) {
+            $this->alert('error', 'Error inesperado al eliminar el producto.');
         }
-        
-        // Eliminar imagen si existe
-        if ($producto->imagen_path) {
-            Storage::disk('public')->delete($producto->imagen_path);
-        }
-        
-        // Eliminar presentaciones y stocks
-        $producto->presentaciones()->delete();
-        $producto->stocks()->delete();
-        
-        $producto->delete();
-        LivewireAlert::text('Producto eliminado correctamente.')
-        ->success()
-        ->toast()
-        ->position('top-end')
-        ->show();
+    }
+    public function eliminarImagen()
+    {
+        $this->imagen = null;        
+        $this->imagen_a_eliminar = $this->imagen_url;
+        $this->imagen_url = null;
+        $this->imagen_eliminada = true;
     }
 
     public function addPresentacion()
     {
         $this->presentaciones[] = [
             'codigo_barra' => '',
-            'unidad_id' => '',
+            'unidad' => $this->getUnidadPreseleccionada(),
             'descripcion' => '',
             'factor' => 1,
             'precio' => 0,

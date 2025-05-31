@@ -7,6 +7,7 @@ use App\Models\Negocio;
 use App\Models\InvoiceExtraInformation;
 use App\Models\SiteConfig;
 use App\Models\Venta;
+use Auth;
 use DateTime;
 use Exception;
 use Greenter\Model\Client\Client;
@@ -21,6 +22,7 @@ use Greenter\Report\PdfReport;
 use Greenter\Report\Resolver\DefaultTemplateResolver;
 use Greenter\See;
 use Greenter\Ws\Services\SunatEndpoints;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 
 class ComprobanteService
@@ -34,104 +36,9 @@ class ComprobanteService
     public static function generar($ventaId)
     {
 
-        $venta = Venta::find($ventaId);
-        $correlativo = null;
-
-        if (!$venta) {
-            throw new Exception("La venta proporcionada no existe");
-        }
-
-        $negocio = $venta->negocio;
-        if (!$negocio) {
-            throw new Exception("La venta proporcionada no está asociado a ningún negocio");
-        }
-
-        $serieComprobante = $venta->serie_comprobante;
-        $correlativoComprobante = $venta->correlativo_comprobante;
-
-        if (!$venta->serie_comprobante || !$venta->correlativo_comprobante) {
-            $correlativo = self::generarSiguienteCorrelativo($venta->modo_venta, $venta->tipo_comprobante_codigo, $venta->sucursal_id);
-            $serieComprobante = $correlativo['serie_comprobante'];
-            $correlativoComprobante = $correlativo['correlativo_comprobante'];
-        }
-        if (!$serieComprobante || !$correlativoComprobante) {
-            throw new Exception("La correlativos no estan correctamente configurados");
-        }
-
-        $tipoDocumento = $venta->tipo_documento;
-        $fechaEmision = $venta->fecha_emision;
-        $montoOperacionesGravadas = $venta->monto_operaciones_gravadas;
-        $montoOperacionesExoneradas = $venta->monto_operaciones_exoneradas;
-        $montoOperacionesInafectas = $venta->monto_operaciones_inafectas;
-        $montoOperacionesExportacion = $venta->monto_operaciones_exportacion;
-        $montoOperacionesGratuitas = $venta->monto_operaciones_gratuitas;
-
-        
-        $totalImpuestos = $mtoIGV + $mtoIGVGratuitas + $icbper;
-
-        $data = [
-            "ublVersion" => "2.1",
-            "tipoDoc" => $tipoDocumento,
-            "tipoOperacion" => "0101",
-            "serie" => $serieComprobante,
-            "correlativo" => $correlativoComprobante,
-            "fechaEmision" => $fechaEmision,
-            "formaPago" => [
-                "moneda" => "PEN",
-                "tipo" => "Contado"
-            ],
-            "tipoMoneda" => "PEN",
-            "company" => [
-                "ruc" => 20611263300,
-                "razonSocial" => "INVERSIONES YARECH S.R.L.",
-                "nombreComercial" => "-",
-                "address" => [
-                    "ubigueo" => "040307",
-                    "departamento" => "AREQUIPA",
-                    "provincia" => "CARAVELI",
-                    "distrito" => "CHALA",
-                    "urbanizacion" => "-",
-                    "direccion" => "AV. LAS FLORES MZA. 17 LOTE. 4 A.H.  FLORES",
-                    "codLocal" => "0000"
-                ]
-            ],
-
-            "client" => [
-                "tipoDoc" => '1',
-                "numDoc" => '00000000',
-                "rznSocial" => 'VARIOS'
-            ],
-            //Mto Operaciones
-            "mtoOperGravadas" => $montoOperacionesGravadas,
-            "mtoOperExoneradas" => $montoOperacionesExoneradas,
-            "mtoOperInafectas" => $montoOperacionesInafectas,
-            "mtoOperExportacion" => $montoOperacionesExportacion,
-            "mtoOperGratuitas" => $montoOperacionesGratuitas,
-
-            //Impuestos
-            "mtoIGV" => (float) $venta->igv,
-            "mtoIGVGratuitas" => (float) $venta->igv,
-            "icbper" => (float) $venta->igv,
-            "totalImpuestos" => $totalImpuestos,
-
-            /*
-            valorVenta	Total sin impuestos
-            subTotal	valorVenta + IGV + ICBPER
-            redondeo	Ajuste decimal para llegar al monto deseado
-            mtoImpVenta	Total final a pagar (subTotal + redondeo)
-            */
-            "valorVenta" => (float) $sale->subtotal,
-            "subTotal" => (float) $sale->total_amount,
-            "redondeo"=> (float) $sale->total_tax,
-            "mtoImpVenta" => (float) $sale->total_amount,
-            "details" => $details,
-            "legends" => [
-                [
-                    "code" => "1000",
-                    "value" => ""
-                ]
-            ]
-        ];
+        $comprobanteServicio = new ComprobanteServicio();
+        $fecha = Carbon::now();
+        $servicio = $comprobanteServicio->generar($ventaId,'factura',$fecha);
 
     }
     private static function generarSiguienteCorrelativo($modoVenta, $tipo_comprobante_codigo, $sucursal_id)
