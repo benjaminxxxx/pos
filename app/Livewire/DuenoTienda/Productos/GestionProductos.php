@@ -40,7 +40,7 @@ class GestionProductos extends Component
     // ------------------------------
     public $codigo_barra;
     public $sunat_code;
-    public $descripcion; // antes nombre_producto
+    public $descripcion;
     public $detalle;     // antes descripcion extendida
     public $tipo_afectacion_igv; // sigue igual
 
@@ -174,7 +174,7 @@ class GestionProductos extends Component
             'uuid',
             'codigo_barra',
             'sunat_code',
-            'descripcion',        // ← antes era nombre_producto
+            'descripcion',
             'detalle',            // ← antes era descripcion
             'imagen',
             'imagen_url',

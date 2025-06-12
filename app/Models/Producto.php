@@ -15,7 +15,7 @@ class Producto extends Model
         'codigo_barra',
         'sunat_code',
 
-        'descripcion',    // ← antes era nombre_producto
+        'descripcion',
         'detalle',        // ← antes era descripcion
         'imagen_path',
 
@@ -48,7 +48,10 @@ class Producto extends Model
             }
         });
     }
-
+    public function unidades()
+    {
+        return $this->belongsTo(Unidad::class, 'unidad', 'codigo'); // asumiendo 'unidad' es el código de la unidad
+    }
     /**
      * Get the category that owns the product.
      */

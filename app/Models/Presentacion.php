@@ -26,7 +26,10 @@ class Presentacion extends Model
         'precio' => 'decimal:2',
         'activo' => 'boolean',
     ];
-
+    public function unidades()
+    {
+        return $this->belongsTo(Unidad::class, 'unidad', 'codigo'); // asumiendo 'unidad' es el código de la unidad
+    }
     /**
      * Get the product that owns the presentation.
      */

@@ -5,6 +5,7 @@ namespace App\Services;
 
 use App\Models\Producto;
 use App\Models\Stock;
+use DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -15,6 +16,44 @@ use Intervention\Image\Laravel\Facades\Image;
 
 class ProductoServicio
 {
+    public static function buscarPorTextoYStock(string $search, int $sucursal_id)
+    {
+        $productos = Producto::where(function ($query) use ($search) {
+            $query->where('codigo_barra', 'like', '%' . $search . '%')
+                ->orWhere('descripcion', 'like', '%' . $search . '%')
+                ->orWhereHas('presentaciones', function ($q) use ($search) {
+                    $q->where('codigo_barra', 'like', '%' . $search . '%');
+                });
+        })
+            ->with([
+                'presentaciones' => function ($q) {
+                    $q->where('activo', true)->with('unidades');
+                },
+                'unidades',
+                'categoria'
+            ])
+            ->get()
+            ->map(function ($producto) use ($sucursal_id) {
+                $stock = DB::table('stocks')
+                    ->where('producto_id', $producto->id)
+                    ->where('sucursal_id', $sucursal_id)
+                    ->value('cantidad');
+
+                $producto->stock = $stock ?? 0;
+
+                // Añadir campo unidad_alt desde la relación
+                $producto->unidad_alt = $producto->unidades->alt ?? null;
+
+                // Añadir unidad_alt a cada presentacion
+                $producto->presentaciones->each(function ($p) {
+                    $p->unidad_alt = $p->unidades->alt ?? null;
+                });
+
+                return $producto;
+            });
+
+        return $productos;
+    }
     public static function buscar(array $filtros)
     {
         return Producto::query()

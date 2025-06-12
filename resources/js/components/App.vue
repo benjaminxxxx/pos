@@ -8,15 +8,20 @@ import PanelVender from '@/Pages/PanelVender.vue'
 // cambiar la sucursal cuando sea necesario.
 
 const sucursalSeleccionada = ref(localStorage.getItem('sucursalSeleccionada'))
+const sucursalSeleccionadaNombre = ref(localStorage.getItem('sucursalSeleccionadaNombre'))
 
-const actualizarSucursal = (id) => {
-  sucursalSeleccionada.value = id
-  localStorage.setItem('sucursalSeleccionada', id)
+const actualizarSucursal = (data) => {
+  sucursalSeleccionada.value = data.id
+  sucursalSeleccionadaNombre.value = data.nombre
+  localStorage.setItem('sucursalSeleccionada', data.id)
+  localStorage.setItem('sucursalSeleccionadaNombre', data.nombre)
 }
 
 const cambiarSucursal = () => {
   localStorage.removeItem('sucursalSeleccionada')
+  localStorage.removeItem('sucursalSeleccionadaNombre')
   sucursalSeleccionada.value = null
+  sucursalSeleccionadaNombre.value = null
 }
 </script>
 

@@ -3,13 +3,17 @@
 namespace App\Services;
 
 use App\Models\Negocio;
+use App\Models\Nota;
 use App\Models\SucursalCorrelativo;
 use App\Models\Venta;
+use App\Services\Facturacion\PdfGenerators\A4VoucherGenerator;
 use Exception;
 use Illuminate\Support\Carbon;
 use InvalidArgumentException;
 use Luecano\NumeroALetras\NumeroALetras;
 use Storage;
+use Dompdf\Dompdf;
+use Dompdf\Options;
 
 class ComprobanteServicio
 {
@@ -57,22 +61,144 @@ class ComprobanteServicio
      * @return mixed
      * @throws Exception
      */
-    public function generar(int $ventaId, $tipoComprobante, $fecha)
+    public function generar(int $ventaId)
     {
         $venta = $this->obtenerVenta($ventaId);
-        $opciones = $this->prepararOpcionesSunat(negocio: $venta->negocio);
-        $see = $this->obtenerServicioSunat($opciones);
 
-        $invoice = $this->prepararDatosInvoice($venta, $tipoComprobante, $fecha);
+        //$voucherPdf = VoucherServicio::generarDocumento($venta);
+        $opciones = $this->prepararOpcionesSunat($venta->negocio);
+        $see = $this->obtenerServicioSunat($opciones);
+        $tipoDoc = $venta->tipo_comprobante_codigo;
+        $numeracion = $this->obtenerNumeracion($venta->sucursal_id, $tipoDoc);
+
+         $data = [
+            'negocio' => $venta->negocio,
+            'fecha_emision' => $venta->fecha_emision,
+            'tipo_documento' => $tipoDoc,
+            'venta' => $venta
+        ];
+
+        $invoice = $this->prepararDatosInvoice($data, $numeracion);
 
         $result = $see->send($invoice);
-        if ($result->isSuccess()) {
-            dd($result);
-        } else {
-            $error = $result->getError(); // instancia de Greenter\Model\Response\Error
+
+        if (!$result->isSuccess()) {
+            $error = $result->getError();
             throw new Exception("SUNAT Error {$error->getCode()}: {$error->getMessage()}");
         }
+
+        // Procesar respuesta de SUNAT y guardar XML y CDR
+        $sunatResponse = $this->procesarRespuestaSunat($invoice, $result, $see);
+
+        $sunatComprobantePdf = A4VoucherGenerator::generarDocumento($invoice, $venta);
+        $voucherPdf = VoucherServicio::generarDocumento($venta);
+
+        // Actualizar venta
+        $venta->sunat_comprobante_pdf = $sunatComprobantePdf;
+        $venta->voucher_pdf = $voucherPdf;
+        $venta->sunat_xml_firmado = $sunatResponse['xml_path'];
+        $venta->sunat_cdr = $sunatResponse['cdr_path'];
+        $venta->serie_comprobante = $numeracion['serie'];
+        $venta->correlativo_comprobante = $numeracion['correlativo'];
+        $venta->save();
+
+        // Actualizar correlativo
+        $correlativo = $numeracion['modelo'];
+        $correlativo->correlativo_actual = $numeracion['correlativo'];
+        $correlativo->save();
     }
+    public function generarNota($notaId)
+    {
+        $nota = $this->obtenerNota($notaId);
+
+        //$voucherPdf = VoucherServicio::generarDocumento($venta);
+        $opciones = $this->prepararOpcionesSunat($nota->negocio);
+        
+        $see = $this->obtenerServicioSunat($opciones);
+        $tipoDoc = $nota->tipo_doc;
+        $numeracion = $this->obtenerNumeracion($nota->sucursal_id, $tipoDoc);
+
+        $data = [
+            'negocio' => $nota->negocio,
+            'fecha_emision' => $nota->fecha_emision,
+            'tipo_documento' => $tipoDoc,
+            'venta_afectada' => $nota->venta,
+            'nota' => $nota,
+        ];
+        $invoice = $this->prepararDatosInvoice($data, $numeracion);
+        
+        $result = $see->send($invoice);
+
+        if (!$result->isSuccess()) {
+            $error = $result->getError();
+            throw new Exception("SUNAT Error {$error->getCode()}: {$error->getMessage()}");
+        }
+        
+        // Procesar respuesta de SUNAT y guardar XML y CDR
+        $sunatResponse = $this->procesarRespuestaSunat($invoice, $result, $see);
+        
+        $sunatComprobantePdf = A4VoucherGenerator::generarDocumento($invoice, $nota->negocio);
+        $voucherPdf = null;//VoucherServicio::generarDocumento($venta);
+
+        // Actualizar venta
+        $nota->sunat_comprobante_pdf = $sunatComprobantePdf;
+        $nota->voucher_pdf = $voucherPdf;
+        $nota->sunat_xml_firmado = $sunatResponse['xml_path'];
+        $nota->sunat_cdr = $sunatResponse['cdr_path'];
+        $nota->serie_comprobante = $numeracion['serie'];
+        $nota->correlativo_comprobante = $numeracion['correlativo'];
+        $nota->save();
+
+        // Actualizar correlativo
+        $correlativo = $numeracion['modelo'];
+        $correlativo->correlativo_actual = $numeracion['correlativo'];
+        $correlativo->save();
+    }
+    private function procesarRespuestaSunat($invoice, $result, $see)
+    {
+        $response = [];
+        $response['success'] = $result->isSuccess();
+
+        if (!$response['success']) {
+            $response['error'] = [
+                'code' => $result->getError()->getCode(),
+                'message' => $result->getError()->getMessage()
+            ];
+            return $response;
+        }
+
+        // Obtener XML firmado directamente del factory
+        $signedXml = $see->getFactory()->getLastXml();
+
+        // Obtener CDR (ZIP base64)
+        $cdrZip = $result->getCdrZip();
+
+        $cdr = $result->getCdrResponse();
+        $response['cdrResponse'] = [
+            'code' => (int) $cdr->getCode(),
+            'description' => $cdr->getDescription(),
+            'notes' => $cdr->getNotes(),
+        ];
+
+        // Guardar archivos
+        $nowPath = Carbon::now()->format('Y/m');
+        $invoiceName = $invoice->getName();
+
+        $signedXmlPath = "$nowPath/{$invoiceName}.xml";
+        $cdrZipPath = "$nowPath/{$invoiceName}.zip";
+
+        Storage::disk('public')->put($signedXmlPath, $signedXml);
+        Storage::disk('public')->put($cdrZipPath, $cdrZip); // No necesita decode
+
+        $response['xml_path'] = $signedXmlPath;
+        $response['cdr_path'] = $cdrZipPath;
+
+        return $response;
+    }
+
+
+
+
     /**
      * Prepara las opciones para el servicio Sunat a partir del negocio.
      *
@@ -81,22 +207,32 @@ class ComprobanteServicio
      */
     protected function prepararOpcionesSunat(Negocio $negocio): array
     {
+        if (!$negocio->certificado) {
+            throw new Exception("El negocio no tiene certificado configurado.");
+        }
+
+        $disk = Storage::disk('public');
+
+        if (!$disk->exists($negocio->certificado)) {
+            throw new Exception("El archivo de certificado no existe en el disco público: {$negocio->certificado}");
+        }
+
         return [
-            'certificate' => Storage::disk('public')->get($negocio->certificado),
+            'certificate' => $disk->get($negocio->certificado),
             'production' => $negocio->modo === 'produccion',
             'ruc' => $negocio->ruc,
             'user' => $negocio->usuario_sol,
             'password' => $negocio->clave_sol,
         ];
     }
+
     /**
      * Obtiene la venta o lanza excepción si no existe.
      *
      * @param int $ventaId
-     * @return Venta
      * @throws Exception
      */
-    protected function obtenerVenta(int $ventaId): Venta
+    protected function obtenerVenta(int $ventaId)
     {
         $venta = Venta::find($ventaId);
         if (!$venta) {
@@ -104,7 +240,14 @@ class ComprobanteServicio
         }
         return $venta;
     }
-
+    protected function obtenerNota(int $notaId)
+    {
+        $nota = Nota::find($notaId);
+        if (!$nota) {
+            throw new Exception("La nota proporcionada no existe");
+        }
+        return $nota;
+    }
     protected function obtenerTipoDoc($tipoComprobante)
     {
         $tipoDoc = $this->catalogoComprobantes[$tipoComprobante] ?? null;
@@ -139,7 +282,8 @@ class ComprobanteServicio
 
         return [
             'serie' => $correlativo->serie,
-            'correlativo' => $correlativo->correlativo_actual,
+            'correlativo' => $correlativo->correlativo_actual + 1,
+            'modelo' => $correlativo,
         ];
     }
     /*
@@ -226,12 +370,10 @@ class ComprobanteServicio
     | subTotal            = 536
     | mtoImpVenta         = 536
     */
-
-    protected function prepararDatosInvoice(Venta $venta, $tipoComprobante, $fecha)
+    /*
+    protected function prepararDatosInvoice(Venta $venta, $tipoDoc, $fecha, $numeracion)
     {
         $negocio = $venta->negocio;
-        $tipoDoc = $this->obtenerTipoDoc($tipoComprobante);
-        $numeracion = $this->obtenerNumeracion($venta->sucursal_id, $tipoDoc);
         $fechaEmision = $this->formatearFechaEmision($fecha);
 
         $legends = [
@@ -289,7 +431,7 @@ class ComprobanteServicio
         $data['mtoOperGratuitas'] = (float) $venta->monto_operaciones_gratuitas;
         $data['mtoIGV'] = (float) $venta->monto_igv;
         $data['mtoIGVGratuitas'] = (float) $venta->monto_igv_gratuito;
-        $data['icbper'] = (float) $venta->icbper!==0.00 ? (float) $venta->icbper : null;
+        $data['icbper'] = (float) $venta->icbper !== 0.00 ? (float) $venta->icbper : null;
         $data['totalImpuestos'] = (float) $venta->total_impuestos;
         $data['valorVenta'] = (float) $venta->valor_venta;
         $data['subTotal'] = (float) $venta->sub_total;
@@ -305,6 +447,150 @@ class ComprobanteServicio
         $data['legends'] = $legends;
         //dd($data);
         return $this->sunatService->getInvoice($data);
+    }
+     */
+    protected function prepararDatosInvoice($data, $numeracion)
+    {
+        if (!isset($data['tipo_documento'])) {
+            throw new Exception('Necesita indicar el tipo de documento');
+        }
+        if (!isset($data['negocio'])) {
+            throw new Exception('Necesita indicar el parametro negocio');
+        }
+        if (!isset($data['fecha_emision'])) {
+            throw new Exception('Necesita indicar la fecha de emisión');
+        }
+        if (in_array($data['tipo_documento'], haystack: ['07', '08']) && !isset($data['nota'])) {
+            throw new Exception('Necesita indicar los valores de la nota de credito o debito');
+        }
+
+
+        $negocio = $data['negocio'];
+        $fecha = $data['fecha_emision'];
+        $venta = $data['venta'] ?? null;
+        $nota = $data['nota'] ?? null;
+        $ventaAfectada = $data['venta_afectada'] ?? null;
+
+        $tipoDoc = $data['tipo_documento'];
+
+        $fechaEmision = $this->formatearFechaEmision($fecha);
+
+        if (in_array($tipoDoc, ['01', '03'])) { //Factura y Boleta
+            $legends = [
+                [
+                    'code' => '1000',
+                    'value' => $this->montoEnLetras($venta->monto_importe_venta ?? 0),
+                ],
+            ];
+
+            // Si hay productos gratuitos, agregar leyenda 1002
+            if (($venta->monto_operaciones_gratuitas ?? 0) > 0) {
+                $legends[] = [
+                    'code' => '1002',
+                    'value' => 'TRANSFERENCIA GRATUITA DE UN BIEN Y/O SERVICIO PRESTADO GRATUITAMENTE',
+                ];
+            }
+        }
+
+
+        $data = [];
+
+        $data['ublVersion'] = '2.1';
+        $data['tipoOperacion'] = '0101';
+        $data['tipoDoc'] = $tipoDoc;
+        $data['serie'] = $numeracion['serie'];
+        $data['correlativo'] = $numeracion['correlativo'];
+        $data['fechaEmision'] = $fechaEmision;
+        $data['tipoMoneda'] = 'PEN';
+
+        // Empresa emisora
+        $data['company'] = [
+            'ruc' => $negocio->ruc,
+            'razonSocial' => $negocio->nombre_legal,
+            'nombreComercial' => $negocio->nombre_comercial,
+            'address' => [
+                'direccion' => $negocio->direccion,
+                'ubigueo' => $negocio->ubigeo,
+                'departamento' => $negocio->departamento,
+                'provincia' => $negocio->provincia,
+                'distrito' => $negocio->distrito,
+                'urbanizacion' => $negocio->urbanizacion,
+                'codLocal' => $negocio->codigo_pais,
+            ]
+        ];
+
+        // Cliente
+        if (in_array($tipoDoc, ['01', '03'])) { //Factura y Boleta
+            $data['client'] = [
+                'tipoDoc' => $this->validarTipoDocumentoCliente($venta->tipo_documento_cliente),
+                'numDoc' => $venta->documento_cliente,
+                'rznSocial' => $venta->nombre_cliente,
+            ];
+        }
+        if (in_array($tipoDoc, ['07', '08'])) { //Factura y Boleta
+
+            $data['tipDocAfectado'] = $nota->tip_doc_afectado;
+            $data['numDocfectado'] = $nota->num_doc_afectado;
+            $data['codMotivo'] = $nota->cod_motivo;
+            $data['desMotivo'] = $nota->des_motivo;
+            $data['client'] = [
+                'tipoDoc' => $this->validarTipoDocumentoCliente($ventaAfectada->tipo_documento_cliente),
+                'numDoc' => $ventaAfectada->documento_cliente,
+                'rznSocial' => $ventaAfectada->nombre_cliente,
+            ];
+        }
+
+
+        // Montos
+        if (in_array($tipoDoc, ['01', '03'])) { //Factura y Boleta
+            $data['mtoOperGravadas'] = (float) $venta->monto_operaciones_gravadas;
+            $data['mtoOperExoneradas'] = (float) $venta->monto_operaciones_exoneradas;
+            $data['mtoOperInafectas'] = (float) $venta->monto_operaciones_inafectas;
+            $data['mtoOperGratuitas'] = (float) $venta->monto_operaciones_gratuitas;
+            $data['mtoIGV'] = (float) $venta->monto_igv;
+            $data['mtoIGVGratuitas'] = (float) $venta->monto_igv_gratuito;
+            $data['icbper'] = (float) $venta->icbper !== 0.00 ? (float) $venta->icbper : null;
+            $data['totalImpuestos'] = (float) $venta->total_impuestos;
+            $data['valorVenta'] = (float) $venta->valor_venta;
+            $data['subTotal'] = (float) $venta->sub_total;
+            $data['mtoImpVenta'] = (float) $venta->monto_importe_venta;
+            if ((float) $venta->redondeo !== 0.0) {
+                $data['redondeo'] = (float) $venta->redondeo;
+            }
+            // Detalles
+            $data['details'] = $this->getDetallesProductos($venta);
+
+            // Leyendas
+            $data['legends'] = $legends;
+        }
+        if (in_array($tipoDoc, ['07', '08'])) { //Factura y Boleta
+            //caso anulacion, se mantienen los mismo montos
+            $data['mtoOperGravadas'] = (float) $ventaAfectada->monto_operaciones_gravadas;
+            $data['mtoOperExoneradas'] = (float) $ventaAfectada->monto_operaciones_exoneradas;
+            $data['mtoOperInafectas'] = (float) $ventaAfectada->monto_operaciones_inafectas;
+            $data['mtoOperGratuitas'] = (float) $ventaAfectada->monto_operaciones_gratuitas;
+            $data['mtoIGV'] = (float) $ventaAfectada->monto_igv;
+            $data['mtoIGVGratuitas'] = (float) $ventaAfectada->monto_igv_gratuito;
+            $data['icbper'] = $ventaAfectada->icbper ?: null;
+            $data['totalImpuestos'] = (float) $ventaAfectada->total_impuestos;
+            $data['valorVenta'] = (float) $ventaAfectada->valor_venta;
+            $data['subTotal'] = (float) $ventaAfectada->sub_total;
+            $data['mtoImpVenta'] = (float) $ventaAfectada->monto_importe_venta;
+            if ((float) $ventaAfectada->redondeo !== 0.0) {
+                $data['redondeo'] = (float) $ventaAfectada->redondeo;
+            }
+            // Detalles
+            $data['details'] = $this->getDetallesProductos($ventaAfectada);
+
+        }
+
+        if (in_array($tipoDoc, ['01', '03'])) { //Factura y Boleta
+            return $this->sunatService->getInvoice($data);
+        }
+        if (in_array($tipoDoc, ['07', '08'])) { //Factura y Boleta
+            return $this->sunatService->getNote($data);
+        }
+        return null;
     }
     function formatearFechaEmision($fecha): string
     {

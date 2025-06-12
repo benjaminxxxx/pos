@@ -1,11 +1,15 @@
 <?php
 
 use App\Http\Controllers\ClienteController;
+use App\Http\Controllers\FacturaController;
 use App\Http\Controllers\SucursalController;
 use App\Http\Controllers\SuperadminController;
 use App\Http\Controllers\VentaController;
+use App\Livewire\VentaPanel\GestionVentas;
+use App\Livewire\VentaPanel\Ventas;
 use App\Models\User;
 use App\Services\ComprobanteService;
+use App\Services\ComprobanteServicio;
 use Illuminate\Support\Facades\Route;
 use Laravel\Socialite\Facades\Socialite;
 use Livewire\Volt\Volt;
@@ -41,17 +45,23 @@ Route::middleware(['auth', 'role:dueno_tienda'])->prefix('mi-tienda')->group(fun
 });
 
 Route::middleware(['auth'])->group(function () {
-    Route::get('/ventas', App\Livewire\VentaPanel\GestionVentas::class)
+    Route::get('/vender', GestionVentas::class)
     ->name('vender')
+    ->middleware('can:gestionar ventas');
+    Route::get('/ventas', Ventas::class)
+    ->name('ventas')
     ->middleware('can:gestionar ventas');
 });
 
+Route::get('/ver-factura/{serie?}/{numero?}', [FacturaController::class, 'mostrar'])->name('ver_factura');
 
 
 Route::get('/ventaTest', function () {
-    return ComprobanteService::generar(1);
-})
-    ->name('ventaTest');
+    return ComprobanteService::generar(30);
+})->name('ventaTest');
+Route::get('/notaTest', function () {
+    return ComprobanteService::generarNota(1);
+})->name('notaTest');
 
 Route::prefix('api')->middleware('auth')->group(function () {
     Route::get('/mis-sucursales', [SucursalController::class, 'sucursalesPorUsuario'])->name('listar.sucursales.porusuario');
@@ -59,6 +69,7 @@ Route::prefix('api')->middleware('auth')->group(function () {
     Route::get('/cliente/buscar', [ClienteController::class, 'buscar'])->name('cliente.buscar');
     Route::post('/cliente/crear', [ClienteController::class, 'registrar'])->name('cliente.registrar');
     Route::post('/venta/registrar', [VentaController::class, 'registrar'])->name('venta.registrar');
+    Route::get('/venta/listar/{sucursal}', [VentaController::class, 'listar'])->name('venta.listar');
 });
 
 Route::get('/auth/google', function () {

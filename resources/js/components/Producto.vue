@@ -8,7 +8,7 @@
   
       <div class="p-4 flex flex-col gap-1 grow">
         <p class="font-semibold text-sm text-gray-700 leading-tight truncate-2-lines">
-          {{ producto.nombre_producto }}
+          {{ producto.descripcion }}
         </p>
   
         <p class="text-xs flex items-center gap-1" :class="producto.stock <= 0 ? 'text-orange-600' : 'text-green-700'">
@@ -17,12 +17,12 @@
         </p>
   
         <p class="font-bold text-base text-gray-900">
-          S/. {{ formatearPrecio(producto.precio_base) }}
+          S/. {{ formatearPrecio(producto.monto_venta) }}
         </p>
   
         <!-- Botón por unidad -->
         <Button @click.stop="$emit('seleccionar', { producto, presentacion: null })" variant="secondary">
-          Unidad x1 a s/. {{ formatearPrecio(producto.precio_base) }}
+          {{producto.unidad_alt}} x1 a s/. {{ formatearPrecio(producto.monto_venta) }}
         </Button>
   
         <!-- Botones por presentación -->
@@ -30,7 +30,7 @@
           <Button
             v-for="pres in producto.presentaciones"
             :key="pres.id" @click.stop="$emit('seleccionar', { producto, presentacion: pres })">
-            {{ pres.descripcion }} A S/. {{ formatearPrecio(pres.precio) }}
+            {{ pres.unidad_alt }} {{ pres.descripcion }} x{{ pres.factor }} a S/. {{ formatearPrecio(pres.precio) }}
           </Button>
         </div>
       </div>

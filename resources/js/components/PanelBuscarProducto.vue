@@ -28,7 +28,7 @@ const cargando = ref(false)
 
 const buscarProductos = async () => {
     const texto = busqueda.value.trim()
-    if (texto.length < 2) {
+    if (texto.length < 1) {
         resultados.value = []
         return
     }
@@ -43,6 +43,7 @@ const buscarProductos = async () => {
                 q: texto
             }
         })
+        console.log(resultados);
         resultados.value = data
     } catch (error) {
         console.error('Error al buscar productos:', error)

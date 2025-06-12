@@ -9,7 +9,6 @@
                             <tr>
                                 <th scope="col" class="px-6 py-3">Código</th>
                                 <th scope="col" class="px-6 py-3">Descripción</th>
-                                <th scope="col" class="px-6 py-3">Unidad</th>
                                 <th scope="col" class="px-6 py-3">Cantidad</th>
                                 <th scope="col" class="px-6 py-3">Valor unitario (sin IGV)</th>
                                 <th scope="col" class="px-6 py-3">Precio de venta (con IGV)</th>
@@ -22,14 +21,13 @@
                         <tbody>
                             <tr v-for="(producto, index) in venta.productos" :key="producto.idUnico"
                                 class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
-                                <td class="px-6 py-4">{{ producto.producto_id }}</td>
-                                <td class="px-6 py-4">{{ producto.nombre }}</td>
-                                <td class="px-6 py-4">{{ producto.descripcion }}</td>
+                                <td class="px-6 py-4">{{ index+1 }}</td>
+                                <td class="px-6 py-4">[{{ producto.unidad }}] {{ producto.descripcion }}</td>
                                 <td class="px-6 py-4">{{ producto.cantidad }}</td>
-                                <td class="px-6 py-4">S/ {{ parseFloat(producto.precio_sin_igv).toFixed(2) }}</td>
-                                <td class="px-6 py-4">S/ {{ parseFloat(producto.precio).toFixed(2) }}</td>
+                                <td class="px-6 py-4">S/ {{ parseFloat(producto.monto_venta_sinigv).toFixed(2) }}</td>
+                                <td class="px-6 py-4">S/ {{ parseFloat(producto.monto_venta).toFixed(2) }}</td>
                                 <td class="px-6 py-4">{{ producto.tipo_afectacion_igv }}</td>
-                                <td class="px-6 py-4">S/ {{ parseFloat(producto.monto_igv).toFixed(2) }}</td>
+                                <td class="px-6 py-4">S/ {{ parseFloat(producto.porcentaje_igv).toFixed(2) }}</td>
                                 <td class="px-6 py-4 font-bold">S/ {{ parseFloat(producto.subtotal).toFixed(2) }}</td>
                                 <td class="px-6 py-4 text-right">
                                     <Button @click="eliminarProducto(index)" variant="danger">
@@ -38,10 +36,8 @@
                                 </td>
                             </tr>
                         </tbody>
-
                     </table>
                 </div>
-
             </div>
             <Flex class="justify-end mt-4">
                 <Button @click="cerrarModal" variant="secondary">Cerrar</Button>

@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Intervention\Image\Laravel\Facades\Image;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Jantinnerezo\LivewireAlert\Facades\LivewireAlert;
@@ -40,11 +41,15 @@ class GestionNegocios extends Component
     public $client_secret;
     public $modo = 'desarrollo'; // Valor por defecto
     public $certificado;
-    public $logo_factura;
+    public $certificado_a_eliminar;
+    public $certificado_eliminada = false;
+    public $certificado_actual;
 
     // Para mostrar nombres de archivos actuales
-    public $certificado_actual;
     public $logo_actual;
+    public $logo_factura;
+    public $logo_factura_a_eliminar;
+    public $logo_factura_eliminada = false;
 
     // Información adicional
     public $infoAdicionalCabecera = [];
@@ -68,7 +73,7 @@ class GestionNegocios extends Component
         'client_secret' => 'nullable|string',
         'modo' => 'required|in:desarrollo,produccion',
         'certificado' => 'nullable|file|max:2048', // sin validar mimes
-        'logo_factura' => 'nullable|file|mimes:jpg,jpeg,png|max:2048',
+        'logo_factura' => 'nullable|file|mimes:jpg,jpeg,png',
     ];
 
     public function mount()
@@ -130,8 +135,15 @@ class GestionNegocios extends Component
         $this->modo = $negocio->modo;
 
         // Guardamos referencia a los nombres de archivos actuales
-        $this->certificado_actual = $negocio->certificado ? 'Certificado actual' : null;
-        $this->logo_actual = $negocio->logo_factura ? 'Logo actual' : null;
+        $this->logo_actual = $negocio->logo_factura;
+        $this->logo_factura_a_eliminar = null;
+        $this->logo_factura_eliminada = false;
+        $this->logo_factura = null;
+
+        $this->certificado = null;
+        $this->certificado_a_eliminar = null;
+        $this->certificado_actual = $negocio->certificado;
+        $this->certificado_eliminada = false;
 
         // Cargar información adicional
         $this->cargarInformacionAdicional($negocio->id);
@@ -140,7 +152,20 @@ class GestionNegocios extends Component
         $this->isEditing = true;
         $this->activeTab = 'general';
     }
-
+    public function eliminarImagen()
+    {
+        $this->logo_factura = null;
+        $this->logo_factura_a_eliminar = $this->logo_actual;
+        $this->logo_actual = null;
+        $this->logo_factura_eliminada = true;
+    }
+    public function eliminarImagenCertificado()
+    {
+        $this->certificado = null;
+        $this->certificado_a_eliminar = $this->certificado;
+        $this->certificado_actual = null;
+        $this->certificado_eliminada = true;
+    }
     public function cargarInformacionAdicional($negocioId)
     {
         // Limpiar arrays
@@ -249,34 +274,36 @@ class GestionNegocios extends Component
             $negocio->provincia = $this->provincia;
             $negocio->distrito = $this->distrito;
             $negocio->codigo_pais = $this->codigo_pais;
-            $negocio->urbanizacion = $this->urbanizacion;            
+            $negocio->urbanizacion = $this->urbanizacion;
             $negocio->tipo_negocio = $this->tipo_negocio;
             $negocio->usuario_sol = $this->usuario_sol;
             $negocio->clave_sol = $this->clave_sol;
             $negocio->client_secret = $this->client_secret;
             $negocio->modo = $this->modo;
 
-            // Procesar archivos si se han subido
-            if ($this->certificado) {
-                // Elimina el anterior si existe
-                if ($negocio->certificado && Storage::disk('public')->exists($negocio->certificado)) {
-                    Storage::disk('public')->delete($negocio->certificado);
-                }
+            
+            if (!empty($this->logo_factura_a_eliminar) && $this->logo_factura_eliminada) {
 
-                // Guarda el nuevo archivo
-                $certificadoPath = $this->storeFile($this->certificado, 'certificados');
-                $negocio->certificado = $certificadoPath;
+                Storage::disk('public')->delete($this->logo_factura_a_eliminar);
+                $negocio->logo_factura = null;
+            }
+            if (!empty($this->certificado_a_eliminar) && $this->certificado_eliminada) {
+
+                Storage::disk('public')->delete($this->certificado_a_eliminar);
+                $negocio->certificado = null;
             }
 
             if ($this->logo_factura) {
-                // Elimina el anterior si existe
-                if ($negocio->logo_factura && Storage::disk('public')->exists($negocio->logo_factura)) {
-                    Storage::disk('public')->delete($negocio->logo_factura);
-                }
-
                 // Guarda el nuevo archivo
                 $logoPath = $this->storeFile($this->logo_factura, 'logos');
                 $negocio->logo_factura = $logoPath;
+            }
+            
+            if ($this->certificado) {
+                // Guarda el nuevo archivo
+                $certificadoPath = $this->storeFile($this->certificado, 'certificados');
+                //dd($certificadoPath);
+                $negocio->certificado = $certificadoPath;
             }
 
 
@@ -418,7 +445,6 @@ class GestionNegocios extends Component
 
         $this->resetValidation();
     }
-
     private function storeFile($file, $type)
     {
         try {
@@ -432,12 +458,48 @@ class GestionNegocios extends Component
             $fileName = "{$randomId}.{$extension}";
             $path = "{$userSlug}/{$year}/{$month}/{$type}";
 
-            $file->storeAs($path, $fileName, 'public');
+            // Asegúrate de que el directorio exista
+            if (!Storage::disk('public')->exists($path)) {
+                Storage::disk('public')->makeDirectory($path);
+            }
+
+            $fullPath = Storage::disk('public')->path("{$path}/{$fileName}");
+
+            if ($type === 'logos') {
+                // Redimensionar si es logo
+                $image = Image::read($file)->scale(500);
+                $image->save($fullPath);
+            } else {
+                // Guardar directamente
+                $file->storeAs($path, $fileName, 'public');
+            }
 
             return "{$path}/{$fileName}";
         } catch (\Throwable $th) {
-            throw new Exception($th->getMessage());
+            throw new \Exception($th->getMessage());
         }
     }
+
+    /*
+        private function storeFile($file, $type)
+        {
+            try {
+                $user = Auth::user();
+                $userSlug = Str::slug($user->uuid);
+                $year = date('Y');
+                $month = date('m');
+                $randomId = Str::random(32);
+                $extension = $file->getClientOriginalExtension();
+
+                $fileName = "{$randomId}.{$extension}";
+                $path = "{$userSlug}/{$year}/{$month}/{$type}";
+
+                $file->storeAs($path, $fileName, 'public');
+
+                return "{$path}/{$fileName}";
+            } catch (\Throwable $th) {
+                throw new Exception($th->getMessage());
+            }
+        }*/
 }
 

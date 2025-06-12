@@ -84,6 +84,12 @@ select:focus[data-flux-control] {
     outline: 1px solid var(--color-accent);
 }
 
+.swal2-container{
+    z-index: 9900001;
+}
+.swal2-toast-shown{
+    z-index: 9090001;
+}
 /* \[:where(&)\]:size-4 {
     @apply size-4;
 } */

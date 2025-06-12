@@ -16,7 +16,7 @@ return new class extends Migration {
             $table->string('codigo_barra')->nullable()->unique();
             $table->string('sunat_code')->nullable();
 
-            $table->text('descripcion'); // ← antes era 'nombre_producto'
+            $table->text('descripcion');
             $table->text('detalle')->nullable(); // ← antes era 'descripcion', para info extendida
 
             $table->string('imagen_path')->nullable();

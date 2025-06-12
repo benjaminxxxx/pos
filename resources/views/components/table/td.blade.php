@@ -1,8 +1,6 @@
 @props(['class' => ''])
 
-<td {{ $attributes->merge(['class' => 'px-6 py-4 whitespace-nowrap ' . $class]) }}>
-    <div class="text-sm text-gray-500 dark:text-gray-400">
+<td valign="top" {{ $attributes->merge(['class' => 'px-6 py-4 whitespace-nowrap text-md text-gray-600 dark:text-gray-400 ' . $class]) }}>
     {{ $slot }}
-    </div>
 </td>
 

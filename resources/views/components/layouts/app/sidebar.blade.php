@@ -35,6 +35,9 @@
                     <flux:navlist.item icon="shopping-cart" :href="route('vender')" :current="request()->routeIs('vender')">
                         Vender
                     </flux:navlist.item>
+                    <flux:navlist.item icon="shopping-bag" :href="route('ventas')" :current="request()->routeIs('ventas')">
+                        Ventas
+                    </flux:navlist.item>
                     @endcan
                     @role('dueno_tienda')
                     <flux:navlist.item icon="building-office" :href="route('dueno_tienda.negocios')" :current="request()->routeIs('dueno_tienda.negocios')" wire:navigate>

@@ -13,8 +13,9 @@
         <tr v-for="(item, index) in productos" :key="index" class="border-t">
           <!-- Nombre del producto -->
           <td class="p-2">
-            <div class="font-semibold">{{ item.nombre }}</div>
-            <div class="text-sm text-gray-500">S/. {{ parseFloat(item.precio).toFixed(2) }}</div>
+            <div class="font-semibold">{{ item.descripcion }}</div>
+            <div class="text-sm text-gray-500">S/. {{ parseFloat(item.monto_precio_unitario).toFixed(2) }}</div>
+            
           </td>
 
           <!-- Cantidad con botones -->
@@ -28,7 +29,7 @@
 
           <!-- Subtotal con hover para mostrar botón de edición -->
           <td class="p-2 text-right relative group">
-            <span>S/. {{ (parseFloat(item.precio) * item.cantidad).toFixed(2) }}</span>
+            <span>S/. {{ parseFloat(item.subtotal).toFixed(2) }}</span>
 
             <!-- Icono de editar precio unitario -->
             <button @click="$emit('editarPrecioUnitario', item)"

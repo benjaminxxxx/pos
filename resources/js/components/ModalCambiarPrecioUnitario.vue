@@ -10,11 +10,11 @@
                     <tbody>
                         <tr>
                             <th class="text-left">Producto</th>
-                            <td>:{{ producto.nombre }}</td>
+                            <td>:{{ producto.descripcion }}</td>
                         </tr>
                         <tr>
                             <th class="text-left">Precio anterior</th>
-                            <td>:{{ producto.precio }}</td>
+                            <td>:{{ producto.monto_precio_unitario }}</td>
                         </tr>
                     </tbody>
                 </table>

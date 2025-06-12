@@ -23,7 +23,7 @@ class Venta extends Model
         'sub_total',
         'redondeo',
         'monto_importe_venta',
-        
+
 
         'monto_operaciones_gravadas',
         'monto_operaciones_exoneradas',
@@ -52,6 +52,10 @@ class Venta extends Model
         'negocio_id',
         'tipo_factura'
     ];
+    public function comprobante(): BelongsTo
+    {
+        return $this->belongsTo(TipoComprobante::class, 'tipo_comprobante_codigo');
+    }
     public function negocio(): BelongsTo
     {
         return $this->belongsTo(Negocio::class, 'negocio_id');
@@ -75,5 +79,8 @@ class Venta extends Model
     {
         return $this->belongsTo(Sucursal::class)->withDefault();
     }
-   
+    public function notas()
+    {
+        return $this->hasMany(Nota::class);
+    }
 }

@@ -41,6 +41,13 @@ class ComprobanteService
         $servicio = $comprobanteServicio->generar($ventaId,'factura',$fecha);
 
     }
+    public static function generarNota($notaId)
+    {
+
+        $comprobanteServicio = new ComprobanteServicio();
+        $servicio = $comprobanteServicio->generarNota($notaId);
+
+    }
     private static function generarSiguienteCorrelativo($modoVenta, $tipo_comprobante_codigo, $sucursal_id)
     {
         $correlativoResponse = [

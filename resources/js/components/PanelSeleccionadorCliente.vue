@@ -172,7 +172,7 @@ const registrarCliente = async () => {
             ? { nombre_completo: nombreCompleto.value }
             : { nombre_comercial: nombreComercial.value }),
     };
-    console.log(clienteData);
+    
     try {
         const response = await api.post("/cliente/crear", clienteData);
         emit("clienteSeleccionado", response.data);
