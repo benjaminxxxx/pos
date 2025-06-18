@@ -1,0 +1,270 @@
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <style type="text/css">
+        {% include 'assets/style.css' %}        
+    </style>
+</head>
+<body>
+{% set cp = doc.company %}
+{% set isNota = doc.tipoDoc in ['07', '08'] %}
+{% set isAnticipo = doc.totalAnticipos is defined and doc.totalAnticipos > 0 %}
+{% set name = doc.tipoDoc|catalog('01') %}
+{% set moneda = doc.tipoMoneda|catalog('02') %}
+{% set cl = doc.client %}
+
+<div class="invoice-container">
+    <!-- Header -->
+    <div class="header-section">
+        <table class="header-table">
+            <tr>
+                <td class="company-info">
+                    {% if params.system.logo %}
+                    <div style="text-align: center; margin-bottom: 10px;">
+                        <img src="{{ params.system.logo|image_b64 }}" height="50" alt="Logo">
+                    </div>
+                    {% endif %}
+                    
+                    <div class="company-name">{{ cp.razonSocial }}</div>
+                    
+                    <div class="company-details">
+                        <strong>Dirección:</strong> {{ cp.address.direccion }}<br>
+                        {% if params.user.header %}
+                        {{ params.user.header|raw }}
+                        {% endif %}
+                    </div>
+                </td>
+                
+                <td class="document-info">
+                    <div class="document-type">{{ name }}</div>
+                    <div class="document-electronic">E L E C T R Ó N I C A</div>
+                    <div class="ruc-info">R.U.C.: {{ cp.ruc }}</div>
+                    <div class="document-number">{{ doc.serie }}-{{ doc.correlativo }}</div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Información del Cliente -->
+    <div class="client-section">
+        <table class="client-table">
+            <tr>
+                <td width="75%"><span class="label">Razón Social:</span> {{ cl.rznSocial }}</td>
+                <td width="25%"><span class="label">{{ cl.tipoDoc|catalog('06') }}:</span> {{ cl.numDoc }}</td>
+            </tr>
+            <tr>
+                <td>
+                    <span class="label">Fecha Emisión:</span> {{ doc.fechaEmision|date('d/m/Y') }}{% if doc.fechaEmision|date('H:i:s') != '00:00:00' %} {{ doc.fechaEmision|date('H:i:s') }}{% endif %}
+                    {% if doc.fecVencimiento is defined and doc.fecVencimiento %}
+                    <br><span class="label">Fecha Vencimiento:</span> {{ doc.fecVencimiento|date('d/m/Y') }}
+                    {% endif %}
+                </td>
+                <td><span class="label">Dirección:</span> {% if cl.address %}{{ cl.address.direccion }}{% endif %}</td>
+            </tr>
+            {% if isNota %}
+            <tr>
+                <td><span class="label">Tipo Doc. Ref.:</span> {{ doc.tipDocAfectado|catalog('01') }}</td>
+                <td><span class="label">Documento Ref.:</span> {{ doc.numDocfectado }}</td>
+            </tr>
+            {% endif %}
+            <tr>
+                <td><span class="label">Tipo Moneda:</span> {{ doc.tipoMoneda|catalog('021') }}</td>
+                <td>{% if doc.compra is defined and doc.compra %}<span class="label">O/C:</span> {{ doc.compra }}{% endif %}</td>
+            </tr>
+            {% if doc.guias %}
+            <tr>
+                <td colspan="2">
+                    <span class="label">Guías:</span> 
+                    {% for guia in doc.guias %}{{ guia.nroDoc }}{% if not loop.last %}, {% endif %}{% endfor %}
+                </td>
+            </tr>
+            {% endif %}
+        </table>
+    </div>
+
+    <!-- Detalle de Items -->
+    <div class="items-section">
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th class="qty-col">CANTIDAD</th>
+                    <th class="code-col">CÓDIGO</th>
+                    <th class="desc-col">DESCRIPCIÓN</th>
+                    <th class="price-col">VALOR UNIT.</th>
+                    <th class="total-col">VALOR TOTAL</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for det in doc.details %}
+                <tr>
+                    <td class="qty-col">{{ det.cantidad|n_format }}<br>{{ det.unidad }}</td>
+                    <td class="code-col">{{ det.codProducto }}</td>
+                    <td class="desc-col">{{ det.descripcion }}</td>
+                    <td class="price-col">{{ moneda }}<br>{{ det.mtoValorUnitario|n_format }}</td>
+                    <td class="total-col">{{ moneda }}<br>{{ det.mtoValorVenta|n_format }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Sección Inferior -->
+    <div class="bottom-section">
+        <div class="additional-info">
+            <div class="amount-in-words">
+                {{ legend(doc.legends, '1000') }}
+            </div>
+            
+            <div class="additional-title">Información Adicional</div>
+            
+            {% for leg in doc.legends %}
+            {% if leg.code != '1000' %}
+            <div class="legend-item">{{ leg.value }}</div>
+            {% endif %}
+            {% endfor %}
+            
+            {% if isNota %}
+            <div class="legend-item">
+                <strong>MOTIVO DE EMISIÓN:</strong> {{ doc.desMotivo }}
+            </div>
+            {% endif %}
+            
+            {% if params.user.extras is defined %}
+            {% for item in params.user.extras %}
+            <div class="legend-item">
+                <strong>{{ item.name|upper }}:</strong> {{ item.value }}
+            </div>
+            {% endfor %}
+            {% endif %}
+
+            {% if isAnticipo %}
+            <div style="margin-top: 15px;">
+                <div class="additional-title">Anticipos</div>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr style="font-weight: bold;">
+                        <td style="border-bottom: 1px solid #ccc; padding: 2px;">Nro. Doc.</td>
+                        <td style="border-bottom: 1px solid #ccc; padding: 2px; text-align: right;">Total</td>
+                    </tr>
+                    {% for atp in doc.anticipos %}
+                    <tr>
+                        <td style="padding: 2px;">{{ atp.nroDocRel }}</td>
+                        <td style="padding: 2px; text-align: right;">{{ moneda }} {{ atp.total|n_format }}</td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="totals-section">
+            <table class="totals-table">
+                {% if isAnticipo %}
+                <tr>
+                    <td class="label-col">Total Anticipo:</td>
+                    <td class="amount-col">{{ moneda }} {{ doc.totalAnticipos|n_format }}</td>
+                </tr>
+                {% endif %}
+                
+                {% if doc.mtoOperGravadas %}
+                <tr>
+                    <td class="label-col">Op. Gravadas:</td>
+                    <td class="amount-col">{{ moneda }} {{ doc.mtoOperGravadas|n_format }}</td>
+                </tr>
+                {% endif %}
+                
+                {% if doc.mtoOperInafectas %}
+                <tr>
+                    <td class="label-col">Op. Inafectas:</td>
+                    <td class="amount-col">{{ moneda }} {{ doc.mtoOperInafectas|n_format }}</td>
+                </tr>
+                {% endif %}
+                
+                {% if doc.mtoOperExoneradas %}
+                <tr>
+                    <td class="label-col">Op. Exoneradas:</td>
+                    <td class="amount-col">{{ moneda }} {{ doc.mtoOperExoneradas|n_format }}</td>
+                </tr>
+                {% endif %}
+                
+                <tr>
+                    <td class="label-col">I.G.V.{% if params.user.numIGV is defined %} {{ params.user.numIGV }}%{% endif %}:</td>
+                    <td class="amount-col">{{ moneda }} {{ doc.mtoIGV|n_format }}</td>
+                </tr>
+                
+                {% if doc.mtoISC %}
+                <tr>
+                    <td class="label-col">I.S.C.:</td>
+                    <td class="amount-col">{{ moneda }} {{ doc.mtoISC|n_format }}</td>
+                </tr>
+                {% endif %}
+                
+                {% if doc.sumOtrosCargos %}
+                <tr>
+                    <td class="label-col">Otros Cargos:</td>
+                    <td class="amount-col">{{ moneda }} {{ doc.sumOtrosCargos|n_format }}</td>
+                </tr>
+                {% endif %}
+                
+                {% if doc.icbper %}
+                <tr>
+                    <td class="label-col">I.C.B.P.E.R.:</td>
+                    <td class="amount-col">{{ moneda }} {{ doc.icbper|n_format }}</td>
+                </tr>
+                {% endif %}
+                
+                {% if doc.mtoOtrosTributos %}
+                <tr>
+                    <td class="label-col">Otros Tributos:</td>
+                    <td class="amount-col">{{ moneda }} {{ doc.mtoOtrosTributos|n_format }}</td>
+                </tr>
+                {% endif %}
+                
+                <tr class="total-final">
+                    <td class="label-col">PRECIO VENTA:</td>
+                    <td class="amount-col">{{ moneda }} {{ doc.mtoImpVenta|n_format }}</td>
+                </tr>
+                
+                {% if doc.perception and doc.perception.mto %}
+                {% set perc = doc.perception %}
+                {% set soles = 'PEN'|catalog('02') %}
+                <tr>
+                    <td class="label-col">Percepción:</td>
+                    <td class="amount-col">{{ soles }} {{ perc.mto|n_format }}</td>
+                </tr>
+                <tr class="total-final">
+                    <td class="label-col">TOTAL A PAGAR:</td>
+                    <td class="amount-col">{{ soles }} {{ perc.mtoTotal|n_format }}</td>
+                </tr>
+                {% endif %}
+            </table>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer-section">
+        <table class="footer-table">
+            <tr>
+                <td class="footer-info">
+                    {% if params.user.footer is defined %}
+                    {{ params.user.footer|raw }}<br>
+                    {% endif %}
+                    
+                    {% if params.system.hash is defined and params.system.hash %}
+                    <strong>Resumen:</strong> {{ params.system.hash }}<br>
+                    {% endif %}
+                    
+                    Representación Impresa de la {{ name }} ELECTRÓNICA.<br>
+                    Consulte su validez en: www.sunat.gob.pe
+                </td>
+                
+                <td class="qr-section">
+                    <div class="qr-label">Código QR para<br>verificación SUNAT</div>
+                    <img src="{{ qrCode(doc)|image_b64('svg+xml') }}" alt="Código QR" style="width: 70px; height: 70px;">
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+</body>
+</html>

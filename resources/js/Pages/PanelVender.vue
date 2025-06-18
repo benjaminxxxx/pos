@@ -41,25 +41,22 @@
                             <i class="fa fa-chevron-right"></i>
                         </Button>
                     </Flex>
+                    <!-- Parte navegable y scrollable -->
+
+                    <div class="flex-1 overflow-y-auto space-y-4">
+
+                        <!-- Mostrar detalles si existen -->
+                        <ListaDetalles v-if="ventas[ventaActiva].detalles && ventas[ventaActiva].detalles.length"
+                            :productos="ventas[ventaActiva].detalles" />
+
+                        <!-- Si no hay detalles, mostrar productos -->
+                        <ListaProductos
+                            v-else-if="ventas[ventaActiva].productos && ventas[ventaActiva].productos.length"
+                            :productos="ventas[ventaActiva].productos" @quitarCarrito="quitarItem"
+                            @agregarCantidad="aumentarCantidad" @quitarCantidad="reducirCantidad"
+                            @editarPrecioUnitario="productoSeleccionado = $event" />
+                    </div>
                 </Spacing>
-
-                <!-- Parte navegable y scrollable -->
-
-                <div class="flex-1 overflow-y-auto p-4 md:p-8 space-y-4">
-
-                    <!-- Mostrar detalles si existen -->
-                    <ListaDetalles v-if="ventas[ventaActiva].detalles && ventas[ventaActiva].detalles.length"
-                        :productos="ventas[ventaActiva].detalles" />
-
-                    <!-- Si no hay detalles, mostrar productos -->
-                    <ListaProductos v-else-if="ventas[ventaActiva].productos && ventas[ventaActiva].productos.length"
-                        :productos="ventas[ventaActiva].productos" @quitarCarrito="quitarItem"
-                        @agregarCantidad="aumentarCantidad" @quitarCantidad="reducirCantidad"
-                        @editarPrecioUnitario="productoSeleccionado = $event" />
-
-
-                </div>
-
                 <Spacing v-if="ventas[ventaActiva]?.registrado">
                     <OpcionesVenta :venta-activa="ventas[ventaActiva]" @nueva-venta="resetearVenta" />
 
@@ -191,18 +188,21 @@
                                 v-model="tipoComprobante" />
                             <Label for="default-radio-2">Factura</Label>
                         </div>
-                        <div class="flex items-center">
+                        <!--<div class="flex items-center">
                             <input id="default-radio-3" type="radio" value="ticket" class="w-4 h-4"
                                 v-model="tipoComprobante" />
                             <Label for="default-radio-3">Ticket</Label>
-                        </div>
+                        </div>-->
+                        
                     </Spacing>
                     <div class="flex items-center">
 
-                        <button @click="procesarVenta"
+                        <button @click="procesarVenta" :disabled="procesandoVenta"
                             class="w-1/2 bg-primary hover:opacity-90 transition cursor-pointer border-0 hover:bg-primaryHoverOpacity text-white focus:outline-none text-2xl flex items-center justify-center">
                             <Spacing>
-                                <i class="fa fa-check mr-2"></i> Procesar Venta
+                                <i v-if="!procesandoVenta" class="fa fa-check mr-2"></i>
+                                <i v-else class="fas fa-spinner fa-spin mr-2"></i>
+                                {{ procesandoVenta ? 'Procesando...' : 'Procesar Venta' }}
                             </Spacing>
                         </button>
                         <button @click="cerrarPanelPago"
@@ -263,6 +263,7 @@ const metodosPago = ref({
 // Métodos de pago agregados
 const metodosPagoAgregados = ref([]);
 const ventaActual = computed(() => ventas.value[ventaActiva] ?? null);
+const procesandoVenta = ref(false)
 
 // Función para agregar un pago
 const agregarPago = (metodoPago) => {
@@ -300,8 +301,6 @@ const pagar = () => {
     metodosPagoAgregados.value = [];
     fechaEmision.value = new Date().toISOString().split('T')[0];
     agregarPago('cash');
-
-    // Otros métodos de pago pueden ser agregados según lo que necesites después
 };
 
 const agregarVenta = async () => {
@@ -317,8 +316,6 @@ const agregarVenta = async () => {
 
             data.ventas.map(venta => {
                 venta.registrado = true;
-                console.log(venta);
-
                 ventas.value.push(venta)
             })
         }
@@ -352,8 +349,6 @@ const eliminarVenta = (index) => {
 const verDetalle = (index) => {
     estaDetalleAbierto.value = true;
     const venta = ventas.value[index]
-    console.log(venta)
-    // Aquí puedes abrir un modal o hacer lo que necesites con la venta
 }
 const navegarVenta = (direccion) => {
     if (direccion === 'adelante' && ventaActiva.value < ventas.value.length - 1) {
@@ -625,14 +620,13 @@ const recalcularPrecio = () => {
 
 
 const procesarVenta = async () => {
-
+    procesandoVenta.value = true;
 
     try {
         const metodoAgregados = metodosPagoAgregados.value.map(metodo => ({
             codigo: metodo.codigo,
             monto: metodo.amount
         }));
-        console.log(metodosPagoAgregados.value);
         const sucursalSeleccionada = localStorage.getItem('sucursalSeleccionada') ?? null;
         const payload = {
             metodos_pagos: metodoAgregados,
@@ -651,9 +645,9 @@ const procesarVenta = async () => {
             const ventaRegistrada = data.venta
             ventaRegistrada.registrado = true
 
-         
+
             const index = ventas.value.findIndex(v => v.id === ventaAPagar.value.id)
-          
+
             if (index !== -1) {
                 // Reemplazar por la venta real del backend
                 ventas.value[index] = {
@@ -675,6 +669,9 @@ const procesarVenta = async () => {
             title: 'Error al procesar la venta',
             text: msg
         });
+    } finally {
+        procesandoVenta.value = false;
+        cerrarPanelPago();
     }
 };
 

@@ -62,8 +62,8 @@
             <flux:spacer />
 
             <flux:navlist variant="outline">
-                <flux:navlist.item icon="folder-git-2" href="https://github.com/laravel/livewire-starter-kit" target="_blank">
-                    Ventas del dia
+                <flux:navlist.item icon="folder-git-2" href="#" target="_blank">
+                    Ventas
                 </flux:navlist.item>
             </flux:navlist>
 

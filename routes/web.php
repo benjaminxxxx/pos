@@ -42,6 +42,8 @@ Route::middleware(['auth', 'role:dueno_tienda'])->prefix('mi-tienda')->group(fun
     Route::get('/correlativos', App\Livewire\DuenoTienda\CorrelativoPanel\GestionCorrelativos::class)->name('dueno_tienda.correlativos');
     Route::get('/productos', App\Livewire\DuenoTienda\Productos\GestionProductos::class)->name('dueno_tienda.productos');
     Route::get('/servicios', App\Livewire\DuenoTienda\Servicios\GestionServicios::class)->name('dueno_tienda.servicios');
+    //modificar esta ruta para que solo accedan los clientes del dueño de la tienda
+    Route::get('/clientes', App\Livewire\DuenoTienda\NegocioPanel\GestionNegocios::class)->name('dueno_tienda.clientes');
 });
 
 Route::middleware(['auth'])->group(function () {

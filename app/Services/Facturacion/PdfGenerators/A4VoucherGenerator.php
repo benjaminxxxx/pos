@@ -14,7 +14,8 @@ class A4VoucherGenerator
     {
 
         $logo_factura = $negocio->logo_factura;
-
+        //throw new \Exception("Logo" . $logo_factura);
+        
         $headers = [
             'logo' => $logo_factura,
             'informacion_adicional' => $negocio->informacionAdicional,
@@ -61,10 +62,10 @@ class A4VoucherGenerator
 
         $report = new HtmlReport($templatePath, $twigOptions);
         $resolver = new DefaultTemplateResolver();
-        //$report->setTemplate('factura.html.twig'); funcionaba 
+        $report->setTemplate('factura.html.twig'); 
 
         //$resolver = new DefaultTemplateResolver();
-        $report->setTemplate($resolver->getTemplate($invoice));
+        //$report->setTemplate($resolver->getTemplate($invoice));
 
         $ruc = $invoice->getCompany()->getRuc();
         $logoPath = $headers['logo'] ?? null;
@@ -107,6 +108,11 @@ class A4VoucherGenerator
 
         // Mezclamos siempre con userData
         $params = array_merge($params, $userData);
+        //dd($params);
+        /*
+        \Log::error('Error en parámetros: ', $headers);
+
+        throw new \Exception('Error en parámetros: ' . print_r($headers, true));*/
 
         return $report->render($invoice, $params);
     }

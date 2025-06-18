@@ -185,7 +185,6 @@ const registrarCliente = async () => {
         tipoDocumento.value = "1";
     } catch (errorData) {
         errorMensaje.value = errorData.response.data.message;
-        console.log(errorData.response.data.message);
     }
 };
 

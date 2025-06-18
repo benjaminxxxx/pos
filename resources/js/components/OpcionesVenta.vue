@@ -109,7 +109,7 @@ const abrirYImprimir = (url) => {
   iframe.onload = () => {
     iframe.contentWindow.focus()
     iframe.contentWindow.print()
-    setTimeout(() => document.body.removeChild(iframe), 1000)
+    //setTimeout(() => document.body.removeChild(iframe), 1000)
   }
 
   document.body.appendChild(iframe)

@@ -64,8 +64,6 @@ class ComprobanteServicio
     public function generar(int $ventaId)
     {
         $venta = $this->obtenerVenta($ventaId);
-
-        //$voucherPdf = VoucherServicio::generarDocumento($venta);
         $opciones = $this->prepararOpcionesSunat($venta->negocio);
         $see = $this->obtenerServicioSunat($opciones);
         $tipoDoc = $venta->tipo_comprobante_codigo;
@@ -89,8 +87,9 @@ class ComprobanteServicio
 
         // Procesar respuesta de SUNAT y guardar XML y CDR
         $sunatResponse = $this->procesarRespuestaSunat($invoice, $result, $see);
+        $negocio = $venta->negocio;
 
-        $sunatComprobantePdf = A4VoucherGenerator::generarDocumento($invoice, $venta);
+        $sunatComprobantePdf = A4VoucherGenerator::generarDocumento($invoice, $negocio);
         $voucherPdf = VoucherServicio::generarDocumento($venta);
 
         // Actualizar venta
@@ -110,8 +109,6 @@ class ComprobanteServicio
     public function generarNota($notaId)
     {
         $nota = $this->obtenerNota($notaId);
-
-        //$voucherPdf = VoucherServicio::generarDocumento($venta);
         $opciones = $this->prepararOpcionesSunat($nota->negocio);
         
         $see = $this->obtenerServicioSunat($opciones);
@@ -138,7 +135,7 @@ class ComprobanteServicio
         $sunatResponse = $this->procesarRespuestaSunat($invoice, $result, $see);
         
         $sunatComprobantePdf = A4VoucherGenerator::generarDocumento($invoice, $nota->negocio);
-        $voucherPdf = null;//VoucherServicio::generarDocumento($venta);
+        $voucherPdf = null;
 
         // Actualizar venta
         $nota->sunat_comprobante_pdf = $sunatComprobantePdf;
