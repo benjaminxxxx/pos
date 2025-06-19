@@ -1,4 +1,4 @@
-<x-card>
+<div>
     <flux:heading size="lg" class="mb-6">{{ $isEditing ? 'Editar Correlativo' : 'Nuevo Correlativo' }}</flux:heading>
 
     <form wire:submit.prevent="save" class="space-y-6">
@@ -55,5 +55,5 @@
             </flux:button>
         </x-flex-end>
     </form>
-</x-card>
+</div>
 

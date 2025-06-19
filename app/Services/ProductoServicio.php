@@ -18,21 +18,37 @@ class ProductoServicio
 {
     public static function buscarPorTextoYStock(string $search, int $sucursal_id)
     {
+        $user = Auth::user();
+
         $productos = Producto::where(function ($query) use ($search) {
             $query->where('codigo_barra', 'like', '%' . $search . '%')
                 ->orWhere('descripcion', 'like', '%' . $search . '%')
                 ->orWhereHas('presentaciones', function ($q) use ($search) {
                     $q->where('codigo_barra', 'like', '%' . $search . '%');
                 });
-        })
-            ->with([
-                'presentaciones' => function ($q) {
-                    $q->where('activo', true)->with('unidades');
-                },
-                'unidades',
-                'categoria'
-            ])
-            ->get()
+        });
+
+        // 🔒 Restringir productos por dueño de tienda o vendedor
+        if ($user->hasRole('dueno_tienda')) {
+            $negocioIds = $user->negocios()->pluck('id');
+            $productos->whereIn('negocio_id', $negocioIds);
+        } elseif ($user->hasRole('vendedor')) {
+            $sucursal = $user->sucursal; // Asegúrate que esta relación esté definida
+            $negocioId = $sucursal?->negocio_id;
+            if ($negocioId) {
+                $productos->where('negocio_id', $negocioId);
+            } else {
+                return collect(); // No tiene sucursal o no está asignado correctamente
+            }
+        }
+
+        $productos = $productos->with([
+            'presentaciones' => function ($q) {
+                $q->where('activo', true)->with('unidades');
+            },
+            'unidades',
+            'categoria'
+        ])->get()
             ->map(function ($producto) use ($sucursal_id) {
                 $stock = DB::table('stocks')
                     ->where('producto_id', $producto->id)
@@ -40,11 +56,8 @@ class ProductoServicio
                     ->value('cantidad');
 
                 $producto->stock = $stock ?? 0;
-
-                // Añadir campo unidad_alt desde la relación
                 $producto->unidad_alt = $producto->unidades->alt ?? null;
 
-                // Añadir unidad_alt a cada presentacion
                 $producto->presentaciones->each(function ($p) {
                     $p->unidad_alt = $p->unidades->alt ?? null;
                 });
@@ -54,6 +67,7 @@ class ProductoServicio
 
         return $productos;
     }
+
     public static function buscar(array $filtros)
     {
         return Producto::query()
@@ -194,6 +208,15 @@ class ProductoServicio
             }
         }
 
+        if ($user->hasRole('dueno_tienda')) {
+            // Validar que el producto pertenece a uno de los negocios del usuario
+            $negocioIds = $user->negocios()->pluck('id');
+
+            if (!$negocioIds->contains($producto->negocio_id)) {
+                throw new UnauthorizedException("No puedes eliminar productos de otro negocio.");
+            }
+        }
+
         if ($producto->imagen_path) {
             Storage::disk('public')->delete($producto->imagen_path);
         }
@@ -202,4 +225,5 @@ class ProductoServicio
         $producto->stocks()->delete();
         $producto->delete();
     }
+
 }

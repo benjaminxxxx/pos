@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Services\Ventas;
+use App\Models\Sucursal;
 use App\Models\Venta;
 use Illuminate\Support\Carbon;
 
@@ -15,7 +16,19 @@ class InformacionVenta
         $query = Venta::query()->where('estado', 'pagado');
 
         if ($filtro === 'general') {
-            // No se restringe nada, solo estado
+            $user = auth()->user();
+
+            if ($user->hasRole('dueno_tienda')) {
+                // Obtener los IDs de sus propios negocios y sucursales
+                $negocioIds = $user->negocios()->pluck('id'); // Asumiendo que hay relación definida
+                $sucursalIds = Sucursal::whereIn('negocio_id', $negocioIds)->pluck('id');
+
+                $query->whereIn('sucursal_id', $sucursalIds);
+            } elseif ($user->hasRole('dueno_sistema')) {
+                // Acceso completo, no se filtra nada
+            } else {
+                throw new \Exception("Sin permisos para acceder al resumen general.");
+            }
         } elseif ($tipo === 'negocio') {
             $query->where('negocio_id', $id);
         } elseif ($tipo === 'sucursal') {
@@ -79,8 +92,19 @@ class InformacionVenta
     {
         $query = Venta::query()->where('estado', 'pagado');
 
-        // Aplicar filtro según tipo
-        if ($filtro !== 'general') {
+        if ($filtro === 'general') {
+            $user = auth()->user();
+
+            if ($user->hasRole('dueno_tienda')) {
+                $negocioIds = $user->negocios()->pluck('id');
+                $sucursalIds = \App\Models\Sucursal::whereIn('negocio_id', $negocioIds)->pluck('id');
+
+                $query->whereIn('sucursal_id', $sucursalIds);
+            } elseif (!$user->hasRole('dueno_sistema')) {
+                throw new \Exception('Sin permisos para acceder a datos generales.');
+            }
+
+        } else {
             [$tipo, $id] = explode('-', $filtro);
 
             if ($tipo === 'negocio') {
@@ -93,10 +117,9 @@ class InformacionVenta
         }
 
         // Fechas de la semana actual (lunes a domingo)
-        $inicioSemana = now()->startOfWeek(); // Lunes
-        $finSemana = now()->endOfWeek();      // Domingo
+        $inicioSemana = now()->startOfWeek();
+        $finSemana = now()->endOfWeek();
 
-        // Agrupar ventas por día abreviado en español con primera letra mayúscula
         $ventasPorDia = $query->whereBetween('fecha_emision', [$inicioSemana, $finSemana])
             ->get()
             ->groupBy(fn($venta) => ucfirst(Carbon::parse($venta->fecha_emision)->locale('es')->isoFormat('ddd')))
@@ -105,7 +128,7 @@ class InformacionVenta
                 'sales' => $ventas->sum('monto_importe_venta'),
             ])
             ->values();
-        // Asegurar los 7 días estén presentes con 0 si no hay ventas
+
         $diasSemana = ['Lun.', 'Mar.', 'Mié.', 'Jue.', 'Vie.', 'Sáb.', 'Dom.'];
         $datos = [];
 
@@ -117,15 +140,14 @@ class InformacionVenta
             ];
         }
 
-        $data =  [
+        return [
             'datos' => $datos,
             'total' => collect($datos)->sum('sales'),
             'max' => collect($datos)->max('sales'),
-            'crecimiento' => '+0.0%', // Placeholder, se calculará luego
+            'crecimiento' => '+0.0%', // Placeholder
         ];
-        //dd($data);
-        return $data;
     }
+
 
     private static function calcularCambio($hoy, $ayer): string
     {

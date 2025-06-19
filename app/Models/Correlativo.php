@@ -12,6 +12,7 @@ class Correlativo extends Model
     protected $table = 'correlativos';
 
     protected $fillable = [
+        'negocio_id',
         'tipo_comprobante_codigo',
         'serie',
         'correlativo_actual',
@@ -37,6 +38,10 @@ class Correlativo extends Model
     public function sucursales()
     {
         return $this->belongsToMany(Sucursal::class, 'sucursal_correlativo');
+    }
+    public function negocio()
+    {
+        return $this->belongsTo(Negocio::class, 'negocio_id');
     }
 
     /**

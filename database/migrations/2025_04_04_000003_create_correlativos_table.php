@@ -13,6 +13,8 @@ return new class extends Migration
     {
         Schema::create('correlativos', function (Blueprint $table) {
             $table->id();
+            
+            $table->foreignId('negocio_id')->constrained()->onDelete('cascade'); //recien agregado
             $table->string('tipo_comprobante_codigo')->nullable();
             $table->string('serie', 10);
             $table->integer('correlativo_actual')->default(0);

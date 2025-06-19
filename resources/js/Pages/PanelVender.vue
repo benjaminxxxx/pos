@@ -193,7 +193,7 @@
                                 v-model="tipoComprobante" />
                             <Label for="default-radio-3">Ticket</Label>
                         </div>-->
-                        
+
                     </Spacing>
                     <div class="flex items-center">
 
@@ -310,15 +310,32 @@ const agregarVenta = async () => {
         if (!sucursalSeleccionada) {
             return;
         }
-        const { data } = await api.get('/venta/listar/' + sucursalSeleccionada);
 
-        if (data.success) {
+        try {
 
-            data.ventas.map(venta => {
-                venta.registrado = true;
-                ventas.value.push(venta)
-            })
+            const { data } = await api.get('/venta/listar/' + sucursalSeleccionada);
+
+            if (data.success) {
+
+                data.ventas.map(venta => {
+                    venta.registrado = true;
+                    ventas.value.push(venta)
+                });
+            }
+
+        } catch (error) {
+            const msg = error.response?.data?.message || 'Error desconocido';
+
+            Swal.fire({
+                icon: 'error',
+                title: 'Error al listar las ventas',
+                text: msg
+            });
+        } finally {
+
         }
+
+
     }
     const nuevaVenta = {
         id: Date.now(),
