@@ -54,7 +54,7 @@
                             v-else-if="ventas[ventaActiva].productos && ventas[ventaActiva].productos.length"
                             :productos="ventas[ventaActiva].productos" @quitarCarrito="quitarItem"
                             @agregarCantidad="aumentarCantidad" @quitarCantidad="reducirCantidad"
-                            @editarPrecioUnitario="productoSeleccionado = $event" />
+                            @editarPrecioUnitario="abrirModalPrecioUnitario" />
                     </div>
                 </Spacing>
                 <Spacing v-if="ventas[ventaActiva]?.registrado">
@@ -123,8 +123,8 @@
         </PanelCarrito>
 
         <!-- Mostrar modal solo si hay un producto seleccionado -->
-        <ModalCambiarPrecioUnitario v-if="ventaActual?.productos" :producto="productoSeleccionado"
-            @cerrarModal="productoSeleccionado = null" @guardarPrecio="guardarPrecio" />
+        <ModalCambiarPrecioUnitario v-if="mostrarModalPrecioUnitario" :producto="productoParaEditar"
+            @cerrarModal="cerrarModalPrecioUnitario" @guardarPrecio="guardarPrecio" />
 
 
 
@@ -264,7 +264,18 @@ const metodosPago = ref({
 const metodosPagoAgregados = ref([]);
 const ventaActual = computed(() => ventas.value[ventaActiva] ?? null);
 const procesandoVenta = ref(false)
+const mostrarModalPrecioUnitario = ref(false);
+const productoParaEditar = ref(null);
 
+const abrirModalPrecioUnitario = (item) => {
+  productoParaEditar.value = item;
+  mostrarModalPrecioUnitario.value = true;
+}
+
+const cerrarModalPrecioUnitario = () => {
+  mostrarModalPrecioUnitario.value = false;
+  productoParaEditar.value = null;
+}
 // Función para agregar un pago
 const agregarPago = (metodoPago) => {
     // Verificar si el método de pago ya ha sido agregado
@@ -517,6 +528,7 @@ function guardarPrecio({ id, nuevoPrecio }) {
     if (producto) {
         producto.monto_precio_unitario = parseFloat(nuevoPrecio);
         recalcularPrecio();
+        cerrarModalPrecioUnitario();
     }
 }
 
