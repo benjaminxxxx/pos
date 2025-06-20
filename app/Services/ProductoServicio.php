@@ -71,6 +71,7 @@ class ProductoServicio
     public static function buscar(array $filtros)
     {
         return Producto::query()
+            ->with(['categoria', 'marca', 'stocks'])
             ->where('negocio_id', $filtros['negocio_id'])
             ->when($filtros['search'], function ($query) use ($filtros) {
                 $query->where(function ($q) use ($filtros) {

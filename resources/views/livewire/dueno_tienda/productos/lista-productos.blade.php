@@ -32,44 +32,19 @@
 
     <x-table>
         <x-slot name="thead">
-            <x-table.th>Código de Barras</x-table.th>
-            <x-table.th>Imagen</x-table.th>
+            
+            <x-table.th class="text-center">Acciones</x-table.th>
+            <x-table.th class="text-center">Imagen</x-table.th>
             <x-table.th>Nombre</x-table.th>
-            <x-table.th>Descripción</x-table.th>
-            <x-table.th>Categoría</x-table.th>
-            <x-table.th>Marca</x-table.th>
-            <x-table.th>Código SUNAT</x-table.th>
-            <x-table.th>Precio Venta</x-table.th>
-            <x-table.th>% IGV</x-table.th>
-            <x-table.th>Estado</x-table.th>
-            <x-table.th>Acciones</x-table.th>
+            <x-table.th class="text-right">Precio Venta</x-table.th>
+            <x-table.th class="text-right">% IGV</x-table.th>
+            <x-table.th class="text-center">Estado</x-table.th>
+            <x-table.th class="text-center">Stock</x-table.th>
         </x-slot>
 
         <x-slot name="tbody">
             @forelse($productos as $producto)
                 <x-table.tr>
-                    <x-table.td>{{ $producto->codigo_barra }}</x-table.td>
-                    <x-table.td>
-                        @if ($producto->imagen_path)
-                            <img src="{{ Storage::disk('public')->url($producto->imagen_path) }}"
-                                alt="{{ $producto->descripcion }}" class="h-10 w-10 object-cover rounded">
-                        @else
-                            <x-imagen-empty />
-                        @endif
-                    </x-table.td>
-                    <x-table.td>{{ $producto->descripcion }}</x-table.td>
-                    <x-table.td>{{ Str::limit($producto->detalle, 30) }}</x-table.td>
-                    <x-table.td>{{ $producto->categoria ? $producto->categoria->descripcion : 'N/A' }}</x-table.td>
-                    <x-table.td>{{ $producto->marca ? $producto->marca->descripcion_marca : 'N/A' }}</x-table.td>
-                    <x-table.td>{{ $producto->sunat_code ?? 'N/A' }}</x-table.td>
-                    <x-table.td>{{ number_format($producto->monto_venta, 2) }}</x-table.td>
-                    <x-table.td>{{ $producto->porcentaje_igv ?? '-' }}</x-table.td>
-                    <x-table.td>
-                        <span
-                            class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $producto->activo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
-                            {{ $producto->activo ? 'Activo' : 'Inactivo' }}
-                        </span>
-                    </x-table.td>
                     <x-table.td>
                         <div class="flex space-x-2">
                             <flux:button wire:click="edit('{{ $producto->uuid }}')" icon="pencil" size="sm">
@@ -82,6 +57,44 @@
                             </flux:button>
                         </div>
                     </x-table.td>
+                    <x-table.td class="text-center">
+                        @if ($producto->imagen_path)
+                            <img src="{{ Storage::disk('public')->url($producto->imagen_path) }}"
+                                alt="{{ $producto->descripcion }}" class="h-10 w-10 object-cover rounded">
+                        @else
+                            <x-imagen-empty class="m-auto block" />
+                        @endif
+                    </x-table.td>
+                    <x-table.td>
+                        <p>{{ $producto->descripcion }}</p>
+                        @if ($producto->detalle)
+                            <p>Detalle: {{Str::limit($producto->detalle, 30)}}</p>
+                        @endif
+                        @if ($producto->codigo_barra)
+                            <p>Código de barra: {{$producto->codigo_barra}}</p>
+                        @endif
+                        @if ($producto->marca)
+                            <p>Marca: {{$producto->marca->descripcion_marca}}</p>
+                        @endif
+                        @if ($producto->categoria)
+                            <p>Categoría: {{$producto->categoria->descripcion}}</p>
+                        @endif
+                        @if ($producto->sunat_code)
+                            <p>Cod. Sunat: {{$producto->sunat_code}}</p>
+                        @endif
+                    </x-table.td>
+                    <x-table.td class="text-right">{{ number_format($producto->monto_venta, 2) }}</x-table.td>
+                    <x-table.td class="text-right">{{ $producto->porcentaje_igv ?? '-' }}</x-table.td>
+                    <x-table.td class="text-center">
+                        <span
+                            class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $producto->activo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
+                            {{ $producto->activo ? 'Activo' : 'Inactivo' }}
+                        </span>
+                    </x-table.td>
+                    <x-table.td class="text-center">
+                        {{ $producto->stocks->sum('cantidad') }}
+                    </x-table.td>
+                    
                 </x-table.tr>
             @empty
                 <x-table.empty colspan="11" />

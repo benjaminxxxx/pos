@@ -95,8 +95,11 @@ class CorrelativoServicio
             throw new \Exception("El correlativo no existe.");
         }
 
-        // Validar que el negocio del correlativo pertenece al usuario
-        if ($correlativo->negocio->user_id !== $user->id) {
+        // PATCH: Se actualizó la comparación estricta del ID de usuario entre $correlativo->negocio->user_id (string en servidor) 
+        // y $user->id (integer local) para evitar errores de acceso debido a la diferencia de tipos en distintos entornos.
+        // Solución: Se fuerza ambos valores a integer antes de comparar.
+
+        if ((int) $correlativo->negocio->user_id !== (int) $user->id) {
             throw new \Exception("No tienes acceso a este correlativo.");
         }
 
