@@ -6,8 +6,9 @@
 ])
 
 @php
-    $tableClasses = 'min-w-full divide-y divide-gray-200 dark:divide-gray-700 ' . $class;
-    
+    // Changed table-fixed to table-auto for automatic column width
+    $tableClasses = 'min-w-full table-auto divide-y divide-gray-200 dark:divide-gray-700 ' . $class;
+ 
     if ($striped) {
         $tableClasses .= ' table-striped';
     }
@@ -40,4 +41,3 @@
 @if($responsive)
 </div>
 @endif
-

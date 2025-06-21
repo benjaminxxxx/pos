@@ -2,16 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Sucursal;
-use App\Models\VentaMetodoPago;
 use App\Services\VentaServicio;
-use Exception;
 use Illuminate\Http\Request;
-use App\Models\Venta;
-use App\Models\DetalleVenta;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Validator;
 use Log;
 
 class VentaController extends Controller

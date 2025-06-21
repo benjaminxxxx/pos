@@ -101,9 +101,7 @@ class VentaServicio
             $nombreCliente = 'VARIOS'; //valores por defecto obligatorios por sunat
 
             if ($cliente) {
-                $nombreCliente = $cliente['tipo_cliente_id'] === 'empresa'
-                    ? $cliente['nombre_comercial']
-                    : $cliente['nombre_completo'];
+                $nombreCliente = $cliente['nombre_completo'];
             }
 
             $ventaModel = Venta::create([
@@ -232,8 +230,12 @@ class VentaServicio
         if (in_array($sucursal, $sucursales)) {
             $ventas = Venta::where('sucursal_id', $sucursal)
                 ->with(['detalles', 'cliente', 'notas'])
+                ->orderByDesc('fecha_emision')   // ordena primero por fecha_emision
+                ->orderByDesc('created_at')
                 ->take($take)
                 ->get()
+                ->reverse()
+                ->values()
                 ->map(function ($venta) {
                     $venta->voucher_pdf = $venta->voucher_pdf ? Storage::disk('public')->url($venta->voucher_pdf) : null;
                     $venta->sunat_comprobante_pdf = $venta->sunat_comprobante_pdf ? Storage::disk('public')->url($venta->sunat_comprobante_pdf) : null;

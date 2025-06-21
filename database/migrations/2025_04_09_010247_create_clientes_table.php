@@ -21,11 +21,10 @@ return new class extends Migration
             $table->string('departamento')->nullable();
             $table->string('provincia')->nullable();
             $table->string('email')->nullable();
+            $table->string('whatsapp')->nullable();
             $table->string('distrito')->nullable(); // Suponiendo que es un código
             $table->enum('tipo_cliente_id',['empresa','persona']);
             $table->string('nombre_comercial')->nullable();
-            $table->string('ruc_facturacion')->nullable();
-            $table->string('direccion_facturacion')->nullable();
             $table->integer('puntos')->default(0);
             $table->text('notas')->nullable();
             $table->foreign('tipo_documento_id')->references('codigo')->on('tipos_documentos_sunat');

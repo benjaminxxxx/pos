@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Cliente;
+use App\Services\Comercial\ClienteServicio;
+use App\Services\Facturacion\Sunat\SunatServicio;
 use Illuminate\Http\Request;
 use Auth;
 use Illuminate\Support\Facades\Validator;
@@ -23,11 +25,15 @@ class ClienteController extends Controller
             ], 422);
         }
 
-        // Si pasa la validación, buscamos los clientes
-        $clientes = Cliente::where('nombre_completo', 'like', '%' . $request->busqueda . '%')
-            ->orWhere('numero_documento', 'like', '%' . $request->busqueda . '%')
-            ->orWhere('nombre_comercial', 'like', '%' . $request->busqueda . '%')
-            ->get();
+        // Convertimos la búsqueda en filtros múltiples
+        $busqueda = $request->busqueda;
+
+        $clientes = ClienteServicio::listarClientes([
+            'numero_documento' => $busqueda,
+            'nombre_completo' => $busqueda,
+            'nombre_comercial' => $busqueda,
+            'telefono' => $busqueda,
+        ])->take(20)->get(); // Opcional: limitar resultados
 
         return response()->json($clientes);
     }
@@ -35,46 +41,78 @@ class ClienteController extends Controller
     // Método para registrar un nuevo cliente
     public function registrar(Request $request)
     {
-
-        // Validamos los datos del cliente
         $request->validate([
             'tipo_cliente_id' => 'required|in:empresa,persona',
-            'numero_documento' => 'required|unique:clientes,numero_documento',
-            'tipo_documento_id' => 'required|exists:tipos_documentos_sunat,codigo',
-            'nombre_completo' => 'required_if:tipo_cliente_id,persona',
-            'nombre_comercial' => 'required_if:tipo_cliente_id,empresa',
+            'tipo_documento_id' => 'required',
+            'numero_documento' => 'required',
+            'nombre_completo' => 'required',
+            'nombre_comercial' => 'nullable',
+            'email' => 'nullable|email',
+            'telefono' => 'nullable|string|max:20',
+            'whatsapp' => 'nullable|string|max:20',
+            'direccion' => 'nullable|string',
+            'distrito' => 'nullable|string',
+            'provincia' => 'nullable|string',
+            'departamento' => 'nullable|string',
+            'puntos' => 'nullable|integer|min:0',
+            'notas' => 'nullable|string',
         ]);
 
-        $user = Auth::user(); // Usuario autenticado
+        try {
+            // Datos que serán enviados al servicio
+            $data = $request->only([
+                'tipo_cliente_id',
+                'tipo_documento_id',
+                'numero_documento',
+                'nombre_completo',
+                'nombre_comercial',
+                'email',
+                'telefono',
+                'whatsapp',
+                'direccion',
+                'distrito',
+                'provincia',
+                'departamento',
+                'puntos',
+                'notas',
+            ]);
 
-        if ($user->hasRole('dueno_tienda')) {
-            $duenoTiendaId = $user->id;
-        } elseif ($user->hasRole('vendedor')) {
-            // Suponiendo que el vendedor tiene una relación belongsTo hacia el dueño de la tienda
-            $duenoTiendaId = $user->dueno_tienda_id; // funcion por crear aun no existe
-        } else {
-            return response()->json(['error' => 'Usuario no autorizado para registrar clientes.'], 403);
+            // El servicio detecta automáticamente el dueño según el usuario autenticado
+            $cliente = ClienteServicio::guardar($data); // Este debe retornar el modelo si deseas enviarlo como respuesta
+
+            return response()->json($cliente, 201);
+        } catch (\Throwable $th) {
+            report($th);
+            return response()->json(['error' => 'Error al registrar el cliente'], 500);
         }
+    }
+    public function sunatPorRuc(Request $request)
+    {
+        $request->validate([
+            'ruc' => 'required|string|size:11', // asumimos solo RUC
+        ]);
 
-        // Creamos un nuevo cliente
-        $cliente = new Cliente();
-        $cliente->tipo_cliente_id = $request->tipo_cliente_id;
-        $cliente->numero_documento = $request->numero_documento;
-        $cliente->tipo_documento_id = $request->tipo_documento_id;
-        $cliente->dueno_tienda_id = $duenoTiendaId;
+        try {
+            $data = SunatServicio::consultarPorRuc($request->ruc);
 
-
-        // Asignamos nombre completo o nombre comercial según el tipo de cliente
-        if ($request->tipo_cliente_id == 'persona') {
-            $cliente->nombre_completo = $request->nombre_completo;
-        } else {
-            $cliente->nombre_comercial = $request->nombre_comercial;
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'numero_documento' => $data['ruc'],
+                    'nombre_completo' => $data['razonSocial'],
+                    'nombre_comercial' => $data['nombreComercial'],
+                    'direccion' => $data['direccion'],
+                    'departamento' => $data['departamento'],
+                    'provincia' => $data['provincia'],
+                    'distrito' => $data['distrito'],
+                    'telefono' => implode(', ', $data['telefonos'] ?? []),
+                ]
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al consultar SUNAT: ' . $th->getMessage(),
+            ], 500);
         }
-
-        // Guardamos el cliente en la base de datos
-        $cliente->save();
-
-        // Retornamos el cliente recién creado
-        return response()->json($cliente, 201);
     }
 }

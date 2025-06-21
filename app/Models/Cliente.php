@@ -22,11 +22,10 @@ class Cliente extends Model
         'departamento',
         'provincia',
         'email',
+        'whatsapp',
         'distrito',
         'tipo_cliente_id',
         'nombre_comercial',
-        'ruc_facturacion',
-        'direccion_facturacion',
         'puntos',
         'notas',
         'dueno_tienda_id', // El ID del dueño de la tienda

@@ -5,6 +5,8 @@ use App\Http\Controllers\FacturaController;
 use App\Http\Controllers\SucursalController;
 use App\Http\Controllers\SuperadminController;
 use App\Http\Controllers\VentaController;
+use App\Livewire\Actualizaciones;
+use App\Livewire\DuenoTienda\ClientePanel\GestionClientes;
 use App\Livewire\VentaPanel\GestionVentas;
 use App\Livewire\VentaPanel\Ventas;
 use App\Models\User;
@@ -43,7 +45,7 @@ Route::middleware(['auth', 'role:dueno_tienda'])->prefix('mi-tienda')->group(fun
     Route::get('/productos', App\Livewire\DuenoTienda\Productos\GestionProductos::class)->name('dueno_tienda.productos');
     Route::get('/servicios', App\Livewire\DuenoTienda\Servicios\GestionServicios::class)->name('dueno_tienda.servicios');
     //modificar esta ruta para que solo accedan los clientes del dueño de la tienda
-    Route::get('/clientes', App\Livewire\DuenoTienda\NegocioPanel\GestionNegocios::class)->name('dueno_tienda.clientes');
+    Route::get('/clientes', GestionClientes::class)->name('dueno_tienda.clientes');
 });
 
 Route::middleware(['auth'])->group(function () {
@@ -65,10 +67,13 @@ Route::get('/notaTest', function () {
     return ComprobanteService::generarNota(1);
 })->name('notaTest');
 
+Route::get('/actualizaciones', Actualizaciones::class)->name('actualizaciones');
+
 Route::prefix('api')->middleware('auth')->group(function () {
     Route::get('/mis-sucursales', [SucursalController::class, 'sucursalesPorUsuario'])->name('listar.sucursales.porusuario');
     Route::get('/mis-productos', [SucursalController::class, 'buscarProductos'])->name('buscar.productos.porsucursal');
     Route::get('/cliente/buscar', [ClienteController::class, 'buscar'])->name('cliente.buscar');
+    Route::post('/cliente/sunat', [ClienteController::class, 'sunatPorRuc']);
     Route::post('/cliente/crear', [ClienteController::class, 'registrar'])->name('cliente.registrar');
     Route::post('/venta/registrar', [VentaController::class, 'registrar'])->name('venta.registrar');
     Route::get('/venta/listar/{sucursal}', [VentaController::class, 'listar'])->name('venta.listar');

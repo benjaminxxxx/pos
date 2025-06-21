@@ -171,7 +171,9 @@ class InformacionVenta
      */
     public static function listarVentas(int $negocio_id, array $filtros = [])
     {
-        $query = Venta::with(['detalles', 'comprobante', 'notas'])->where('negocio_id', $negocio_id);
+        $query = Venta::with(['detalles', 'comprobante', 'notas'])
+        ->orderBy('fecha_emision','desc')
+        ->where('negocio_id', $negocio_id);
 
         if (!empty($filtros['sucursal_id'])) {
             $query->where('sucursal_id', $filtros['sucursal_id']);
