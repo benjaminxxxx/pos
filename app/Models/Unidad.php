@@ -13,6 +13,7 @@ class Unidad extends Model
     protected $fillable = [
         'codigo',
         'descripcion',
-        'alt'
+        'alt',
+        'validado_sunat'
     ];
 }

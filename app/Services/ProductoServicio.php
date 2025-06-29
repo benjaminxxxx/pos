@@ -149,6 +149,7 @@ class ProductoServicio
             'monto_compra' => $data['monto_compra'],
             'monto_compra_sinigv' => $data['monto_compra_sinigv'],
             'unidad' => $data['unidad'],
+            'unidad_comercial'=>$data['unidad_comercial']??null,
             'tipo_afectacion_igv' => $data['tipo_afectacion_igv'],
             'categoria_id' => $data['categoria_id'] ?? null,
             'marca_id' => $data['marca_id'] ?? null,

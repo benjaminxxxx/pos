@@ -14,6 +14,8 @@
             @include('livewire.superadmin.unidades.form-unidad')
         @endif
 
+        @include('livewire.superadmin.unidades.form-especial')
+
         @include('livewire.superadmin.unidades.lista-unidades')
     </x-card>
 </div>

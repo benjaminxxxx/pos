@@ -3,6 +3,8 @@
 namespace App\Livewire\Superadmin\Unidades;
 
 use App\Models\Unidad;
+use App\Models\UnidadComercial;
+use App\Services\Producto\UnidadServicio;
 use App\Traits\LivewireAlerta;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -18,6 +20,8 @@ class GestionUnidades extends Component
     public $descripcion;
     public $alt;
     public $search = '';
+    public $mostrarFormularioEspecial = false;
+    public $nombre_comercial;
 
     public function render()
     {
@@ -25,7 +29,7 @@ class GestionUnidades extends Component
             ->when($this->search, function ($query) {
                 $searchTerm = '%' . $this->search . '%';
                 $query->where('codigo', 'like', $searchTerm)
-                      ->orWhere('descripcion', 'like', $searchTerm);
+                    ->orWhere('descripcion', 'like', $searchTerm);
             })
             ->orderBy('descripcion')
             ->paginate(10);
@@ -38,9 +42,8 @@ class GestionUnidades extends Component
     public function crear()
     {
         $this->resetValidation();
-        $this->reset(['codigo', 'descripcion', 'alt']);
-        $this->estaEditando = false;
-        $this->isOpen = true;
+        $this->reset(['nombre_comercial']);
+        $this->mostrarFormularioEspecial = true;
     }
 
     public function editar($codigo)
@@ -55,7 +58,16 @@ class GestionUnidades extends Component
         $this->estaEditando = true;
         $this->isOpen = true;
     }
-
+    public function guardarUnidadEspecial()
+    {
+        try {
+            UnidadServicio::crearUnidadComercial($this->nombre_comercial);
+            $this->mostrarFormularioEspecial = false;
+            $this->alert('success', 'Registro exitoso.');
+        } catch (\Exception $e) {
+            $this->alert('error', $e->getMessage());
+        }
+    }
     public function guardar()
     {
         $this->validate([

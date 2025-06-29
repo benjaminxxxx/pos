@@ -53,7 +53,7 @@
             text-transform: uppercase;
             margin-top: 5px;
             margin-bottom: 5px;
-            font-size: 34px;
+            font-size: 50px;
             font-family: Arial, Helvetica, sans-serif
         }
 

@@ -56,7 +56,7 @@ class A4VoucherGenerator
     {
         $templatePath = resource_path('views/documents');
         $twigOptions = [
-            'cache' => storage_path('app/cache/twig'), // Directorio donde guardar la caché de Twig
+            'cache' => storage_path('app/cache/twig7'), // Directorio donde guardar la caché de Twig
             'strict_variables' => true,
         ];
 

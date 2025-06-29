@@ -420,9 +420,18 @@ const agregarProducto = ({ producto, presentacion }) => {
     if (productoExistente) {
         productoExistente.cantidad += 1
     } else {
+        /*
+        console.log(presentacion?.unidades.validado_sunat,producto.unidades.validado_sunat);
+         const unidad_nosunat = presentacion
+            ? presentacion.unidad
+            : producto.unidad;
 
+        // Decidir la unidad SUNAT para el XML
+        const unidad = presentacion
+            ? (presentacion.unidades?.validado_sunat === 0 ? 'NIU' : presentacion.unidad)
+            : (producto.unidades?.validado_sunat === 0 ? 'NIU' : producto.unidad);*/
         const factor = presentacion?.factor ?? 1
-        const unidad = producto.unidad
+        const unidad = presentacion? presentacion.unidad: producto.unidad
         const descripcion = presentacion ? `${producto.descripcion}-${presentacion.descripcion}` : `${producto.descripcion}`
         // Precio base con o sin presentación
         const monto_precio_unitario = presentacion ? presentacion.precio : producto.monto_venta

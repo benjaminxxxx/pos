@@ -18,7 +18,7 @@ $actualizaciones = [
 $actualizaciones = collect($actualizaciones)->sortKeysDesc();
 @endphp
 
-<div class="container mx-auto max-w-3xl p-6">
+<div class="container p-6">
     <h2 class="text-2xl font-bold mb-6">📝 Actualizaciones del Sistema</h2>
 
     @foreach ($actualizaciones as $fecha => $items)

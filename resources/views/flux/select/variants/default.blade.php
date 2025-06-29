@@ -26,7 +26,7 @@ $classes = Flux::classes()
     ->add('disabled:shadow-none')
     ->add($invalid
         ? 'border border-red-500'
-        : 'border border-zinc-200 border-b-zinc-300/80 dark:border-white/10'
+        : 'border border-zinc-400 dark:border-white/10'
     )
     ;
 @endphp

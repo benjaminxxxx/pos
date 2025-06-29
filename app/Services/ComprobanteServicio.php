@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Negocio;
 use App\Models\Nota;
 use App\Models\SucursalCorrelativo;
+use App\Models\Unidad;
 use App\Models\Venta;
 use App\Services\Facturacion\PdfGenerators\A4VoucherGenerator;
 use Exception;
@@ -632,12 +633,16 @@ class ComprobanteServicio
     protected function getDetallesProductos(Venta $venta): array
     {
         return $venta->detalles->map(function ($detalle) {
+            $unidad = null;
+            $unidadData = Unidad::where('codigo', $detalle->unidad)->first();
+            if($unidadData){
+                $unidad = $unidadData->validado_sunat?$detalle->unidad:'NIU';
+            }
             return [
                 'codProducto' => $this->generarCodigoProducto($detalle->producto_id),
-                'unidad' => $detalle->unidad,
+                'unidad' => $unidad,
                 'descripcion' => $detalle->descripcion,
                 'cantidad' => (int) $detalle->cantidad,
-
                 'mtoValorUnitario' => (float) $detalle->monto_valor_unitario,
                 'mtoValorGratuito' => (float) $detalle->monto_valor_gratuito,
                 'mtoValorVenta' => (float) $detalle->monto_valor_venta,

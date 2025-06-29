@@ -44,7 +44,7 @@ class GestionProductos extends Component
     public $detalle;     // antes descripcion extendida
     public $tipo_afectacion_igv; // sigue igual
 
-    public $porcentaje_igv; // antes igv
+    public $porcentaje_igv = 18; // antes igv
     public $monto_venta; // antes precio_base
     public $monto_venta_sinigv;
     public $monto_compra; // antes precio_compra

@@ -3,14 +3,6 @@
         <div class="w-1/3">
             <flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass" placeholder="Buscar unidades..." />
         </div>
-        <div>
-            <flux:select wire:model.live="tipoNegocioFilter" label="Tipo de negocio" class="w-full">
-                <option value="">Todos los tipos</option>
-                @foreach (config('negocios.tipos') as $valor => $nombre)
-                    <option value="{{ $valor }}">{{ $nombre }}</option>
-                @endforeach
-            </flux:select>
-        </div>
     </div>
 
     <x-table>

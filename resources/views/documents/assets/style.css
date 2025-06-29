@@ -7,7 +7,20 @@ body {
     
     font-size: 12px;
 }
-
+.company-name {
+    font-size: 18px;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 2px;
+    text-transform: uppercase;
+}
+.company-address{
+    font-size: 16px;
+}
+p{
+    margin:0;
+    padding:0;
+}
 .invoice-container {
     margin: 0 auto;
     border: 0;
@@ -27,16 +40,13 @@ body {
     border-right: 0;
 }
 
-.company-name {
-    font-size: 16px;
-    font-weight: bold;
-    text-align: center;
-    margin-bottom: 10px;
-    text-transform: uppercase;
-}
+
 
 .company-details {
     font-size: 14px;
+    text-align: center;
+    width: 100%;
+    display: block;
 }
 
 .document-info {
