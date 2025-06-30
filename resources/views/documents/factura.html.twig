@@ -56,31 +56,27 @@
 			<div class="client-section">
 				<table class="client-table">
 					<tr>
-						<td width="75%">
-							<span class="label">Razón Social:</span>
-							{{ cl.rznSocial }}</td>
-						<td width="25%">
-							<span class="label">{{ cl.tipoDoc|catalog('06') }}:</span>
-							{{ cl.numDoc }}</td>
-					</tr>
-					<tr>
-						<td>
-							<span class="label">Fecha Emisión:</span>
-							{{ doc.fechaEmision|date('d/m/Y') }}
+                        <td colspan="2">
+                            <p><span class="label">Razón Social:</span> {{ cl.rznSocial }}</p>
+                            <p><span class="label">{{ cl.tipoDoc|catalog('06') }}:</span> {{ cl.numDoc }}</p>
+                            <p><span class="label">Fecha Emisión:</span> {{ doc.fechaEmision|date('d/m/Y') }}
 							{% if doc.fechaEmision|date('H:i:s') != '00:00:00' %}
 								{{ doc.fechaEmision|date('H:i:s') }}
-							{% endif %}
-							{% if doc.fecVencimiento is defined and doc.fecVencimiento %}
-								<br><span class="label">Fecha Vencimiento:</span>
-								{{ doc.fecVencimiento|date('d/m/Y') }}
-							{% endif %}
-						</td>
-						<td>
-							<span class="label">Dirección:</span>
-							{% if cl.address %}
-								{{ cl.address.direccion }}
-							{% endif %}
-						</td>
+							{% endif %}</p>
+
+                            {% if doc.fecVencimiento is defined and doc.fecVencimiento %}
+                                <p><span class="label">Fecha Vencimiento:</span> {{ doc.fecVencimiento|date('d/m/Y') }}</p>
+                            {% endif %}
+                            {% if cl.email %}
+                                <p><span class="label">Email:</span> {{ cl.email }}</p>
+                            {% endif %}
+                            {% if cl.telephone %}
+                                <p><span class="label">Teléfono:</span> {{ cl.telephone }}</p>
+                            {% endif %}
+                            <p><span class="label">Dirección:</span> {% if cl.address %}
+								{{ cl.address.direccion }} {{ cl.address.distrito }} {{ cl.address.provincia }} {{ cl.address.departamento }}
+							{% endif %}</p>
+                        </td>
 					</tr>
 					{% if isNota %}
 						<tr>

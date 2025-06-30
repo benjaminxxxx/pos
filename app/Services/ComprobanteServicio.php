@@ -523,9 +523,20 @@ class ComprobanteServicio
                 'tipoDoc' => $this->validarTipoDocumentoCliente($venta->tipo_documento_cliente),
                 'numDoc' => $venta->documento_cliente,
                 'rznSocial' => $venta->nombre_cliente,
+                'email' => $venta->cliente_email,
+                'telephone' => $venta->cliente_telefono,
+                'address'=>[
+                    'ubigueo'=> $venta->cliente_ubigeo,
+                    'departamente'=> $venta->cliente_departamento,
+                    'provincia'=> $venta->cliente_provincia,
+                    'distrito'=> $venta->cliente_distrito,
+                    'urbanizacion'=> $venta->cliente_urbanizacion,
+                    'direccion'=> $venta->cliente_direccion,
+                    'codLocal'=> $venta->cliente_cod_local,
+                ]
             ];
         }
-        if (in_array($tipoDoc, ['07', '08'])) { //Factura y Boleta
+        if (in_array($tipoDoc, ['07', '08'])) { //Nota de credito y debito
 
             $data['tipDocAfectado'] = $nota->tip_doc_afectado;
             $data['numDocfectado'] = $nota->num_doc_afectado;
@@ -535,6 +546,17 @@ class ComprobanteServicio
                 'tipoDoc' => $this->validarTipoDocumentoCliente($ventaAfectada->tipo_documento_cliente),
                 'numDoc' => $ventaAfectada->documento_cliente,
                 'rznSocial' => $ventaAfectada->nombre_cliente,
+                'email' => $ventaAfectada->cliente_email,
+                'telephone' => $ventaAfectada->cliente_telefono,
+                'address'=>[
+                    'ubigueo'=> $ventaAfectada->cliente_ubigeo,
+                    'departamente'=> $ventaAfectada->cliente_departamento,
+                    'provincia'=> $ventaAfectada->cliente_provincia,
+                    'distrito'=> $ventaAfectada->cliente_distrito,
+                    'urbanizacion'=> $ventaAfectada->cliente_urbanizacion,
+                    'direccion'=> $ventaAfectada->cliente_direccion,
+                    'codLocal'=> $ventaAfectada->cliente_cod_local,
+                ]
             ];
         }
 
@@ -633,7 +655,7 @@ class ComprobanteServicio
     protected function getDetallesProductos(Venta $venta): array
     {
         return $venta->detalles->map(function ($detalle) {
-            $unidad = null;
+            $unidad = 'NIU';
             $unidadData = Unidad::where('codigo', $detalle->unidad)->first();
             if($unidadData){
                 $unidad = $unidadData->validado_sunat?$detalle->unidad:'NIU';

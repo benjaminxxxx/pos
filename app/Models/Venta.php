@@ -16,6 +16,16 @@ class Venta extends Model
         'documento_cliente',
         'tipo_documento_cliente',
 
+        'cliente_ubigueo',
+        'cliente_departamento',
+        'cliente_provincia',
+        'cliente_distrito',
+        'cliente_urbanizacion',
+        'cliente_direccion',
+        'cliente_cod_local',
+        'cliente_email',
+        'cliente_telefono',
+
         'estado',
         'modo_venta',
 

@@ -19,6 +19,8 @@ return new class extends Migration
             $table->string('cliente_urbanizacion', 150)->nullable()->after('cliente_distrito');
             $table->string('cliente_direccion', 255)->nullable()->after('cliente_urbanizacion');
             $table->string('cliente_cod_local', 20)->nullable()->default('0000')->after('cliente_direccion');
+            $table->string('cliente_email', 255)->nullable()->after('cliente_cod_local');
+            $table->string('cliente_telefono', 30)->nullable()->after('cliente_email');
         });
     }
 
@@ -36,6 +38,8 @@ return new class extends Migration
                 'cliente_urbanizacion',
                 'cliente_direccion',
                 'cliente_cod_local',
+                'cliente_email',
+                'cliente_telefono',
             ]);
         });
     }

@@ -14,7 +14,7 @@
                 </div>
             </Title>
 
-            <PanelBuscarProducto @productoSeleccionado="agregarProducto" />
+            <PanelBuscarProducto ref="panelBuscarProductoRef" @productoSeleccionado="agregarProducto" />
 
         </PanelProductos>
 
@@ -42,7 +42,6 @@
                         </Button>
                     </Flex>
                     <!-- Parte navegable y scrollable -->
-
                     <div class="flex-1 overflow-y-auto space-y-4">
 
                         <!-- Mostrar detalles si existen -->
@@ -55,6 +54,12 @@
                             :productos="ventas[ventaActiva].productos" @quitarCarrito="quitarItem"
                             @agregarCantidad="aumentarCantidad" @quitarCantidad="reducirCantidad"
                             @editarPrecioUnitario="abrirModalPrecioUnitario" />
+
+                        <Button 
+                        v-if="ventas[ventaActiva].productos && ventas[ventaActiva].productos.length"
+                            class="mt-4 w-full"
+                            @click="enfocarPanelBuscarProducto">Agregar más productos
+                        </Button>
                     </div>
                 </Spacing>
                 <Spacing v-if="ventas[ventaActiva]?.registrado">
@@ -266,15 +271,19 @@ const ventaActual = computed(() => ventas.value[ventaActiva] ?? null);
 const procesandoVenta = ref(false)
 const mostrarModalPrecioUnitario = ref(false);
 const productoParaEditar = ref(null);
+const panelBuscarProductoRef = ref(null)
 
+function enfocarPanelBuscarProducto() {
+  panelBuscarProductoRef.value?.focusYLimpiar()
+}
 const abrirModalPrecioUnitario = (item) => {
-  productoParaEditar.value = item;
-  mostrarModalPrecioUnitario.value = true;
+    productoParaEditar.value = item;
+    mostrarModalPrecioUnitario.value = true;
 }
 
 const cerrarModalPrecioUnitario = () => {
-  mostrarModalPrecioUnitario.value = false;
-  productoParaEditar.value = null;
+    mostrarModalPrecioUnitario.value = false;
+    productoParaEditar.value = null;
 }
 // Función para agregar un pago
 const agregarPago = (metodoPago) => {
@@ -431,7 +440,7 @@ const agregarProducto = ({ producto, presentacion }) => {
             ? (presentacion.unidades?.validado_sunat === 0 ? 'NIU' : presentacion.unidad)
             : (producto.unidades?.validado_sunat === 0 ? 'NIU' : producto.unidad);*/
         const factor = presentacion?.factor ?? 1
-        const unidad = presentacion? presentacion.unidad: producto.unidad
+        const unidad = presentacion ? presentacion.unidad : producto.unidad
         const descripcion = presentacion ? `${producto.descripcion}-${presentacion.descripcion}` : `${producto.descripcion}`
         // Precio base con o sin presentación
         const monto_precio_unitario = presentacion ? presentacion.precio : producto.monto_venta

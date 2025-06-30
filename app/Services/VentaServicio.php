@@ -110,6 +110,17 @@ class VentaServicio
                 'nombre_cliente' => $nombreCliente,
                 'documento_cliente' => $cliente['numero_documento'] ?? '00000000', //valores por defecto obligatorios por sunat
                 'tipo_documento_cliente' => $cliente['tipo_documento_id'] ?? '1', //valores por defecto obligatorios por sunat
+
+                //Nuevos campos de dirección del cliente
+                'cliente_ubigeo' => $cliente['ubigeo'] ?? null,
+                'cliente_departamento' => $cliente['departamento'] ?? null,
+                'cliente_provincia'=> $cliente['provincia'] ?? null,
+                'cliente_distrito'=> $cliente['distrito'] ?? null,
+                'cliente_urbanizacion'=> $cliente['urbanizacion'] ?? null,
+                'cliente_direccion'=> $cliente['direccion'] ?? null,
+                'cliente_email' => $cliente['email'] ?? null,
+                'cliente_telefono' => $cliente['telefono'] ?? null,
+                //'cliente_cod_local'=> $cliente['provincia'] ?? null,
                 'modo_venta' => $modo_venta,
                 'estado' => 'pagado',
 

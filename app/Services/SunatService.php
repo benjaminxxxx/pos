@@ -135,7 +135,10 @@ class SunatService
         return (new Client())
             ->setTipoDoc($client['tipoDoc'] ?? null) // DNI - Catalog. 06
             ->setNumDoc($client['numDoc'] ?? null)
-            ->setRznSocial($client['rznSocial'] ?? null);
+            ->setRznSocial($client['rznSocial'] ?? null)
+            ->setEmail($client['email'] ?? null) // Email del cliente
+            ->setTelephone($client['telephone'] ?? null) // Telefono del cliente
+            ->setAddress($this->getAddress($client['address']) ?? null);
     }
 
     public function getAddress($address)
