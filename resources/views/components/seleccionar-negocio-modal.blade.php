@@ -3,7 +3,7 @@
 
     @if($mostrar)
         <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-            <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
+            <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6 dark:bg-gray-800">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-lg font-medium">Seleccionar Negocio</h3>
                     <button wire:click="$set('mostrarModalSeleccionNegocio', false)" class="text-gray-400 hover:text-gray-500">
@@ -13,7 +13,7 @@
                     </button>
                 </div>
                 
-                <p class="mb-4 text-sm text-gray-600">
+                <p class="mb-4 text-sm text-gray-600 dark:text-gray-300">
                     Seleccione el negocio con el que desea trabajar:
                 </p>
                 
@@ -21,7 +21,7 @@
                     @foreach($negocios as $negocio)
                         <button 
                             wire:click="seleccionarNegocio({{ $negocio->id }})"
-                            class="w-full text-left px-4 py-3 border rounded-lg hover:bg-gray-50 flex items-center"
+                            class="w-full text-left px-4 py-3 border rounded-lg hover:bg-gray-50 flex items-center dark:border-gray-700 dark:hover:bg-gray-700"
                         >
                             <div class="flex-1">
                                 <p class="font-medium">{{ $negocio->nombre_legal }}</p>

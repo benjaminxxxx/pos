@@ -1,6 +1,6 @@
 @props(['class' => ''])
 
-<div {{ $attributes->merge(['class' => 'bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4 md:p-10 ' . $class]) }}>
+<div {{ $attributes->merge(['class' => 'p-6 bg-white border border-gray-200 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-700 ' . $class]) }}>
     {{ $slot }}
 </div>
 

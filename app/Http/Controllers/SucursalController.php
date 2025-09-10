@@ -16,13 +16,48 @@ class SucursalController extends Controller
             return response()->json([$user->empleado->sucursal]);
         }
 
-        return response()->json($user->sucursales()->where('estado', true)->get());
+        return response()->json($user->sucursales()
+            ->where('sucursales.estado', true)
+            ->where('negocios.estado', true)
+            ->where('negocios.eliminado', false)
+            ->get());
     }
+    public function negociosPorUsuario()
+    {
+        $user = Auth::user();
+
+        if ($user->hasRole('vendedor')) {
+            return response()->json([$user->empleado->sucursal->negocio]);
+        }
+
+        return response()->json($user->negocios()
+            ->with('sucursales')
+            ->where('estado', true)
+            ->where('eliminado', false)
+            ->get());
+    }
+    /*
     public function buscarProductos(Request $request)
     {
         $sucursal_id = $request->input('sucursal_id');
         $search = $request->input('q');
         $productos = ProductoServicio::buscarPorTextoYStock($search, $sucursal_id);
+        return response()->json($productos);
+    }*/
+    public function buscarProductos(Request $request)
+    {
+        $negocio_id = $request->input('negocio_id');
+        $sucursal_id = $request->input('sucursal_id');
+        $search = $request->input('q');
+
+        if (!$negocio_id) {
+            return response()->json([
+                'error' => 'El parámetro negocio_id es obligatorio.'
+            ], 422);
+        }
+
+        $productos = ProductoServicio::buscarPorTextoYStock($search, $negocio_id, $sucursal_id);
+
         return response()->json($productos);
     }
 }

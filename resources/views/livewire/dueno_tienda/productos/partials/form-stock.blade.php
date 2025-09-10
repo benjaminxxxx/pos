@@ -1,8 +1,9 @@
 <div class="mb-4">
-    <p class="text-sm text-gray-600 mb-4">Configure el stock inicial para cada sucursal:</p>
+    <p class="text-sm text-gray-600 mb-4 dark:text-gray-200">Configure el stock inicial para cada sucursal:</p>
 
     @foreach ($sucursales as $sucursal)
-        <flux:card title="{{ $sucursal->nombre }}">
+        <x-card class="mb-4">
+            <x-h2 class="mb-2">{{ $sucursal->nombre }}</x-h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <flux:input 
                     wire:model="stocks.{{ $sucursal->id }}.cantidad" 
@@ -18,7 +19,7 @@
                     step="0.01"
                 />
             </div>
-        </flux:card>
+        </x-card>
     @endforeach
 
     @if (count($sucursales) === 0)

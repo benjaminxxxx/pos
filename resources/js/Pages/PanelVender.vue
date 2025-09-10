@@ -1,15 +1,19 @@
 <template>
     <Card>
         <PanelProductos>
+            <div>
+                <b>{{ sucursalSeleccionadaNombre }}</b>
+            </div>
             <Title titulo="Panel de Ventas">
+
                 <div class="md:flex items-center gap-3">
-                    Sucursal: <b>{{ sucursalSeleccionadaNombre }}</b>
+
                     <Button @click="agregarVenta">
                         <i class="fa fa-plus"></i> Nueva Venta
                     </Button>
 
-                    <Button @click="$emit('mostrarModalSeleccionSucursal', true)">
-                        <i class="fa fa-save"></i> Cambiar sucursal
+                    <Button @click="$emit('cambiarNegocio', true)">
+                        <i class="fa fa-save"></i> Cambiar negocio o sucursal
                     </Button>
                 </div>
             </Title>
@@ -20,15 +24,12 @@
 
         <PanelCarrito>
             <div v-if="ventas.length > 0" class="flex flex-col h-full">
-                <Spacing>
-
+                <Spacing class="flex-shrink-0 !pb-1">
                     <PanelSeleccionadorCliente v-if="!ventas[ventaActiva]?.registrado" :clienteSeleccionado="cliente"
                         @clienteSeleccionado="actualizarClienteSeleccionado" />
 
                     <PanelVisorCliente v-else :documento="ventas[ventaActiva]?.documento_cliente"
                         :nombre="ventas[ventaActiva]?.nombre_cliente" />
-
-
 
                     <Flex class="justify-between my-3">
                         <Button @click="navegarVenta('atras')" :disabled="ventaActiva === 0">
@@ -41,68 +42,53 @@
                             <i class="fa fa-chevron-right"></i>
                         </Button>
                     </Flex>
-                    <!-- Parte navegable y scrollable -->
-                    <div class="flex-1 overflow-y-auto space-y-4">
-
-                        <!-- Mostrar detalles si existen -->
-                        <ListaDetalles v-if="ventas[ventaActiva].detalles && ventas[ventaActiva].detalles.length"
-                            :productos="ventas[ventaActiva].detalles" />
-
-                        <!-- Si no hay detalles, mostrar productos -->
-                        <ListaProductos
-                            v-else-if="ventas[ventaActiva].productos && ventas[ventaActiva].productos.length"
-                            :productos="ventas[ventaActiva].productos" @quitarCarrito="quitarItem"
-                            @agregarCantidad="aumentarCantidad" @quitarCantidad="reducirCantidad"
-                            @editarPrecioUnitario="abrirModalPrecioUnitario" />
-
-                        <Button 
-                        v-if="ventas[ventaActiva].productos && ventas[ventaActiva].productos.length"
-                            class="mt-4 w-full"
-                            @click="enfocarPanelBuscarProducto">Agregar más productos
-                        </Button>
-                    </div>
                 </Spacing>
-                <Spacing v-if="ventas[ventaActiva]?.registrado">
-                    <OpcionesVenta :venta-activa="ventas[ventaActiva]" @nueva-venta="resetearVenta" />
 
-                    <Button @click="agregarVenta" class="w-full mt-5">
-                        <i class="fa fa-plus"></i> Nueva Venta
+                <!-- Contenido scrollable -->
+                <div class="flex-1 overflow-y-auto space-y-4 px-2 md:px-4">
+                    <!-- Mostrar detalles si existen -->
+                    <ListaDetalles v-if="ventas[ventaActiva].detalles && ventas[ventaActiva].detalles.length"
+                        :venta="ventas[ventaActiva]" />
+
+                    <!-- Si no hay detalles, mostrar productos -->
+                    <ListaProductos v-else-if="ventas[ventaActiva].productos && ventas[ventaActiva].productos.length"
+                        :productos="ventas[ventaActiva].productos" @quitarCarrito="quitarItem"
+                        @agregarCantidad="aumentarCantidad" @quitarCantidad="reducirCantidad"
+                        @editarPrecioUnitario="abrirModalPrecioUnitario" @cambiarCantidad="cambiarCantidadManual" />
+
+                    <Button v-if="ventas[ventaActiva].productos && ventas[ventaActiva].productos.length"
+                        class="mt-4 w-full" @click="enfocarPanelBuscarProducto">
+                        Agregar más productos
                     </Button>
-                </Spacing>
 
-                <Flex class="justify-end mt-4" v-show="false">
-                    <Spacing>
-                        <Button @click="verDetalle(ventaActiva)">
-                            <i class="fa fa-list"></i> Avanzado
+                    <Spacing v-if="ventas[ventaActiva]?.registrado" class="flex-shrink-0 !pt-1 !pb-1">
+                        <OpcionesVenta :venta-activa="ventas[ventaActiva]" @nueva-venta="resetearVenta" />
+
+                        <Button @click="agregarVenta" class="w-full mt-5">
+                            <i class="fa fa-plus"></i> Nueva Venta
                         </Button>
                     </Spacing>
-                </Flex>
-                <!-- Pie fijo al fondo -->
-                <div class="bg-neutral-200 border-t mt-auto">
-                    <Spacing>
+
+                </div>
+
+
+
+                <!-- Footer fijo -->
+                <div class="bg-neutral-200 dark:bg-gray-700 border-t dark:border-gray-600 flex-shrink-0">
+                    <Spacing class="!pt-1">
                         <Flex class="justify-between my-3">
                             <table class="w-full">
                                 <tbody>
-                                    <tr>
-                                        <td>
-                                            Sub total
-                                        </td>
-                                        <td class="text-right">
-                                            {{ ventas[ventaActiva].valor_venta }}
-                                        </td>
+                                    <tr v-if="ventas[ventaActiva].tipo_comprobante_codigo !== 'ticket'">
+                                        <td>Sub total</td>
+                                        <td class="text-right">{{ ventas[ventaActiva].valor_venta }}</td>
+                                    </tr>
+                                    <tr v-if="ventas[ventaActiva].tipo_comprobante_codigo !== 'ticket'">
+                                        <td>IGV</td>
+                                        <td class="text-right">{{ ventas[ventaActiva].total_impuestos }}</td>
                                     </tr>
                                     <tr>
-                                        <td>
-                                            IGV
-                                        </td>
-                                        <td class="text-right">
-                                            {{ ventas[ventaActiva].total_impuestos }}
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <th class="text-left">
-                                            Total
-                                        </th>
+                                        <th class="text-left">Total</th>
                                         <th class="text-right">
                                             {{ ventas[ventaActiva].monto_importe_venta }}
                                         </th>
@@ -121,11 +107,10 @@
                             </Button>
                         </Flex>
                     </Spacing>
-
-
                 </div>
             </div>
         </PanelCarrito>
+
 
         <!-- Mostrar modal solo si hay un producto seleccionado -->
         <ModalCambiarPrecioUnitario v-if="mostrarModalPrecioUnitario" :producto="productoParaEditar"
@@ -137,14 +122,14 @@
             v-model="estaDetalleAbierto" />
 
         <Modal v-model="procesarPago" maxWidth="full">
-            <div class="flex h-screen bg-white text-black" style="max-height:90vh">
+            <div class="flex h-screen bg-white text-black dark:bg-gray-700" style="max-height:90vh">
                 <div class="lg:w-[21rem] flex flex-col">
-                    <div class="h-1/2 bg-slate-400 overflow-y-auto">
+                    <div class="h-1/2 bg-slate-400 overflow-y-auto dark:bg-gray-900">
                         <div v-for="(method, key) in metodosPago" :key="key">
                             <ButtonMethodPayment :icon="method.icon" :label="method.label" @click="agregarPago(key)" />
                         </div>
                     </div>
-                    <div class="h-1/2 bg-slate-200">
+                    <div class="h-1/2 bg-slate-200 dark:bg-gray-800 dark:text-gray-300">
                         <Spacing>
                             <p class="font-medium text-lg">Cliente:</p>
                             <PanelSeleccionadorCliente :clienteSeleccionado="cliente"
@@ -155,8 +140,8 @@
                         </Spacing>
                     </div>
                 </div>
-                <div class="flex-1 flex flex-col bg-slate-100">
-                    <div class="bg-amber-500  text-3xl text-center text-white">
+                <div class="flex-1 flex flex-col bg-slate-100 dark:bg-gray-800">
+                    <div class="bg-amber-500 dark:bg-blue-500  text-3xl text-center text-white">
                         <Spacing>
                             Total: S/. <span class="subtotal">{{ ventaAPagar.monto_importe_venta }}</span>
                         </Spacing>
@@ -165,7 +150,7 @@
                         <Spacing>
                             <div class="space-y-2">
                                 <div v-for="(metodo, index) in metodosPagoAgregados" :key="index"
-                                    class="flex items-center justify-between p-5 rounded shadow cursor-pointer bg-white">
+                                    class="flex items-center justify-between p-5 rounded shadow cursor-pointer bg-white dark:bg-gray-700 dark:text-gray-300">
                                     <div class="flex items-center">
                                         <i :class="metodo.icon" class="mr-2"></i>
                                         <span>{{ metodo.label }}</span>
@@ -184,9 +169,14 @@
                     </div>
                     <Spacing>
                         <div class="flex items-center mb-4">
-                            <input id="default-radio-1" type="radio" value="03" class="w-4 h-4"
+                            <input id="default-radio-1" type="radio" value="ticket" class="w-4 h-4"
                                 v-model="tipoComprobante">
-                            <Label for="default-radio-1">Boleta</Label>
+                            <Label for="default-radio-1">Nota de venta</Label>
+                        </div>
+                        <div class="flex items-center mb-4">
+                            <input id="default-radio-Boleta" type="radio" value="03" class="w-4 h-4"
+                                v-model="tipoComprobante">
+                            <Label for="default-radio-Boleta">Boleta</Label>
                         </div>
                         <div class="flex items-center mb-4">
                             <input id="default-radio-2" type="radio" value="01" class="w-4 h-4"
@@ -211,7 +201,7 @@
                             </Spacing>
                         </button>
                         <button @click="cerrarPanelPago"
-                            class="w-1/2 bg-white cursor-pointer transition border-0 hover:bg-stone-100 text-stone-600 bg-text-white text-2xl flex items-center justify-center">
+                            class="w-1/2 bg-white cursor-pointer transition border-0 hover:bg-stone-100 text-stone-600 bg-text-white text-2xl flex items-center justify-center dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
 
                             <Spacing>
                                 <i class="fa fa-arrow-left mr-2"></i> Regresar
@@ -248,7 +238,6 @@ import Spacing from '@/components/ui/Spacing.vue'
 import PanelDetalle from '@/components/PanelDetalle.vue'
 import Swal from 'sweetalert2'
 
-const sucursalSeleccionadaNombre = ref(localStorage.getItem('sucursalSeleccionadaNombre'))
 
 const ventas = ref([])
 const ventaActiva = ref(null)
@@ -272,9 +261,33 @@ const procesandoVenta = ref(false)
 const mostrarModalPrecioUnitario = ref(false);
 const productoParaEditar = ref(null);
 const panelBuscarProductoRef = ref(null)
+// negocio y sucursal seleccionados desde localStorage
+const negocioSeleccionado = ref(null)
+const sucursalSeleccionada = ref(null)
+
+// nombre combinado para mostrar
+const sucursalSeleccionadaNombre = ref('')
+
+const cargarSeleccion = () => {
+    const negocioRaw = localStorage.getItem('negocioSeleccionado')
+    const sucursalRaw = localStorage.getItem('sucursalSeleccionada')
+
+    negocioSeleccionado.value = negocioRaw ? JSON.parse(negocioRaw) : null
+    sucursalSeleccionada.value = sucursalRaw ? JSON.parse(sucursalRaw) : null
+    console.log(sucursalSeleccionada.value);
+    if (negocioSeleccionado.value) {
+        if (sucursalSeleccionada.value) {
+            sucursalSeleccionadaNombre.value = `${negocioSeleccionado.value.nombre_legal} - ${sucursalSeleccionada.value.nombre}`
+        } else {
+            sucursalSeleccionadaNombre.value = negocioSeleccionado.value.nombre_legal
+        }
+    } else {
+        sucursalSeleccionadaNombre.value = ''
+    }
+}
 
 function enfocarPanelBuscarProducto() {
-  panelBuscarProductoRef.value?.focusYLimpiar()
+    panelBuscarProductoRef.value?.focusYLimpiar()
 }
 const abrirModalPrecioUnitario = (item) => {
     productoParaEditar.value = item;
@@ -325,15 +338,29 @@ const pagar = () => {
 
 const agregarVenta = async () => {
     if (ventas.value.length == 0) {
-        //cargar 10 ultimas ventas
-        const sucursalSeleccionada = localStorage.getItem('sucursalSeleccionada') ?? null;
-        if (!sucursalSeleccionada) {
-            return;
+        // Cargar 10 últimas ventas
+        const negocioSeleccionadoRaw = localStorage.getItem('negocioSeleccionado');
+        const sucursalSeleccionadaRaw = localStorage.getItem('sucursalSeleccionada');
+
+        if (!negocioSeleccionadoRaw) {
+            return; // Si no hay negocio, no continuar
+        }
+
+        const negocio = JSON.parse(negocioSeleccionadoRaw);
+        const sucursal = sucursalSeleccionadaRaw ? JSON.parse(sucursalSeleccionadaRaw) : null;
+
+        console.log('Negocio ID:', negocio.id);
+        console.log('Sucursal ID:', sucursal?.id ?? 'null');
+
+        // Construir la URL dinámicamente
+        let url = `/venta/listar/${negocio.id}`;
+        if (sucursal && sucursal.id) {
+            url += `/${sucursal.id}`;
         }
 
         try {
 
-            const { data } = await api.get('/venta/listar/' + sucursalSeleccionada);
+            const { data } = await api.get(url);
 
             if (data.success) {
 
@@ -538,7 +565,15 @@ function reducirCantidad(producto) {
         recalcularPrecio();
     }
 }
+function cambiarCantidadManual(producto) {
+    const venta = ventas.value[ventaActiva.value];
+    const item = venta.productos.find(p => p.idUnico === producto.idUnico);
 
+    if (item) {
+        if (item.cantidad < 1) item.cantidad = 1; // asegura mínimo 1
+        recalcularPrecio();
+    }
+}
 function guardarPrecio({ id, nuevoPrecio }) {
     const venta = ventas.value[ventaActiva.value];
     const producto = venta.productos.find(p => p.idUnico === id);
@@ -674,13 +709,30 @@ const procesarVenta = async () => {
             codigo: metodo.codigo,
             monto: metodo.amount
         }));
-        const sucursalSeleccionada = localStorage.getItem('sucursalSeleccionada') ?? null;
+
+        let negocio = null
+        let sucursal = null
+
+        try {
+            negocio = JSON.parse(localStorage.getItem('negocioSeleccionado'))
+            sucursal = JSON.parse(localStorage.getItem('sucursalSeleccionada'))
+        } catch (e) {
+            console.error('Error al parsear localStorage:', e)
+        }
+
+        // validar negocio (obligatorio)
+        if (!negocio || !negocio.id) {
+            alert('Debe seleccionar un negocio antes de continuar')
+            return
+        }
+
         const payload = {
             metodos_pagos: metodoAgregados,
             cliente: cliente.value,
             venta: ventaAPagar.value,
             tipo_comprobante_codigo: tipoComprobante.value,
-            sucursal_id: sucursalSeleccionada,
+            negocio_id: negocio.id,
+            sucursal_id: sucursal.id ?? null,
             fecha_emision: fechaEmision.value,
             totalPago: totalPago.value,
         };
@@ -691,7 +743,6 @@ const procesarVenta = async () => {
 
             const ventaRegistrada = data.venta
             ventaRegistrada.registrado = true
-
 
             const index = ventas.value.findIndex(v => v.id === ventaAPagar.value.id)
 
@@ -723,7 +774,7 @@ const procesarVenta = async () => {
 };
 
 agregarVenta();
-
+cargarSeleccion();
 
 
 

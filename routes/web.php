@@ -12,6 +12,7 @@ use App\Livewire\VentaPanel\Ventas;
 use App\Models\User;
 use App\Services\ComprobanteService;
 use App\Services\ComprobanteServicio;
+use App\Services\ComprobanteSinSunatServicio;
 use Illuminate\Support\Facades\Route;
 use Laravel\Socialite\Facades\Socialite;
 use Livewire\Volt\Volt;
@@ -39,22 +40,27 @@ Route::middleware(['auth', 'role:dueno_sistema'])->group(function () {
 });
 
 Route::middleware(['auth', 'role:dueno_tienda'])->prefix('mi-tienda')->group(function () {
-    Route::get('/negocios', App\Livewire\DuenoTienda\NegocioPanel\GestionNegocios::class)->name('dueno_tienda.negocios');
+    Route::get('/negocios', function () {
+        return view('livewire.dueno_tienda.negocio_panel.index-negocios');
+    })->name('dueno_tienda.negocios');
     Route::get('/sucursales', App\Livewire\DuenoTienda\SucursalPanel\GestionSucursales::class)->name('dueno_tienda.sucursales');
     Route::get('/correlativos', App\Livewire\DuenoTienda\CorrelativoPanel\GestionCorrelativos::class)->name('dueno_tienda.correlativos');
-    Route::get('/productos', App\Livewire\DuenoTienda\Productos\GestionProductos::class)->name('dueno_tienda.productos');
+    Route::get('/productos',function () {
+        return view('livewire.dueno_tienda.productos.index-productos');
+    } )->name('dueno_tienda.productos');
     Route::get('/servicios', App\Livewire\DuenoTienda\Servicios\GestionServicios::class)->name('dueno_tienda.servicios');
     //modificar esta ruta para que solo accedan los clientes del dueño de la tienda
     Route::get('/clientes', GestionClientes::class)->name('dueno_tienda.clientes');
 });
 
 Route::middleware(['auth'])->group(function () {
-    Route::get('/vender', GestionVentas::class)
-    ->name('vender')
-    ->middleware('can:gestionar ventas');
+    Route::get('/vender', function () {
+        return view('livewire.venta_panel.index-gestion-ventas');
+    })->name('vender')
+        ->middleware('can:gestionar ventas');
     Route::get('/ventas', Ventas::class)
-    ->name('ventas')
-    ->middleware('can:gestionar ventas');
+        ->name('ventas')
+        ->middleware('can:gestionar ventas');
 });
 
 Route::get('/ver-factura/{serie?}/{numero?}', [FacturaController::class, 'mostrar'])->name('ver_factura');
@@ -66,17 +72,21 @@ Route::get('/ventaTest', function () {
 Route::get('/notaTest', function () {
     return ComprobanteService::generarNota(1);
 })->name('notaTest');
+Route::get('/ticketTest', function () {
+    return ComprobanteSinSunatServicio::generarTicket(115);
+})->name('ticketTest');
 
 Route::get('/actualizaciones', Actualizaciones::class)->name('actualizaciones');
 
 Route::prefix('api')->middleware('auth')->group(function () {
     Route::get('/mis-sucursales', [SucursalController::class, 'sucursalesPorUsuario'])->name('listar.sucursales.porusuario');
+    Route::get('/mis-negocios', [SucursalController::class, 'negociosPorUsuario'])->name('listar.negocios.porusuario');
     Route::get('/mis-productos', [SucursalController::class, 'buscarProductos'])->name('buscar.productos.porsucursal');
     Route::get('/cliente/buscar', [ClienteController::class, 'buscar'])->name('cliente.buscar');
     Route::post('/cliente/sunat', [ClienteController::class, 'sunatPorRuc']);
     Route::post('/cliente/crear', [ClienteController::class, 'registrar'])->name('cliente.registrar');
     Route::post('/venta/registrar', [VentaController::class, 'registrar'])->name('venta.registrar');
-    Route::get('/venta/listar/{sucursal}', [VentaController::class, 'listar'])->name('venta.listar');
+    Route::get('/venta/listar/{negocio}/{sucursal?}', [VentaController::class, 'listar'])->name('venta.listar');
 });
 
 Route::get('/auth/google', function () {

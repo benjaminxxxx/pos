@@ -4,6 +4,7 @@
 namespace App\Services;
 
 use App\Models\DetalleVenta;
+use App\Models\Negocio;
 use App\Models\Sucursal;
 use App\Models\Venta;
 use App\Models\VentaMetodoPago;
@@ -28,9 +29,10 @@ class VentaServicio
         if (!$tipoComprobante || !in_array($tipoComprobante, ['01', '03', 'ticket'])) {
             throw new Exception('Debe seleccionar un tipo de comprobante.');
         }
+        /*
         if ($tipoComprobante == 'ticket') {
             $tipoComprobante = null; // Para tickets no se requiere tipo de comprobante específico, se va a facturar o boletear despues
-        }
+        }*/
         if ($tipoComprobante == '01' && !$cliente) {
             throw new Exception('Debe agregar un cliente para emitir una factura.');
         }
@@ -87,15 +89,24 @@ class VentaServicio
 
         self::validarFechaEmision($fechaEmision, $tipoComprobante);
 
-        $sucursal = Sucursal::find($data['sucursal_id']);
-        if (!$sucursal) {
-            throw new Exception('La sucursal ya no existe');
-        }
+        $negocioId = $data['negocio_id'] ?? null;
+        $sucursalId = $data['sucursal_id'] ?? null;
 
-        $modo_venta = $sucursal->modo_venta;
-        $negocio_id = $sucursal->negocio_id;
-        //throw new Exception($modo_venta . ' - ' . $negocio_id);
-        return DB::transaction(function () use ($data, $modo_venta, $negocio_id, $cliente, $venta, $tipoComprobante) {
+        $negocio = Negocio::find($negocioId);
+        if (!$negocio) {
+            throw new Exception('El negocio ya no existe');
+        }
+/*
+        if ($sucursalId) {
+            $sucursal = Sucursal::find($sucursalId);
+            if (!$sucursal) {
+                throw new Exception('La sucursal ya no existe');
+            }
+        }*/
+
+
+        $modo_venta = $negocio->modo;
+        return DB::transaction(function () use ($data, $modo_venta, $negocioId, $cliente, $venta, $tipoComprobante) {
             // Crear venta principal
 
             $nombreCliente = 'VARIOS'; //valores por defecto obligatorios por sunat
@@ -114,10 +125,10 @@ class VentaServicio
                 //Nuevos campos de dirección del cliente
                 'cliente_ubigeo' => $cliente['ubigeo'] ?? null,
                 'cliente_departamento' => $cliente['departamento'] ?? null,
-                'cliente_provincia'=> $cliente['provincia'] ?? null,
-                'cliente_distrito'=> $cliente['distrito'] ?? null,
-                'cliente_urbanizacion'=> $cliente['urbanizacion'] ?? null,
-                'cliente_direccion'=> $cliente['direccion'] ?? null,
+                'cliente_provincia' => $cliente['provincia'] ?? null,
+                'cliente_distrito' => $cliente['distrito'] ?? null,
+                'cliente_urbanizacion' => $cliente['urbanizacion'] ?? null,
+                'cliente_direccion' => $cliente['direccion'] ?? null,
                 'cliente_email' => $cliente['email'] ?? null,
                 'cliente_telefono' => $cliente['telefono'] ?? null,
                 //'cliente_cod_local'=> $cliente['provincia'] ?? null,
@@ -152,7 +163,7 @@ class VentaServicio
                 'sucursal_id' => $data['sucursal_id'] ?? null,
                 'fecha_emision' => $data['fecha_emision'] ?? null,
                 'fecha_pago' => $data['fecha_pago'] ?? null,
-                'negocio_id' => $negocio_id,
+                'negocio_id' => $negocioId,
                 'tipo_factura' => '0101'
             ]);
             // Guardar métodos de pago
@@ -202,11 +213,25 @@ class VentaServicio
     public static function registrar($data)
     {
         logger($data);
+        $tipoComprobante = $data['tipo_comprobante_codigo'] ?? null;
+        $sucursalId = $data['sucursal_id'] ?? null;
+        $correlativoServicio = new CorrelativoServicio();
+        $numeracion = $correlativoServicio->obtenerNumeracion($sucursalId, $tipoComprobante);
 
         $ventaModel = self::generarVenta($data);
 
-        $comprobanteServicio = new ComprobanteServicio();
-        $comprobanteServicio->generar($ventaModel->id);
+        $tipoComprobante = $data['tipo_comprobante_codigo'] ?? null;
+        if ($tipoComprobante == 'ticket') {
+            // Para tickets no se requiere tipo de comprobante específico, se va a facturar o boletear despues
+            //Generar Nota de venta simple
+            ComprobanteSinSunatServicio::generarTicket($ventaModel->id,$numeracion);
+
+        }else{
+            $comprobanteServicio = new ComprobanteServicio();
+            $comprobanteServicio->generar($ventaModel->id,$numeracion);
+        }
+        
+        $correlativoServicio->guardarCorrelativo();
 
         $ventaConRelaciones = Venta::with(['detalles.producto', 'cliente', 'notas'])
             ->find($ventaModel->id);
@@ -217,49 +242,61 @@ class VentaServicio
         $ventaConRelaciones->sunat_xml_firmado = $ventaConRelaciones->sunat_xml_firmado ? Storage::disk('public')->url($ventaConRelaciones->sunat_xml_firmado) : null;
         $ventaConRelaciones->sunat_cdr = $ventaConRelaciones->sunat_cdr ? Storage::disk('public')->url($ventaConRelaciones->sunat_cdr) : null;
 
-
         return $ventaConRelaciones;
 
     }
-    public static function listar($sucursal, $take = 10)
+    public static function listar($negocio, $sucursal = null, $take = 10)
     {
         $user = Auth::user();
-        $duenoTiendaId = null;
 
         if ($user->hasRole('dueno_tienda')) {
             $duenoTiendaId = $user->id;
         } elseif ($user->hasRole('vendedor')) {
-            // Suponiendo que el vendedor tiene una relación belongsTo hacia el dueño de la tienda
-            throw new Exception("Apun no habillitado para vendedor account");
-
-            //$duenoTiendaId = $user->dueno_tienda_id; // funcion por crear aun no existe
+            throw new Exception("Aún no habilitado para cuenta vendedor.");
         } else {
-            throw new Exception("Usuario no autorizado realizar esta accion.");
-
+            throw new Exception("Usuario no autorizado realizar esta acción.");
         }
-        $sucursales = $user->sucursales->pluck('id')->toArray();
-        if (in_array($sucursal, $sucursales)) {
-            $ventas = Venta::where('sucursal_id', $sucursal)
-                ->with(['detalles', 'cliente', 'notas'])
-                ->orderByDesc('fecha_emision')   // ordena primero por fecha_emision
-                ->orderByDesc('created_at')
-                ->take($take)
-                ->get()
-                ->reverse()
-                ->values()
-                ->map(function ($venta) {
-                    $venta->voucher_pdf = $venta->voucher_pdf ? Storage::disk('public')->url($venta->voucher_pdf) : null;
-                    $venta->sunat_comprobante_pdf = $venta->sunat_comprobante_pdf ? Storage::disk('public')->url($venta->sunat_comprobante_pdf) : null;
-                    $venta->sunat_xml_firmado = $venta->sunat_xml_firmado ? Storage::disk('public')->url($venta->sunat_xml_firmado) : null;
-                    $venta->sunat_cdr = $venta->sunat_cdr ? Storage::disk('public')->url($venta->sunat_cdr) : null;
-                    return $venta;
-                });
 
-            return $ventas;
+        // Validar que el usuario tenga acceso al negocio
+        $negocioIds = $user->negocios->pluck('id')->toArray();
+        if (!in_array($negocio, $negocioIds)) {
+            throw new Exception("Usuario no autorizado para este negocio: {$negocio}");
+        }
+
+        // Si el negocio tiene sucursales, validar acceso
+        $sucursalesUsuario = $user->sucursales->pluck('id')->toArray();
+
+        if ($sucursal && !in_array($sucursal, $sucursalesUsuario)) {
+            throw new Exception("Usuario no autorizado para la sucursal {$sucursal} del negocio {$negocio}");
+        }
+
+        // Query base
+        $query = Venta::where('negocio_id', $negocio)
+            ->with(['detalles', 'cliente', 'notas']);
+
+        if ($sucursal) {
+            $query->where('sucursal_id', $sucursal);
         } else {
-            throw new Exception("Usuario no autorizado para esta sucursal.");
+            $query->whereNull('sucursal_id');
         }
+
+        $ventas = $query->orderByDesc('fecha_emision')
+            ->orderByDesc('created_at')
+            ->take($take)
+            ->get()
+            ->reverse()
+            ->values()
+            ->map(function ($venta) {
+                $venta->voucher_pdf = $venta->voucher_pdf ? Storage::disk('public')->url($venta->voucher_pdf) : null;
+                $venta->sunat_comprobante_pdf = $venta->sunat_comprobante_pdf ? Storage::disk('public')->url($venta->sunat_comprobante_pdf) : null;
+                $venta->sunat_xml_firmado = $venta->sunat_xml_firmado ? Storage::disk('public')->url($venta->sunat_xml_firmado) : null;
+                $venta->sunat_cdr = $venta->sunat_cdr ? Storage::disk('public')->url($venta->sunat_cdr) : null;
+                return $venta;
+            });
+
+        return $ventas;
     }
+
     public static function getFactorIcbper($fechaEmision): float
     {
         $anio = (int) $fechaEmision->format('Y');

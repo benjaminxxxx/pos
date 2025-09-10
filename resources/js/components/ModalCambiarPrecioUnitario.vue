@@ -3,7 +3,7 @@
         <div class="absolute inset-0 bg-black opacity-50">
 
         </div>
-        <div class="bg-white rounded-lg p-6 w-96 z-50">
+        <div class="bg-white rounded-lg p-6 w-96 z-50 dark:bg-gray-800">
             <h2 class="text-xl font-semibold mb-4">Cambiar Precio Unitario</h2>
             <div class="my-4">
                 <table>
@@ -20,7 +20,7 @@
                 </table>
             </div>
             <div class="mb-4">
-                <label for="nuevoPrecio" class="block text-sm font-medium text-gray-700">Nuevo precio unitario:</label>
+                <label for="nuevoPrecio" class="block text-sm font-medium text-gray-700 dark:text-gray-200">Nuevo precio unitario:</label>
                 <input id="nuevoPrecio" v-model.number="nuevoPrecio" type="number" step="0.01"
                     class="w-full mt-1 p-2 border rounded-md text-right" />
             </div>

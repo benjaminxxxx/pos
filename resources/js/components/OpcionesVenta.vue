@@ -6,7 +6,7 @@
       <button
         type="button"
         @click="imprimirVoucher"
-        class="flex items-center justify-center gap-2 h-14 border rounded-md px-4 hover:bg-gray-100"
+        class="flex items-center justify-center gap-2 h-14 border rounded-md px-4 hover:bg-gray-100 dark:hover:bg-gray-800"
       >
         <PrinterIcon class="h-5 w-5" />
         <div class="flex flex-col items-start">
@@ -15,17 +15,6 @@
         </div>
       </button>
 
-      <button
-        type="button" 
-         @click="imprimirFactura"
-        class="flex items-center justify-center gap-2 h-14 border rounded-md px-4 hover:bg-gray-100"
-      >
-        <FileTextIcon class="h-5 w-5" />
-        <div class="flex flex-col items-start">
-          <span>Imprimir</span>
-          <span class="text-xs text-muted-foreground">Factura A4</span>
-        </div>
-      </button>
 
       <!-- Enviar por correo -->
        <!--
@@ -42,10 +31,25 @@
        -->
       
 
-      <!-- Descargar PDF -->
+      <!-- Factura A4: solo si NO es ticket -->
+      <button
+        v-if="props.ventaActiva.tipo_comprobante_codigo !== 'ticket'"
+        type="button" 
+        @click="imprimirFactura"
+        class="flex items-center justify-center gap-2 h-14 border rounded-md px-4 hover:bg-gray-100 dark:hover:bg-gray-800"
+      >
+        <FileTextIcon class="h-5 w-5" />
+        <div class="flex flex-col items-start">
+          <span>Imprimir</span>
+          <span class="text-xs text-muted-foreground">Factura A4</span>
+        </div>
+      </button>
+
+      <!-- Descargar PDF: solo si NO es ticket -->
       <button 
-       @click="descargarFactura"
-        class="flex items-center justify-center gap-2 h-14 border rounded-md px-4 hover:bg-gray-100"
+        v-if="props.ventaActiva.tipo_comprobante_codigo !== 'ticket'"
+        @click="descargarFactura"
+        class="flex items-center justify-center gap-2 h-14 border rounded-md px-4 hover:bg-gray-100 dark:hover:bg-gray-800"
       >
         <DownloadIcon class="h-5 w-5" />
         <div class="flex flex-col items-start">

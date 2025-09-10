@@ -16,6 +16,7 @@ use Intervention\Image\Laravel\Facades\Image;
 
 class ProductoServicio
 {
+    /*
     public static function buscarPorTextoYStock(string $search, int $sucursal_id)
     {
         $user = Auth::user();
@@ -66,8 +67,64 @@ class ProductoServicio
             });
 
         return $productos;
-    }
+    }*/
+    public static function buscarPorTextoYStock(string $search, int $negocio_id, ?int $sucursal_id = null)
+    {
+        $user = Auth::user();
 
+        $productos = Producto::where('negocio_id', $negocio_id)
+            ->where(function ($query) use ($search) {
+                $query->where('codigo_barra', 'like', '%' . $search . '%')
+                    ->orWhere('descripcion', 'like', '%' . $search . '%')
+                    ->orWhereHas('presentaciones', function ($q) use ($search) {
+                        $q->where('codigo_barra', 'like', '%' . $search . '%');
+                    });
+            });
+
+        // 🔒 Seguridad adicional: el usuario solo accede a sus negocios
+        if ($user->hasRole('dueno_tienda')) {
+            $negocioIds = $user->negocios()->pluck('id');
+            if (!$negocioIds->contains($negocio_id)) {
+                return collect(); // 🚫 Intento de acceder a otro negocio
+            }
+        } elseif ($user->hasRole('vendedor')) {
+            $sucursal = $user->sucursal;
+            if (!$sucursal || $sucursal->negocio_id !== $negocio_id) {
+                return collect(); // 🚫 No pertenece al negocio
+            }
+        }
+
+        $productos = $productos->with([
+            'presentaciones' => function ($q) {
+                $q->where('activo', true)->with('unidades');
+            },
+            'unidades',
+            'categoria'
+        ])->get()
+            ->map(function ($producto) use ($sucursal_id) {
+                // si no hay sucursal → no traer stock
+                if ($sucursal_id) {
+                    $stock = DB::table('stocks')
+                        ->where('producto_id', $producto->id)
+                        ->where('sucursal_id', $sucursal_id)
+                        ->value('cantidad');
+
+                    $producto->stock = $stock ?? 0;
+                } else {
+                    $producto->stock = null; // opcional: null o 0, según lo que necesites
+                }
+
+                $producto->unidad_alt = $producto->unidades->alt ?? null;
+
+                $producto->presentaciones->each(function ($p) {
+                    $p->unidad_alt = $p->unidades->alt ?? null;
+                });
+
+                return $producto;
+            });
+
+        return $productos;
+    }
     public static function buscar(array $filtros)
     {
         return Producto::query()
@@ -149,7 +206,7 @@ class ProductoServicio
             'monto_compra' => $data['monto_compra'],
             'monto_compra_sinigv' => $data['monto_compra_sinigv'],
             'unidad' => $data['unidad'],
-            'unidad_comercial'=>$data['unidad_comercial']??null,
+            'unidad_comercial' => $data['unidad_comercial'] ?? null,
             'tipo_afectacion_igv' => $data['tipo_afectacion_igv'],
             'categoria_id' => $data['categoria_id'] ?? null,
             'marca_id' => $data['marca_id'] ?? null,

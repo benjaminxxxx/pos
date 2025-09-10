@@ -1,25 +1,6 @@
 <script setup>
-import { ref, onMounted } from 'vue'
-import api from '@/lib/axios'
+defineProps({ sucursales: Array })
 
-const sucursales = ref([])
-const cargando = ref(true)
-
-const obtenerSucursales = async () => {
-    try {
-        const response = await api.get('/mis-sucursales')
-        sucursales.value = response.data
-    } catch (error) {
-        console.error('Error cargando sucursales:', error)
-    } finally {
-        cargando.value = false
-    }
-}
-
-
-onMounted(() => {
-    obtenerSucursales()
-})
 </script>
 
 
@@ -29,10 +10,10 @@ onMounted(() => {
         <div v-if="cargando">Cargando...</div>
         <div v-else class="grid gap-4">
             <button v-for="sucursal in sucursales" :key="sucursal.id"
-                class="bg-white border rounded p-4 shadow hover:bg-gray-50"
+                class="py-2.5 px-5 me-2 mb-2 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700"
                 @click="$emit('sucursalSeleccionada', {id:sucursal.id,nombre:sucursal.nombre})">
-                <div class="font-medium">{{ sucursal.nombre }}</div>
-                <div class="text-sm text-gray-500">{{ sucursal.direccion }}</div>
+                <div class="font-medium dark:text-white">{{ sucursal.nombre }}</div>
+                <div class="text-sm text-gray-500 dark:text-gray-300">{{ sucursal.direccion }}</div>
             </button>
         </div>
     </div>

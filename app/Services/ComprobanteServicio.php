@@ -62,13 +62,12 @@ class ComprobanteServicio
      * @return mixed
      * @throws Exception
      */
-    public function generar(int $ventaId)
+    public function generar(int $ventaId,$numeracion)
     {
         $venta = $this->obtenerVenta($ventaId);
         $opciones = $this->prepararOpcionesSunat($venta->negocio);
         $see = $this->obtenerServicioSunat($opciones);
         $tipoDoc = $venta->tipo_comprobante_codigo;
-        $numeracion = $this->obtenerNumeracion($venta->sucursal_id, $tipoDoc);
 
          $data = [
             'negocio' => $venta->negocio,
@@ -91,7 +90,7 @@ class ComprobanteServicio
         $negocio = $venta->negocio;
 
         $sunatComprobantePdf = A4VoucherGenerator::generarDocumento($invoice, $negocio);
-        $voucherPdf = VoucherServicio::generarDocumento($venta);
+        $voucherPdf = VoucherServicio::generarDocumento($venta, $numeracion['serie'], $numeracion['correlativo']);
 
         // Actualizar venta
         $venta->sunat_comprobante_pdf = $sunatComprobantePdf;
@@ -101,11 +100,6 @@ class ComprobanteServicio
         $venta->serie_comprobante = $numeracion['serie'];
         $venta->correlativo_comprobante = $numeracion['correlativo'];
         $venta->save();
-
-        // Actualizar correlativo
-        $correlativo = $numeracion['modelo'];
-        $correlativo->correlativo_actual = $numeracion['correlativo'];
-        $correlativo->save();
     }
     public function generarNota($notaId)
     {
@@ -281,7 +275,7 @@ class ComprobanteServicio
         return [
             'serie' => $correlativo->serie,
             'correlativo' => $correlativo->correlativo_actual + 1,
-            'modelo' => $correlativo,
+            'modelo' => $correlativo, //se manda el modelo para que la funcion que lo use, lo actualice despues de guardar
         ];
     }
     /*

@@ -27,10 +27,10 @@ class VentaController extends Controller
             ], 500);
         }
     }
-   public function listar($sucursal)
+   public function listar($negocio,$sucursal = null)
     {
         try {
-            $ventas = VentaServicio::listar($sucursal);
+            $ventas = VentaServicio::listar($negocio,$sucursal);
 
             return response()->json([
                 'success' => true,

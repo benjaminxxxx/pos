@@ -159,7 +159,7 @@ class GestionSucursales extends Component
 
         try {
             // Verificar si es la única sucursal del negocio
-            $countSucursales = Sucursal::where('negocio_id', $sucursal->negocio_id)->count();
+            /*$countSucursales = Sucursal::where('negocio_id', $sucursal->negocio_id)->count();
             if ($countSucursales <= 1) {
                 LivewireAlert::text('No se puede eliminar la única sucursal del negocio')
                     ->error()
@@ -177,7 +177,7 @@ class GestionSucursales extends Component
                     ->position('top-end')
                     ->show();
                 return;
-            }
+            }*/
             
             $sucursal->delete();
             

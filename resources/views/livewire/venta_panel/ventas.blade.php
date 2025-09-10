@@ -20,8 +20,6 @@
                         <x-table.th>Cliente</x-table.th>
                         <x-table.th>Fecha</x-table.th>
                         <x-table.th>Comprobante</x-table.th>
-                        <x-table.th>Monto</x-table.th>
-                        <x-table.th>IGV</x-table.th>
                         <x-table.th>Total</x-table.th>
                         <x-table.th>Documentos</x-table.th>
                         <x-table.th>Estado</x-table.th>
@@ -34,10 +32,6 @@
                                 <x-table.td>{{ $venta->nombre_cliente }}</x-table.td>
                                 <x-table.td class="text-center">{{ $venta->fecha_emision }}</x-table.td>
                                 <x-table.td class="text-center">{{ $venta->comprobante?->nombre }}</x-table.td>
-                                <x-table.td class="text-right">S/
-                                    {{ number_format($venta->valor_venta, 2) }}</x-table.td>
-                                <x-table.td class="text-right">S/
-                                    {{ number_format($venta->total_impuestos, 2) }}</x-table.td>
                                 <x-table.td class="text-right">S/
                                     {{ number_format($venta->monto_importe_venta, 2) }}</x-table.td>
                                 <x-table.td class="text-right">
@@ -75,14 +69,12 @@
                                 </x-table.td>
                                 <x-table.td class="text-center">
                                     <div>
-                                        Estado
                                         <span
                                             class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $venta->estado === 'pagado' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' }}">
                                             {{ ucfirst($venta->estado) }}
                                         </span>
                                     </div>
                                     <div>
-                                        Modo
                                         <span
                                             class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $venta->modo_venta !== 'desarrollo' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' }}">
                                             {{ ucfirst($venta->modo_venta) }}
@@ -91,35 +83,49 @@
                                 </x-table.td>
                                 <x-table.td class="text-center">
                                     <div class="flex justify-center gap-3">
-                                        <flux:button size="sm" icon="eye"
-                                            @click="openVentaId === '{{ $venta->id }}' ? openVentaId = null : openVentaId = '{{ $venta->id }}'">
-                                            Ver Detalles
-                                        </flux:button>
                                         <flux:dropdown>
-                                            <flux:button icon:trailing="chevron-down">Más opciones</flux:button>
-                                            <flux:menu>
-                                                <flux:menu.item icon="document-arrow-down"
-                                                    @click="$wire.dispatch('generarNota',{modo:'anulacion',uuid:'{{ $venta->uuid }}'})">
-                                                    Anular factura (nota de crédito)
-                                                </flux:menu.item>
-                                                <flux:menu.item icon="trash" variant="danger"
-                                                    wire:confirm="¿Eliminar venta?"
-                                                    wire:click="eliminarVenta('{{ $venta->uuid }}')">Eliminar
-                                                </flux:menu.item>
-                                            </flux:menu>
-                                        </flux:dropdown>
+    <flux:button icon:trailing="chevron-down">Opciones</flux:button>
+    <flux:menu>
+        <!-- Ver Detalles -->
+        <flux:menu.item 
+            icon="eye"
+            @click="openVentaId === '{{ $venta->id }}' ? openVentaId = null : openVentaId = '{{ $venta->id }}'">
+            Ver Detalles
+        </flux:menu.item>
+
+        <!-- Anular Factura -->
+        @if ($venta->tipo_comprobante_codigo === '01')
+            <flux:menu.item 
+                icon="document-arrow-down"
+                @click="$wire.dispatch('generarNota',{modo:'anulacion',uuid:'{{ $venta->uuid }}'})">
+                Anular factura (nota de crédito)
+            </flux:menu.item>
+        @endif
+
+        <!-- Eliminar -->
+        <flux:menu.item 
+            icon="trash" 
+            variant="danger"
+            wire:confirm="¿Eliminar venta?"
+            wire:click="eliminarVenta('{{ $venta->uuid }}')">
+            Eliminar
+        </flux:menu.item>
+    </flux:menu>
+</flux:dropdown>
+
                                     </div>
                                 </x-table.td>
                             </tr>
 
-                            <tr x-show="openVentaId === '{{ $venta->id }}'" x-cloak class="bg-gray-50">
+                            <tr x-show="openVentaId === '{{ $venta->id }}'" x-cloak
+                                class="bg-gray-50 dark:bg-gray-800">
                                 <td colspan="100%" class="p-2">
-                                    <flux:card class="mb-4">
+                                    <x-card class="mb-4 dark:bg-gray-900">
                                         <flux:heading>
                                             Detalle de venta
                                         </flux:heading>
                                         <table class="w-full text-sm">
-                                            <thead class="text-left bg-gray-100">
+                                            <thead class="text-left bg-gray-100 dark:bg-gray-700">
                                                 <tr>
                                                     <th class="px-2 py-1">Descripción</th>
                                                     <th class="px-2 py-1">Cantidad</th>
@@ -145,11 +151,11 @@
                                                 @endforeach
                                             </tbody>
                                         </table>
-                                    </flux:card>
+                                    </x-card>
 
 
                                     @if ($venta->notas && $venta->notas->count() > 0)
-                                        <flux:card>
+                                        <x-card>
                                             <flux:heading>
                                                 Se emitieron las siguientes notas
                                             </flux:heading>
@@ -202,7 +208,7 @@
                                                 </tbody>
                                             </table>
 
-                                        </flux:card>
+                                        </x-card>
                                     @endif
                                 </td>
                             </tr>

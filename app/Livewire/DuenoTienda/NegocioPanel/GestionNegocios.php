@@ -4,6 +4,7 @@ namespace App\Livewire\DuenoTienda\NegocioPanel;
 
 use App\Models\Negocio;
 use App\Models\InformacionAdicional;
+use App\Traits\LivewireAlerta;
 use Exception;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -12,11 +13,11 @@ use Illuminate\Support\Str;
 use Intervention\Image\Laravel\Facades\Image;
 use Livewire\Component;
 use Livewire\WithFileUploads;
-use Jantinnerezo\LivewireAlert\Facades\LivewireAlert;
 
 class GestionNegocios extends Component
 {
     use WithFileUploads;
+    use LivewireAlerta;
 
     public $negocios;
     public $negocio;
@@ -84,7 +85,7 @@ class GestionNegocios extends Component
 
     public function loadNegocios()
     {
-        $this->negocios = Auth::user()->negocios;
+        $this->negocios = Auth::user()->negocios()->where('eliminado', false)->get();
     }
 
     public function render()
@@ -109,11 +110,7 @@ class GestionNegocios extends Component
     {
         $negocio = Negocio::where('uuid', $uuid)->first();
         if (!$negocio) {
-            LivewireAlert::text('El negocio ya no existe')
-                ->error()
-                ->toast()
-                ->position('top-end')
-                ->show();
+            $this->alert('error', 'El negocio ya no existe');
             return;
         }
         $this->resetForm();
@@ -281,7 +278,7 @@ class GestionNegocios extends Component
             $negocio->client_secret = $this->client_secret;
             $negocio->modo = $this->modo;
 
-            
+
             if (!empty($this->logo_factura_a_eliminar) && $this->logo_factura_eliminada) {
 
                 Storage::disk('public')->delete($this->logo_factura_a_eliminar);
@@ -298,7 +295,7 @@ class GestionNegocios extends Component
                 $logoPath = $this->storeFile($this->logo_factura, 'logos');
                 $negocio->logo_factura = $logoPath;
             }
-            
+
             if ($this->certificado) {
                 // Guarda el nuevo archivo
                 $certificadoPath = $this->storeFile($this->certificado, 'certificados');
@@ -321,24 +318,13 @@ class GestionNegocios extends Component
             $this->guardarInformacionAdicional($negocio->id, $this->infoAdicionalPie, 'Pie');
 
             DB::commit();
-
-            LivewireAlert::text($this->isEditing ? 'Negocio actualizado correctamente' : 'Negocio creado correctamente')
-                ->success()
-                ->toast()
-                ->position('top-end')
-                ->show();
-
+            $this->alert('success', $this->isEditing ? 'Negocio actualizado correctamente' : 'Negocio creado correctamente');
             $this->resetForm();
             $this->loadNegocios();
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
-
-            LivewireAlert::text('Error al guardar el negocio: ' . $e->getMessage())
-                ->error()
-                ->toast()
-                ->position('top-end')
-                ->show();
+            $this->alert('error', 'Error al guardar el negocio: ' . $e->getMessage());
         }
     }
 
@@ -354,54 +340,54 @@ class GestionNegocios extends Component
         }
     }
 
-    public function delete(string $uuid)
+    public function eliminarNegocio(string $uuid)
     {
         $negocio = Negocio::where('uuid', $uuid)->first();
         if (!$negocio) {
-            LivewireAlert::text('El negocio ya no existe')
-                ->error()
-                ->toast()
-                ->position('top-end')
-                ->show();
+            $this->alert('error', 'El negocio ya no existe');
             return;
         }
+        $negocio->update(['eliminado' => true]);
+        $this->loadNegocios();
+        $this->alert('success', 'El negocio ha sido eliminado');
+        /*
+                try {
+                    DB::beginTransaction();
 
-        try {
-            DB::beginTransaction();
+                    // Eliminar información adicional
+                    InformacionAdicional::where('negocio_id', $negocio->id)->delete();
 
-            // Eliminar información adicional
-            InformacionAdicional::where('negocio_id', $negocio->id)->delete();
+                    // Eliminar archivos asociados
+                    if ($negocio->certificado) {
+                        Storage::delete($negocio->certificado);
+                    }
 
-            // Eliminar archivos asociados
-            if ($negocio->certificado) {
-                Storage::delete($negocio->certificado);
-            }
+                    if ($negocio->logo_factura) {
+                        Storage::delete($negocio->logo_factura);
+                    }
 
-            if ($negocio->logo_factura) {
-                Storage::delete($negocio->logo_factura);
-            }
+                    $negocio->delete();
 
-            $negocio->delete();
+                    DB::commit();
 
-            DB::commit();
+                    LivewireAlert::text('Negocio eliminado correctamente')
+                        ->success()
+                        ->toast()
+                        ->position('top-end')
+                        ->show();
 
-            LivewireAlert::text('Negocio eliminado correctamente')
-                ->success()
-                ->toast()
-                ->position('top-end')
-                ->show();
+                    $this->loadNegocios();
 
-            $this->loadNegocios();
+                } catch (\Exception $e) {
+                    DB::rollBack();
 
-        } catch (\Exception $e) {
-            DB::rollBack();
-
-            LivewireAlert::text('Error al eliminar el negocio: ' . $e->getMessage())
-                ->error()
-                ->toast()
-                ->position('top-end')
-                ->show();
-        }
+                    LivewireAlert::text('Error al eliminar el negocio: ' . $e->getMessage())
+                        ->error()
+                        ->toast()
+                        ->position('top-end')
+                        ->show();
+                }
+                        */
     }
 
     public function cancel()

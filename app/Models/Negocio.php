@@ -32,6 +32,14 @@ class Negocio extends Model
         'modo',
         'certificado',
         'logo_factura',
+        'eliminado',
+        'estado',
+    ];
+    protected $hidden = [
+        'usuario_sol',
+        'clave_sol',
+        'client_secret',
+        'certificado',
     ];
 
     protected static function boot()

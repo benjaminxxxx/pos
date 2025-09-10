@@ -14,15 +14,18 @@
           <!-- Nombre del producto -->
           <td class="p-2">
             <div class="font-semibold">{{ item.descripcion }}</div>
-            <div class="text-sm text-gray-500">S/. {{ parseFloat(item.monto_precio_unitario).toFixed(2) }}</div>
-            
+            <div class="text-sm text-gray-500 dark:text-gray-100">S/. {{
+              parseFloat(item.monto_precio_unitario).toFixed(2) }}</div>
+
           </td>
 
           <!-- Cantidad con botones -->
           <td class="p-2 text-center">
             <div class="flex justify-center items-center gap-2">
               <button @click="$emit('quitarCantidad', item)" class="bg-orange-500 text-white px-2 rounded">−</button>
-              <span>{{ item.cantidad }}</span>
+              <input type="number" v-model.number="item.cantidad"
+                class="w-12 text-center border rounded dark:border-gray-500" min="1"
+                @input="$emit('cambiarCantidad', item)" @focus="$event.target.select()"  />
               <button @click="$emit('agregarCantidad', item)" class="bg-orange-500 text-white px-2 rounded">+</button>
             </div>
           </td>
@@ -60,6 +63,7 @@ defineEmits([
   'quitarCarrito',
   'agregarCantidad',
   'quitarCantidad',
-  'editarPrecioUnitario'
+  'editarPrecioUnitario',
+  'cambiarCantidad'
 ]);
 </script>

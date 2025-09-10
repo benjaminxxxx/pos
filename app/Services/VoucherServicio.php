@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Storage;
 
 class VoucherServicio
 {
-    public static function generarDocumento($venta)
+    public static function generarDocumento($venta, $serie, $correlativo)
     {
         $textDocument = match ($venta->tipo_comprobante_codigo) {
             '01' => 'FACTURA ELECTRÓNICA',
@@ -21,12 +21,11 @@ class VoucherServicio
             '08' => 'NOTA DE DÉBITO',
             '20' => 'COMPROBANTE DE RETENCIÓN',
             '40' => 'RECIBO DE SERVICIOS PÚBLICOS',
+            'ticket' => 'NOTA DE VENTA', // No valido para comprobantes oficiales
             default => 'DOCUMENTO ELECTRÓNICO',
         };
 
         $ruc = $venta->negocio->ruc ?? '00000000000';
-        $serie = $venta->serie_comprobante;
-        $numero = $venta->correlativo_comprobante;
         $fechaEmision = \Carbon\Carbon::parse($venta->fecha_emision)->format('Y-m-d'); // Asegura el formato
 
         $tipoDocCliente = $venta->tipo_documento_cliente ?? '0'; // '6' = RUC, '1' = DNI, etc.
@@ -35,7 +34,7 @@ class VoucherServicio
         $igv = number_format((float) $venta->monto_igv, 2, '.', '');
         $total = number_format((float) $venta->monto_importe_venta, 2, '.', '');
 
-        $qrData = "{$ruc}|{$venta->tipo_comprobante_codigo}|{$serie}|{$numero}|{$igv}|{$total}|{$fechaEmision}|{$tipoDocCliente}|{$numDocCliente}";
+        $qrData = "{$ruc}|{$venta->tipo_comprobante_codigo}|{$serie}|{$correlativo}|{$igv}|{$total}|{$fechaEmision}|{$tipoDocCliente}|{$numDocCliente}";
 
         $renderer = new ImageRenderer(
             new RendererStyle(100, 0),
@@ -46,7 +45,7 @@ class VoucherServicio
         $qrSvg = $writer->writeString($qrData, 'UTF-8', ErrorCorrectionLevel::Q());
 
         $qrBase64 = 'data:image/svg+xml;base64,' . base64_encode($qrSvg);
-
+      
         $data = [
             'qrBase64' => $qrBase64, // Código QR generado
             // Datos de empresa (asumimos que existe relación `negocio`)
@@ -57,6 +56,7 @@ class VoucherServicio
 
             // Tipo de documento (boleta o factura según tipo_factura)
             'text_document' => $textDocument,
+            'tipo_comprobante_codigo' => $venta->tipo_comprobante_codigo,
 
             // Fechas
             'fecha_emision' => $venta->fecha_emision,
@@ -71,7 +71,7 @@ class VoucherServicio
             // Comprobante
             //'tipo_comprobante_codigo' => $venta->tipo_comprobante_codigo,
             'serie_comprobante' => $serie,
-            'correlativo_comprobante' => $numero,
+            'correlativo_comprobante' => str_pad($correlativo, 6, '0', STR_PAD_LEFT),
 
             // Montos operativos
             'monto_operaciones_gravadas' => (float) $venta->monto_operaciones_gravadas,
@@ -130,10 +130,12 @@ class VoucherServicio
         $pdf->setPaper([0, 0, $width, $height], 'portrait');
 
 
+        $folder = date('Y') . '/' . date('m'); // ejemplo: 2025/09
         $filename = 'voucher_' . time() . '.pdf';
+        $path = $folder . '/' . $filename;
 
-        Storage::disk('public')->put($filename, $pdf->output());
+        Storage::disk('public')->put($path, $pdf->output());
 
-        return $filename;
+        return $path;
     }
 }

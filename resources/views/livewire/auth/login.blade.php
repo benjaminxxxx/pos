@@ -97,7 +97,7 @@ usuario.',
             </div>
 
             <!-- Remember Me -->
-            <flux:checkbox wire:model="remember" :label="__('Remember me')" />
+            <flux:checkbox wire:model="remember" label="Recordar acceso" />
 
             <div class="flex items-center justify-end">
                 <flux:button variant="primary" type="submit" class="w-full">Iniciar</flux:button>

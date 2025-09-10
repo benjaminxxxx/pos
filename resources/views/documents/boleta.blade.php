@@ -53,7 +53,7 @@
             text-transform: uppercase;
             margin-top: 5px;
             margin-bottom: 5px;
-            font-size: 50px;
+            font-size: 20px;
             font-family: Arial, Helvetica, sans-serif
         }
 
@@ -157,141 +157,159 @@
                     <tr>
                         <td colspan="2"></td>
                         <td style="text-align:center">{{ $item['cantidad'] }}</td> {{-- Changed from 'quantity' to 'cantidad' --}}
-                        <td style="text-align:right; white-space: nowrap;">S/
-                            {{ number_format($item['monto_valor_unitario'], 2, '.', ',') }}</td> {{-- Changed from 'unit_price' to 'monto_precio_unitario' --}}
-                        <td style="text-align:right; white-space: nowrap;">S/
-                            {{ number_format($item['monto_valor_venta'], 2, '.', ',') }}</td> {{-- Changed from 'total' to 'monto_valor_venta' --}}
+
+
+                        @if ($tipo_comprobante_codigo === 'ticket')
+                            <td style="text-align:right; white-space: nowrap;">S/
+                                {{ number_format($item['monto_precio_unitario'], 2, '.', ',') }}</td>
+                            <td style="text-align:right; white-space: nowrap;">S/
+                                {{ number_format($item['monto_precio_unitario'] * $item['cantidad'], 2, '.', ',') }}</td>
+                        @else
+                            <td style="text-align:right; white-space: nowrap;">S/
+                                {{ number_format($item['monto_valor_unitario'], 2, '.', ',') }}</td>
+                            <td style="text-align:right; white-space: nowrap;">S/
+                                {{ number_format($item['monto_valor_venta'], 2, '.', ',') }}</td>
+                        @endif
                     </tr>
                 @endforeach
             </tbody>
             <tfoot>
-                @if ($monto_operaciones_gravadas > 0)
+                @if ($tipo_comprobante_codigo === 'ticket')
+                    {{-- Solo mostrar el total simple --}}
                     <tr>
-                        <td colspan="4" style="text-align:right">Op. Gravada:</td>
+                        <td colspan="4" style="text-align:right">Total:</td>
                         <td style="text-align:right; white-space: nowrap;">S/
-                            {{ number_format($monto_operaciones_gravadas, 2, '.', ',') }}</td>
-                    </tr>
-                @endif
-
-                @if ($monto_operaciones_exoneradas > 0)
-                    <tr>
-                        <td colspan="4" style="text-align:right">Op. Exonerada:</td>
-                        <td style="text-align:right; white-space: nowrap;">S/
-                            {{ number_format($monto_operaciones_exoneradas, 2, '.', ',') }}</td>
-                    </tr>
-                @endif
-
-                @if ($monto_operaciones_inafectas > 0)
-                    <tr>
-                        <td colspan="4" style="text-align:right">Op. Inafecta:</td>
-                        <td style="text-align:right; white-space: nowrap;">S/
-                            {{ number_format($monto_operaciones_inafectas, 2, '.', ',') }}</td>
-                    </tr>
-                @endif
-
-                @if ($monto_operaciones_exportacion > 0)
-                    <tr>
-                        <td colspan="4" style="text-align:right">Op. Exportación:</td>
-                        <td style="text-align:right; white-space: nowrap;">S/
-                            {{ number_format($monto_operaciones_exportacion, 2, '.', ',') }}</td>
-                    </tr>
-                @endif
-
-                @if ($monto_operaciones_gratuitas > 0)
-                    <tr>
-                        <td colspan="4" style="text-align:right">Op. Gratuitas:</td>
-                        <td style="text-align:right; white-space: nowrap;">S/
-                            {{ number_format($monto_operaciones_gratuitas, 2, '.', ',') }}</td>
-                    </tr>
-                @endif
-
-                @if ($monto_igv > 0)
-                    <tr>
-                        <td colspan="4" style="text-align:right">IGV:</td>
-                        <td style="text-align:right; white-space: nowrap;">S/
-                            {{ number_format($monto_igv, 2, '.', ',') }}</td>
-                    </tr>
-                @endif
-
-                @if ($monto_igv_gratuito > 0)
-                    <tr>
-                        <td colspan="4" style="text-align:right">IGV Gratuito:</td>
-                        <td style="text-align:right; white-space: nowrap;">S/
-                            {{ number_format($monto_igv_gratuito, 2, '.', ',') }}</td>
-                    </tr>
-                @endif
-
-                @if ($icbper > 0)
-                    <tr>
-                        <td colspan="4" style="text-align:right">ICBPER:</td>
-                        <td style="text-align:right; white-space: nowrap;">S/
-                            {{ number_format($icbper, 2, '.', ',') }}</td>
-                    </tr>
-                @endif
-
-                @if ($total_impuestos > 0)
-                    <tr>
-                        <td colspan="4" style="text-align:right">Total Impuestos:</td>
-                        <td style="text-align:right; white-space: nowrap;">S/
-                            {{ number_format($total_impuestos, 2, '.', ',') }}</td>
-                    </tr>
-                @endif
-
-                @if ($redondeo != 0)
-                    {{-- Display if there's any rounding, positive or negative --}}
-                    <tr>
-                        <td colspan="4" style="text-align:right">Redondeo:</td>
-                        <td style="text-align:right; white-space: nowrap;">S/
-                            {{ number_format($redondeo, 2, '.', ',') }}</td>
-                    </tr>
-                @endif
-
-                {{-- Total amount always displayed --}}
-                <tr>
-                    <td colspan="4" style="text-align:right">Total:</td>
-                    <td style="text-align:right; white-space: nowrap;">S/
-                        {{ number_format($monto_importe_venta, 2, '.', ',') }}</td> {{-- Changed from 'total_amount' to 'monto_importe_venta' --}}
-                </tr>
-
-                <tr>
-                    <td colspan="100%">
-                        <div class="line"></div>
-                    </td>
-                </tr>
-
-                {{-- Conditional display for payment types --}}
-                @if ($modo_venta === 'credito' && $estado === 'por_pagar')
-                    <tr>
-                        <td colspan="4" style="text-align:right">Por pagar:</td>
-                        <td style="text-align:right; white-space: nowrap;">S/
-                            {{ number_format($monto_importe_venta, 2, '.', ',') }}</td>
-                    </tr>
-                @elseif ($modo_venta === 'credito' && $estado === 'parcial')
-                    <tr>
-                        <td colspan="4" style="text-align:right">Primer Pago:</td>
-                        <td style="text-align:right; white-space: nowrap;">S/
-                            {{ number_format($monto_importe_venta - $sub_total, 2, '.', ',') }}</td>
-                        {{-- Assuming sub_total here represents the remaining amount to be paid --}}
-                    </tr>
-                    <tr>
-                        <td colspan="4" style="text-align:right">Saldo a cuenta:</td>
-                        <td style="text-align:right; white-space: nowrap;">S/
-                            {{ number_format($sub_total, 2, '.', ',') }}</td> {{-- Assuming sub_total here represents the remaining amount to be paid --}}
+                            {{ number_format($monto_importe_venta, 2, '.', ',') }}
+                        </td>
                     </tr>
                 @else
-                    {{-- Assuming 'contado' or any other fully paid mode --}}
-                    <tr>
-                        <td colspan="4" style="text-align:right">Efectivo Soles:</td>
-                        <td style="text-align:right; white-space: nowrap;">S/
-                            {{ number_format($monto_importe_venta, 2, '.', ',') }}</td>
-                    </tr>
-                    @if ($monto_importe_venta - $total_impuestos > 0)
-                        {{-- This logic for "vuelto" might need adjustment based on how it's calculated in your system --}}
+                    @if ($monto_operaciones_gravadas > 0)
                         <tr>
-                            <td colspan="4" style="text-align:right">Vuelto:</td>
+                            <td colspan="4" style="text-align:right">Op. Gravada:</td>
                             <td style="text-align:right; white-space: nowrap;">S/
-                                {{ number_format(0, 2, '.', ',') }}</td> {{-- You need to pass the actual 'vuelto' value from your controller --}}
+                                {{ number_format($monto_operaciones_gravadas, 2, '.', ',') }}</td>
                         </tr>
+                    @endif
+
+                    @if ($monto_operaciones_exoneradas > 0)
+                        <tr>
+                            <td colspan="4" style="text-align:right">Op. Exonerada:</td>
+                            <td style="text-align:right; white-space: nowrap;">S/
+                                {{ number_format($monto_operaciones_exoneradas, 2, '.', ',') }}</td>
+                        </tr>
+                    @endif
+
+                    @if ($monto_operaciones_inafectas > 0)
+                        <tr>
+                            <td colspan="4" style="text-align:right">Op. Inafecta:</td>
+                            <td style="text-align:right; white-space: nowrap;">S/
+                                {{ number_format($monto_operaciones_inafectas, 2, '.', ',') }}</td>
+                        </tr>
+                    @endif
+
+                    @if ($monto_operaciones_exportacion > 0)
+                        <tr>
+                            <td colspan="4" style="text-align:right">Op. Exportación:</td>
+                            <td style="text-align:right; white-space: nowrap;">S/
+                                {{ number_format($monto_operaciones_exportacion, 2, '.', ',') }}</td>
+                        </tr>
+                    @endif
+
+                    @if ($monto_operaciones_gratuitas > 0)
+                        <tr>
+                            <td colspan="4" style="text-align:right">Op. Gratuitas:</td>
+                            <td style="text-align:right; white-space: nowrap;">S/
+                                {{ number_format($monto_operaciones_gratuitas, 2, '.', ',') }}</td>
+                        </tr>
+                    @endif
+
+                    @if ($monto_igv > 0)
+                        <tr>
+                            <td colspan="4" style="text-align:right">IGV:</td>
+                            <td style="text-align:right; white-space: nowrap;">S/
+                                {{ number_format($monto_igv, 2, '.', ',') }}</td>
+                        </tr>
+                    @endif
+
+                    @if ($monto_igv_gratuito > 0)
+                        <tr>
+                            <td colspan="4" style="text-align:right">IGV Gratuito:</td>
+                            <td style="text-align:right; white-space: nowrap;">S/
+                                {{ number_format($monto_igv_gratuito, 2, '.', ',') }}</td>
+                        </tr>
+                    @endif
+
+                    @if ($icbper > 0)
+                        <tr>
+                            <td colspan="4" style="text-align:right">ICBPER:</td>
+                            <td style="text-align:right; white-space: nowrap;">S/
+                                {{ number_format($icbper, 2, '.', ',') }}</td>
+                        </tr>
+                    @endif
+
+                    @if ($total_impuestos > 0)
+                        <tr>
+                            <td colspan="4" style="text-align:right">Total Impuestos:</td>
+                            <td style="text-align:right; white-space: nowrap;">S/
+                                {{ number_format($total_impuestos, 2, '.', ',') }}</td>
+                        </tr>
+                    @endif
+
+                    @if ($redondeo != 0)
+                        {{-- Display if there's any rounding, positive or negative --}}
+                        <tr>
+                            <td colspan="4" style="text-align:right">Redondeo:</td>
+                            <td style="text-align:right; white-space: nowrap;">S/
+                                {{ number_format($redondeo, 2, '.', ',') }}</td>
+                        </tr>
+                    @endif
+                    {{-- Total amount always displayed --}}
+                    <tr>
+                        <td colspan="4" style="text-align:right">Total:</td>
+                        <td style="text-align:right; white-space: nowrap;">S/
+                            {{ number_format($monto_importe_venta, 2, '.', ',') }}</td> {{-- Changed from 'total_amount' to 'monto_importe_venta' --}}
+                    </tr>
+
+                    <tr>
+                        <td colspan="100%">
+                            <div class="line"></div>
+                        </td>
+                    </tr>
+
+                    {{-- Conditional display for payment types --}}
+                    @if ($modo_venta === 'credito' && $estado === 'por_pagar')
+                        <tr>
+                            <td colspan="4" style="text-align:right">Por pagar:</td>
+                            <td style="text-align:right; white-space: nowrap;">S/
+                                {{ number_format($monto_importe_venta, 2, '.', ',') }}</td>
+                        </tr>
+                    @elseif ($modo_venta === 'credito' && $estado === 'parcial')
+                        <tr>
+                            <td colspan="4" style="text-align:right">Primer Pago:</td>
+                            <td style="text-align:right; white-space: nowrap;">S/
+                                {{ number_format($monto_importe_venta - $sub_total, 2, '.', ',') }}</td>
+                            {{-- Assuming sub_total here represents the remaining amount to be paid --}}
+                        </tr>
+                        <tr>
+                            <td colspan="4" style="text-align:right">Saldo a cuenta:</td>
+                            <td style="text-align:right; white-space: nowrap;">S/
+                                {{ number_format($sub_total, 2, '.', ',') }}</td> {{-- Assuming sub_total here represents the remaining amount to be paid --}}
+                        </tr>
+                    @else
+                        {{-- Assuming 'contado' or any other fully paid mode --}}
+                        <tr>
+                            <td colspan="4" style="text-align:right">Efectivo Soles:</td>
+                            <td style="text-align:right; white-space: nowrap;">S/
+                                {{ number_format($monto_importe_venta, 2, '.', ',') }}</td>
+                        </tr>
+                        @if ($monto_importe_venta - $total_impuestos > 0)
+                            {{-- This logic for "vuelto" might need adjustment based on how it's calculated in your system --}}
+                            <tr>
+                                <td colspan="4" style="text-align:right">Vuelto:</td>
+                                <td style="text-align:right; white-space: nowrap;">S/
+                                    {{ number_format(0, 2, '.', ',') }}</td> {{-- You need to pass the actual 'vuelto' value from your controller --}}
+                            </tr>
+                        @endif
                     @endif
                 @endif
             </tfoot>
@@ -300,7 +318,7 @@
     </div>
 
     <div class="qr-code" style="text-align: center; margin-top: 30px; margin-bottom: 30px; display: block;">
-        
+
         <img style="width: 100px;" src="{{ $qrBase64 }}" alt="Código QR" />
 
     </div>

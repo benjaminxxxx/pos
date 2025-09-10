@@ -2,8 +2,8 @@
     <flux:button wire:click="addPresentacion" icon="plus" label="Agregar Presentación" />
 </div>
 
-<table class="w-full text-sm table-auto border border-gray-200">
-    <thead class="bg-gray-100">
+<table class="w-full text-sm table-auto border border-gray-200 dark:border-gray-700">
+    <thead class="bg-gray-100 dark:bg-gray-700">
         <tr>
             <th class="p-2">Código de Barras</th>
             <th class="p-2">Unidad</th>
@@ -15,7 +15,7 @@
     </thead>
     <tbody>
         @foreach ($presentaciones as $index => $presentacion)
-            <tr class="border-t">
+            <tr class="border-t dark:border-gray-700">
                 <td class="p-2">
                     <flux:input wire:model="presentaciones.{{ $index }}.codigo_barra" type="text"
                         label="" />

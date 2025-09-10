@@ -1,4 +1,4 @@
-<div class="min-h-screen bg-gray-50/50">
+<div>
     <x-loading wire:loading />
     <div class="flex flex-col space-y-6 p-6">
         @include('livewire.dueno_tienda.dashboard_panel.encabezado-tablero')

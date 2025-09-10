@@ -1,5 +1,5 @@
 <template>
-    <div class="bg-white rounded-2xl shadow-md overflow-hidden flex flex-col hover:shadow-lg transition cursor-pointer">
+    <div class="bg-white rounded-lg shadow-md overflow-hidden flex flex-col hover:shadow-lg transition cursor-pointer dark:bg-gray-700">
       <img
         :src="imagen"
         alt="Imagen del producto"
@@ -7,7 +7,7 @@
       />
   
       <div class="p-4 flex flex-col gap-1 grow">
-        <p class="font-semibold text-sm text-gray-700 leading-tight truncate-2-lines">
+        <p class="font-semibold text-sm text-gray-700 leading-tight truncate-2-lines dark:text-gray-200">
           {{ producto.descripcion }}
         </p>
   
@@ -16,7 +16,7 @@
           {{ producto.stock <= 0 ? 'Sin stock' : `${producto.stock} en stock` }}
         </p>
   
-        <p class="font-bold text-base text-gray-900">
+        <p class="font-bold text-base text-gray-900 dark:text-gray-100">
           S/. {{ formatearPrecio(producto.monto_venta) }}
         </p>
   
