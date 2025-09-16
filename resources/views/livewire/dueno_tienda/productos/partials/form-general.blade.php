@@ -28,14 +28,14 @@
       @endif
     </flux:select>
 
-    <flux:input wire:model="monto_venta" label="Precio Final de Venta (con IGV)" type="number" step="0.01" />
     <flux:input wire:model="monto_compra" label="Precio de Compra (con IGV)" type="number" step="0.01" />
+    <flux:input wire:model="monto_venta" label="Precio Final de Venta (con IGV)" type="number" step="0.01" />
+    <flux:input wire:model="precio_mayorista" label="Precio Mayorista (con IGV)" type="number" step="0.01" />
+    <flux:input wire:model="minimo_mayorista" label="Cantidad mínima para precio mayorista" type="number" step="1" />
   </div>
 
   <!-- Botón para expandir/contraer -->
-  <flux:button variant="filled" class="mt-4"
-    @click="expandido = !expandido" type="button"
-  >
+  <flux:button variant="filled" class="mt-4" @click="expandido = !expandido" type="button">
     <span x-show="!expandido">Mostrar más opciones</span>
     <span x-show="expandido">Mostrar menos opciones</span>
   </flux:button>
@@ -68,4 +68,3 @@
   </div>
 
 </div>
-

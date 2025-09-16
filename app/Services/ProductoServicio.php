@@ -205,6 +205,8 @@ class ProductoServicio
             'monto_venta_sinigv' => $data['monto_venta_sinigv'],
             'monto_compra' => $data['monto_compra'],
             'monto_compra_sinigv' => $data['monto_compra_sinigv'],
+            'precio_mayorista' => $data['precio_mayorista'] ?? null,
+            'minimo_mayorista' => $data['minimo_mayorista'] ?? null,
             'unidad' => $data['unidad'],
             'unidad_comercial' => $data['unidad_comercial'] ?? null,
             'tipo_afectacion_igv' => $data['tipo_afectacion_igv'],
@@ -227,6 +229,8 @@ class ProductoServicio
                     'descripcion' => $presentacion['descripcion'],
                     'factor' => $presentacion['factor'],
                     'precio' => $presentacion['precio'],
+                    'precio_mayorista' => $presentacion['precio_mayorista'] ?? null,
+                    'minimo_mayorista' => $presentacion['minimo_mayorista'] ?? null,
                     'activo' => true,
                 ]);
             }

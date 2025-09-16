@@ -34,7 +34,7 @@
                                 style="width: {{ $percentage }}%;"></div>
                         </div>
                         <div class="text-sm font-semibold text-gray-900 dark:text-blue-200 w-20 text-right">
-                            S/. {{ number_format($ventas_semanal['sales'], 0, ',', '.') }}
+                            S/. {{ number_format($ventas_semanal['sales'], 2, ',', '.') }}
                         </div>
                     </div>
                 </div>
@@ -47,7 +47,7 @@
             <div class="flex justify-between items-center">
                 <span class="text-sm font-medium text-blue-900 dark:text-blue-200">Total Semanal</span>
                 <span class="text-lg font-bold text-blue-900 dark:text-blue-200">
-                    S/. {{ number_format($ventas_semanales['total'] ?? 0, 0, ',', '.') }}
+                    S/. {{ number_format($ventas_semanales['total'] ?? 0, 2, ',', '.') }}
                 </span>
             </div>
         </div>

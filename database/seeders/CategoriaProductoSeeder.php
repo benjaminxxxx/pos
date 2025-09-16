@@ -128,6 +128,30 @@ class CategoriaProductoSeeder extends Seeder
                 'tipo_negocio' => 'polleria',
             ]);
         }
+
+        $ganaderia = CategoriaProducto::create([
+            'descripcion' => 'Ganadería',
+            'tipo_negocio' => 'ganaderia',
+        ]);
+
+        $subcategoriasGanaderia = [
+            'Alimentos y Suplementos',   // balanceados, sales minerales, forraje
+            'Medicamentos Veterinarios', // antibióticos, antiparasitarios, vitaminas
+            'Reproducción y Cría',       // semen, inseminación, equipos de reproducción
+            'Ordeño y Lechería',         // máquinas de ordeño, tanques fríos, utensilios
+            'Accesorios y Herramientas', // sogas, bozales, herramientas de campo
+            'Infraestructura y Corrales',// cercos, bebederos, comederos
+            'Equipos de Identificación', // aretes, marcas, chips
+            'Servicios Ganaderos',       // vacunación, asistencia técnica
+        ];
+
+        foreach ($subcategoriasGanaderia as $subcategoria) {
+            CategoriaProducto::create([
+                'descripcion' => $subcategoria,
+                'categoria_id' => $ganaderia->id,
+                'tipo_negocio' => 'ganaderia',
+            ]);
+        }
     }
 }
 

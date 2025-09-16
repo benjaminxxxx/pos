@@ -81,16 +81,17 @@
                                 <tbody>
                                     <tr v-if="ventas[ventaActiva].tipo_comprobante_codigo !== 'ticket'">
                                         <td>Sub total</td>
-                                        <td class="text-right">{{ ventas[ventaActiva].valor_venta }}</td>
+                                        <td class="text-right">{{ formatoSoles(ventas[ventaActiva].valor_venta) }}</td>
                                     </tr>
                                     <tr v-if="ventas[ventaActiva].tipo_comprobante_codigo !== 'ticket'">
                                         <td>IGV</td>
-                                        <td class="text-right">{{ ventas[ventaActiva].total_impuestos }}</td>
+                                        <td class="text-right">{{ formatoSoles(ventas[ventaActiva].total_impuestos) }}
+                                        </td>
                                     </tr>
                                     <tr>
                                         <th class="text-left">Total</th>
                                         <th class="text-right">
-                                            {{ ventas[ventaActiva].monto_importe_venta }}
+                                            {{ formatoSoles(ventas[ventaActiva].monto_importe_venta) }}
                                         </th>
                                     </tr>
                                 </tbody>
@@ -143,7 +144,7 @@
                 <div class="flex-1 flex flex-col bg-slate-100 dark:bg-gray-800">
                     <div class="bg-amber-500 dark:bg-blue-500  text-3xl text-center text-white">
                         <Spacing>
-                            Total: S/. <span class="subtotal">{{ ventaAPagar.monto_importe_venta }}</span>
+                            Total: <span class="subtotal">{{ formatoSoles(ventaAPagar.monto_importe_venta) }}</span>
                         </Spacing>
                     </div>
                     <div class="flex-1 overflow-y-auto flex flex-col justify-center">
@@ -156,8 +157,10 @@
                                         <span>{{ metodo.label }}</span>
                                     </div>
                                     <Flex>
-                                        <Input type="number" v-model="metodo.amount" class="max-w-[14rem]"
-                                            placeholder="Monto" />
+                                        S/.
+                                        <Input type="number" v-model="metodo.amount" class="max-w-[12rem] text-right"
+                                            placeholder="Monto" @focus="(e) => e.target.select()"
+                                            @blur="formatearMonto(index)" />
                                         <Button variant="danger" @click="eliminarPago(index)">
                                             <i class="fa fa-times"></i>
                                         </Button>
@@ -217,6 +220,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import api from '@/lib/axios'
+import { formatoSoles } from '@/utils/formato'
 import PanelProductos from '@/Components/PanelProductos.vue'
 import PanelCarrito from '@/Components/PanelCarrito.vue'
 import ButtonMethodPayment from '@/components/ui/ButtonMethodPayment.vue'
@@ -298,6 +302,41 @@ const cerrarModalPrecioUnitario = () => {
     mostrarModalPrecioUnitario.value = false;
     productoParaEditar.value = null;
 }
+const agregarPago = (metodoPago) => {
+    const total = ventaAPagar.value.monto_importe_venta;
+
+    // Sumar montos actuales
+    const sumaActual = metodosPagoAgregados.value.reduce(
+        (acc, m) => acc + (parseFloat(m.amount) || 0),
+        0
+    );
+
+    // Si ya hay un método con el total completo (sumaActual >= total)
+    if (sumaActual >= total) {
+        // Reemplazar todo por el nuevo método con el monto total
+        metodosPagoAgregados.value = [
+            {
+                ...metodosPago.value[metodoPago],
+                codigo: metodoPago,
+                amount: parseFloat(total).toFixed(2),
+            },
+        ];
+        return;
+    }
+
+    // Si aún falta por cubrir parte del total
+    const restante = total - sumaActual;
+
+    // Crear nuevo método con el monto faltante
+    const nuevoMetodo = {
+        ...metodosPago.value[metodoPago],
+        codigo: metodoPago,
+        amount: parseFloat(restante).toFixed(2),
+    };
+
+    metodosPagoAgregados.value.push(nuevoMetodo);
+};
+/*
 // Función para agregar un pago
 const agregarPago = (metodoPago) => {
     // Verificar si el método de pago ya ha sido agregado
@@ -317,11 +356,11 @@ const agregarPago = (metodoPago) => {
     }
 };
 
+*/
 // Función para eliminar un pago
 const eliminarPago = (index) => {
     metodosPagoAgregados.value.splice(index, 1); // Eliminar el método de pago seleccionado
 };
-
 // Computar el total de los pagos
 const totalPago = computed(() => {
     return metodosPagoAgregados.value.reduce((total, metodo) => total + parseFloat(metodo.amount || 0), 0).toFixed(2);
@@ -395,7 +434,12 @@ const agregarVenta = async () => {
     ventas.value.push(nuevaVenta)
     ventaActiva.value = ventas.value.length - 1 // Activar la última venta agregada
 }
-
+const formatearMonto = (index) => {
+    let valor = metodosPagoAgregados.value[index].amount
+    if (valor !== null && valor !== undefined && valor !== '') {
+        metodosPagoAgregados.value[index].amount = parseFloat(valor).toFixed(2)
+    }
+}
 const cerrarPanelPago = () => {
     ventaAPagar.value = null;
     procesarPago.value = false;

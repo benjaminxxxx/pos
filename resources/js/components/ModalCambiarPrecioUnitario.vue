@@ -9,12 +9,12 @@
                 <table>
                     <tbody>
                         <tr>
-                            <th class="text-left">Producto</th>
-                            <td>:{{ producto.descripcion }}</td>
+                            <th class="text-left">Producto </th>
+                            <td>: {{ producto.descripcion }}</td>
                         </tr>
                         <tr>
-                            <th class="text-left">Precio anterior</th>
-                            <td>:{{ producto.monto_precio_unitario }}</td>
+                            <th class="text-left">Precio anterior </th>
+                            <td>: {{ formatoSoles(producto.monto_precio_unitario) }}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -40,6 +40,7 @@
 import { ref } from 'vue'
 import Flex from '@/components/ui/Flex.vue'
 import Button from '@/components/ui/Button.vue'
+import { formatoSoles } from '@/utils/formato'
 
 // Recibe el producto seleccionado como un prop
 const props = defineProps({

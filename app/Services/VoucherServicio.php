@@ -2,13 +2,16 @@
 
 namespace App\Services;
 
+use App\Models\DisenioImpresion;
 use BaconQrCode\Common\ErrorCorrectionLevel;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
 use BaconQrCode\Writer;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Exception;
 use Illuminate\Support\Facades\Storage;
+use Luecano\NumeroALetras\NumeroALetras;
 
 class VoucherServicio
 {
@@ -45,9 +48,40 @@ class VoucherServicio
         $qrSvg = $writer->writeString($qrData, 'UTF-8', ErrorCorrectionLevel::Q());
 
         $qrBase64 = 'data:image/svg+xml;base64,' . base64_encode($qrSvg);
-      
+        $metodosPago = $venta->metodosPago; //venta_id, metodo, monto
+        $arrayMetodosPago = [
+            'cash' => 'Efectivo',
+            'card' => 'Tarjeta',
+            'yape' => 'Yape',
+            'plin' => 'Plin',
+        ];
+
+        $metodosEnVentaString = collect($metodosPago)
+            ->map(fn($m) => $arrayMetodosPago[$m->metodo] ?? null) // traduce
+            ->filter() // elimina nulos
+            ->implode(', '); // concatena
+
+        $informacion = [
+            'Cabecera' => [],
+            'Centro' => [],
+            'Pie' => [],
+        ];
+        foreach ($venta->negocio->informacionAdicional as $info) {
+            $informacion[$info->ubicacion][] = [
+                'clave' => $info->clave,
+                'valor' => $info->valor,
+            ];
+        }
+
+        $logoPath = $venta->negocio->logo_factura
+            ? Storage::disk('public')->path($venta->negocio->logo_factura)
+            : null;
+
         $data = [
             'qrBase64' => $qrBase64, // Código QR generado
+            'logoBase64' => $logoPath
+                ? 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath))
+                : null,
             // Datos de empresa (asumimos que existe relación `negocio`)
             'nombre_legal' => $venta->negocio->nombre_legal ?? 'Empresa',
             'nombre_comercial' => $venta->negocio->nombre_comercial ?? 'Nombre Comercial',
@@ -96,6 +130,10 @@ class VoucherServicio
             'estado' => $venta->estado,
             'modo_venta' => $venta->modo_venta,
 
+            'modalidad_pago' => $metodosEnVentaString,
+            'informacion' => $informacion,
+            'texto_total_letras' => self::montoEnLetras($venta->monto_importe_venta ?? 0),
+
             // Detalles
             'items' => $venta->detalles->map(function ($detalle) {
                 return [
@@ -123,10 +161,28 @@ class VoucherServicio
             })->toArray(),
         ];
 
-        $pdf = Pdf::loadView('documents.boleta', $data);
-
+        $disenioImpresion = DisenioImpresion::with('disenioDisponible')
+            ->where('negocio_id', $venta->negocio_id)
+            ->where('sucursal_id', $venta->sucursal_id)
+            ->whereHas('disenioDisponible', function ($query) use ($venta) {
+                $query->where('tipo_comprobante_codigo', $venta->tipo_comprobante_codigo);
+            })
+            ->first();
+        //throw new Exception($venta->negocio_id .' - ' .   $venta->sucursal_id .' - ' .  $venta->tipo_comprobante_codigo , 2);
+        $view = 'documents.boleta'; // Vista por defecto
         $width = 80 / 25.4 * 72; // Convertir 80 mm a puntos
         $height = 200 / 25.4 * 72; // Longitud de 300 mm convertida a puntos (ajústala según la necesidad)
+        if ($disenioImpresion && $disenioImpresion->disenioDisponible) {
+            $width = $disenioImpresion->disenioDisponible->width_mm / 25.4 * 72; // Convertir mm a puntos
+            $height = $disenioImpresion->disenioDisponible->height_mm / 25.4 * 72; // Convertir mm a puntos
+
+            $codigo = $disenioImpresion->disenioDisponible->codigo;
+            $view = "documents.{$venta->tipo_comprobante_codigo}.{$codigo}";
+        }
+
+        $pdf = Pdf::loadView($view, $data);
+
+
         $pdf->setPaper([0, 0, $width, $height], 'portrait');
 
 
@@ -137,5 +193,10 @@ class VoucherServicio
         Storage::disk('public')->put($path, $pdf->output());
 
         return $path;
+    }
+    protected static function montoEnLetras($monto)
+    {
+        $formatter = new NumeroALetras();
+        return $formatter->toInvoice($monto, 2, 'SOLES');
     }
 }

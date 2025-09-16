@@ -33,6 +33,20 @@
             'Se mejoró la estética del menú contraído para mayor usabilidad.',
             'Se agregó la función de vender con “ticket” (nota de venta) sin boleta ni factura, que genera un comprobante no oficial de SUNAT y no incluye detalle de IGV.',
         ],
+        '2025-09-16' => [
+            'Se agregó el nuevo tipo de negocio "Ganadería" para ampliar la cobertura del sistema.',
+            'Se corrigió el formato de los importes (subtotal, IGV y total) mostrando decimales y separador de miles, tanto en la vista como en los documentos generados.',
+            'En el TXT de resumen se agregó soporte para decimales en la cantidad y en el subtotal, mejorando la precisión de los registros electrónicos.',
+            'Se implementó un sistema de selección de diseño de comprobante, permitiendo definir diseños personalizados con diferentes opciones de ancho y alto según la impresora del cliente.',
+            'Ahora si se selecciona el diseño "default", el sistema elimina cualquier personalización previa y aplica el diseño estándar por defecto.',
+            'Se agregó lógica automática: si no existe un diseño guardado para un tipo de comprobante, el sistema selecciona automáticamente el diseño por defecto sin necesidad de clic.',
+            'Se añadió la relación entre `disenios_disponibles` y `disenios_impresion` para cargar dinámicamente el archivo Blade correcto según negocio, sucursal y tipo de comprobante.',
+            'Se agregó un sistema de precios por mayoreo configurable tanto en el producto base como en sus presentaciones.',
+            'Se actualizó el formato de precios a "S/. #,##0.00" en los módulos de venta, dashboard y resumen de pago, para mayor consistencia.',
+            'Se mejoró la lógica de selección de métodos de pago en el módulo de venta: si el nuevo método cubre el total, reemplaza el anterior; si no, se combina sumando el diferencial hasta completar el total.',
+            'Se reorganizó el renderizado de información adicional en comprobantes (cabecera, pie y centro), pasándola como arrays estructurados en lugar de HTML embebido, para mejorar la personalización en las plantillas.',
+            'En la generación de PDFs oficiales se estandarizó el uso de tablas en lugar de flexbox para asegurar compatibilidad total con dompdf y evitar problemas de diseño.',
+        ]
     ];
 
 

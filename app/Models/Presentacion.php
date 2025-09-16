@@ -18,6 +18,8 @@ class Presentacion extends Model
         'descripcion',
         'factor',
         'precio',
+        'precio_mayorista',
+        'minimo_mayorista',
         'activo'
     ];
 

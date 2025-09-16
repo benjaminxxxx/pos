@@ -40,6 +40,7 @@
 
 <script setup>
 import { computed } from "vue";
+import { formatoSoles } from '@/utils/formato'
 
 const props = defineProps({
   venta: Object

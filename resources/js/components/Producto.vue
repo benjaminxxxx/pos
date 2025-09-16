@@ -17,12 +17,12 @@
         </p>
   
         <p class="font-bold text-base text-gray-900 dark:text-gray-100">
-          S/. {{ formatearPrecio(producto.monto_venta) }}
+          {{ formatoSoles(producto.monto_venta) }}
         </p>
   
         <!-- Botón por unidad -->
         <Button @click.stop="$emit('seleccionar', { producto, presentacion: null })" variant="secondary">
-          {{producto.unidad_alt}} x1 a s/. {{ formatearPrecio(producto.monto_venta) }}
+          {{producto.unidad_alt}} x1 a {{ formatoSoles(producto.monto_venta) }}
         </Button>
   
         <!-- Botones por presentación -->
@@ -30,7 +30,7 @@
           <Button
             v-for="pres in producto.presentaciones"
             :key="pres.id" @click.stop="$emit('seleccionar', { producto, presentacion: pres })">
-            {{ pres.unidad_alt }} {{ pres.descripcion }} x{{ pres.factor }} a S/. {{ formatearPrecio(pres.precio) }}
+            {{ pres.unidad_alt }} {{ pres.descripcion }} x{{ pres.factor }} a {{ formatoSoles(pres.precio) }}
           </Button>
         </div>
       </div>
@@ -39,7 +39,7 @@
   
   <script setup>
   import Button from '@/components/ui/Button.vue'
-  
+  import { formatoSoles } from '@/utils/formato'
   const props = defineProps({
     data: Object
   })
@@ -52,9 +52,6 @@
     ? `/uploads/${producto.imagen_path}`
     : 'https://placehold.co/170x250?text=Producto'
   
-  function formatearPrecio(precio) {
-    return Number(precio || 0).toFixed(2)
-  }
   </script>
   
   <style scoped>

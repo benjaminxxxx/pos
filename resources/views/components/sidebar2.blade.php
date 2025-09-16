@@ -145,6 +145,18 @@
                     <x-nav-link-child href="{{ route('dueno_tienda.servicios') }}" :active="request()->routeIs('dueno_tienda.servicios')">
                         Servicios
                     </x-nav-link-child>
+<!--
+                    <x-nav-link-child href="{{ route('dueno_tienda.precios_preferenciales') }}" :active="request()->routeIs('dueno_tienda.precios_preferenciales')">
+                        Precios Preferenciales ✅
+                    </x-nav-link-child>-->
+                </x-nav-link-parent>
+
+                <x-nav-link-parent name="configuracion" logo="fa fa-cogs" text="Configuración" :active="request()->routeIs([
+                    'dueno_tienda.configuracion.disenio_impresion',
+                ])">
+                    <x-nav-link-child href="{{ route('dueno_tienda.configuracion.disenio_impresion') }}" :active="request()->routeIs('dueno_tienda.configuracion.disenio_impresion')">
+                        Diseños de Impresión
+                    </x-nav-link-child>
                 </x-nav-link-parent>
             @endrole
 

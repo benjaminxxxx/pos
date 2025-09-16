@@ -24,6 +24,8 @@ class Producto extends Model
         'monto_venta_sinigv',
         'monto_compra',
         'monto_compra_sinigv',
+        'precio_mayorista',
+        'minimo_mayorista',
 
         'unidad',
 

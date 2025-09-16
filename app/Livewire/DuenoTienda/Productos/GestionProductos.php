@@ -49,6 +49,8 @@ class GestionProductos extends Component
     public $monto_venta_sinigv;
     public $monto_compra; // antes precio_compra
     public $monto_compra_sinigv;
+    public $precio_mayorista;
+    public $minimo_mayorista;
 
     public $categoria_id;
     public $marca_id;
@@ -183,6 +185,8 @@ class GestionProductos extends Component
             'monto_venta_sinigv',
             'monto_compra',       // ← antes era precio_compra
             'monto_compra_sinigv',
+            'precio_mayorista',
+            'minimo_mayorista',
             'categoria_id',
             'marca_id',
             'negocio_id',
@@ -225,6 +229,8 @@ class GestionProductos extends Component
             $this->monto_venta_sinigv = $producto->monto_venta_sinigv;
             $this->monto_compra = $producto->monto_compra;
             $this->monto_compra_sinigv = $producto->monto_compra_sinigv;
+            $this->precio_mayorista = $producto->precio_mayorista;
+            $this->minimo_mayorista = $producto->minimo_mayorista;
             $this->unidad = $producto->unidad;
 
             $this->categoria_id = $producto->categoria_id;
@@ -291,6 +297,8 @@ class GestionProductos extends Component
                 'porcentaje_igv' => $this->porcentaje_igv,
                 'monto_venta' => $this->monto_venta,
                 'monto_compra' => $this->monto_compra,
+                'precio_mayorista' => $this->precio_mayorista,
+                'minimo_mayorista' => $this->minimo_mayorista,
                 'unidad' => $this->unidad,
                 'tipo_afectacion_igv' => $this->tipo_afectacion_igv,
                 'categoria_id' => $this->categoria_id,
@@ -339,6 +347,8 @@ class GestionProductos extends Component
             'descripcion' => '',
             'factor' => 1,
             'precio' => 0,
+            'precio_mayorista'=>null,
+            'minimo_mayorista'=>null,
             'activo' => true
         ];
     }

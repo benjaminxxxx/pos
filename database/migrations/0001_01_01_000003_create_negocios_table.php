@@ -33,7 +33,7 @@ return new class extends Migration {
             $table->enum('modo', ['desarrollo', 'produccion'])->default('desarrollo');
             $table->text('certificado')->nullable();
             $table->text('logo_factura')->nullable();
-            $table->enum('tipo_negocio', ['ferreteria', 'hotel', 'panaderia', 'libreria', 'polleria', 'restaurante'])
+            $table->enum('tipo_negocio', ['ferreteria', 'hotel', 'panaderia', 'libreria', 'polleria', 'restaurante','ganaderia'])
                 ->default('ferreteria');
             $table->timestamps();
         });

@@ -48,6 +48,14 @@ Route::middleware(['auth', 'role:dueno_tienda'])->prefix('mi-tienda')->group(fun
     Route::get('/productos',function () {
         return view('livewire.dueno_tienda.productos.index-productos');
     } )->name('dueno_tienda.productos');
+    Route::get('/precios_preferenciales',function () {
+        return view('livewire.dueno_tienda.precios_preferenciales.index-precios_preferenciales');
+    } )->name('dueno_tienda.precios_preferenciales');
+    Route::get('/configuracion/disenio_impresion',function () {
+        return view('livewire.dueno_tienda.configuracion.index-disenio_impresion');
+    } )->name('dueno_tienda.configuracion.disenio_impresion');
+    
+    
     Route::get('/servicios', App\Livewire\DuenoTienda\Servicios\GestionServicios::class)->name('dueno_tienda.servicios');
     //modificar esta ruta para que solo accedan los clientes del dueño de la tienda
     Route::get('/clientes', GestionClientes::class)->name('dueno_tienda.clientes');

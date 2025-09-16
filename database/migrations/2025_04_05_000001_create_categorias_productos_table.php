@@ -16,7 +16,7 @@ return new class extends Migration
             $table->uuid('uuid')->unique();
             $table->string('descripcion');
             $table->foreignId('categoria_id')->nullable()->constrained('categorias_productos')->onDelete('set null');
-            $table->enum('tipo_negocio', ['ferreteria', 'hotel', 'panaderia', 'libreria', 'polleria','restaurante'])->nullable();
+            $table->enum('tipo_negocio', ['ferreteria', 'hotel', 'panaderia', 'libreria', 'polleria','restaurante','ganaderia'])->nullable();
             $table->boolean('activo')->default(true);
             $table->timestamps();
         });

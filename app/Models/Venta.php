@@ -62,6 +62,10 @@ class Venta extends Model
         'negocio_id',
         'tipo_factura'
     ];
+    public function metodosPago(): HasMany
+    {
+        return $this->hasMany(VentaMetodoPago::class, 'venta_id');
+    }
     public function comprobante(): BelongsTo
     {
         return $this->belongsTo(TipoComprobante::class, 'tipo_comprobante_codigo');
