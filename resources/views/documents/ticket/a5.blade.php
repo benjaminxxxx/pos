@@ -7,7 +7,7 @@
     <title>Boleta de Venta Electrónica - A5</title>
     <style>
         @page {
-            margin: 15px;
+            margin: 20px;
             /* Establecer márgenes a cero */
         }
 
@@ -18,10 +18,7 @@
 
         body {
             font-family: 'Arial', sans-serif;
-            font-size: 9pt;
-            /* Reduced from 11pt for A5 format */
-            line-height: 1.2;
-            /* Reduced from 1.3 for better spacing */
+            font-size: 7pt;
             margin: 0;
             padding: 0;
             color: #000;
@@ -29,8 +26,6 @@
 
         .receipt-container {
             width: 100%;
-            max-width: 148mm;
-            /* A5 width minus margins */
             margin: 0 auto;
         }
 
@@ -38,56 +33,36 @@
         .header-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 12px;
-            /* Reduced from 15px */
-            border-bottom: 2px solid #000;
-            padding-bottom: 8px;
-            /* Reduced from 10px */
+            margin-bottom: 5px;
+            border-bottom: 1px solid #000;
+            padding-bottom: 4px;
         }
 
         .header-table td {
             vertical-align: top;
             padding-bottom: 8px;
         }
-
-        .company-info {
-            width: 70%;
-        }
-
         .company-logo {
             width: 100%;
-            /* Reduced from 80px */
-            height: 70px;
-            /* Reduced from 80px */
-            margin-bottom: 6px;
-            /* Reduced from 8px */
         }
 
         .company-name {
-            font-size: 11pt;
-            /* Reduced from 16pt */
+            font-size: 13pt;
             font-weight: bold;
             text-transform: uppercase;
-            margin-bottom: 2px;
-            /* Reduced from 3px */
         }
 
         .company-details {
             font-size: 8pt;
-            /* Reduced from 9pt */
-            line-height: 1.1;
-            /* Reduced from 1.2 */
         }
 
         .receipt-box {
-            border: 2px solid #000;
+            border: 1px solid #000;
             padding: 2px;
             /* Reduced from 8px */
             text-align: center;
-            width: 170px;
-            /* Reduced from 120px */
-            margin-bottom: 8px;
-            ;
+            width: 100%;
+
         }
 
         .ruc-number {
@@ -100,7 +75,6 @@
 
         .receipt-title {
             font-size: 9pt;
-            /* Reduced from 12pt */
             font-weight: bold;
             margin-bottom: 2px;
             /* Reduced from 3px */
@@ -108,7 +82,6 @@
 
         .receipt-number {
             font-size: 8pt;
-            /* Reduced from 11pt */
             font-weight: bold;
         }
 
@@ -135,16 +108,16 @@
         .items-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 12px;
+            margin-bottom: 5px;
             /* Reduced from 15px */
-            font-size: 8pt;
+            font-size: 7pt;
             /* Reduced from 10pt */
         }
 
         .items-table th {
             background-color: #000;
             color: white;
-            padding: 6px 3px;
+            padding: 6px 2px;
             /* Reduced from 8px 4px */
             text-align: center;
             font-weight: bold;
@@ -152,9 +125,8 @@
         }
 
         .items-table td {
-            padding: 4px 3px;
-            /* Reduced from 6px 4px */
-            border: 1px solid #000;
+            padding: 1px;
+            border: 1px solid #363636ff;
             vertical-align: top;
         }
 
@@ -277,6 +249,9 @@
             margin-bottom: 8px;
             /* Reduced from 10px */
         }
+        *{
+            box-sizing: border-box;
+        }
     </style>
 </head>
 
@@ -286,33 +261,36 @@
         <table style="width:100%">
             <!-- separamos en dos grandes grupos-->
             <tr>
-                <td style="width:66.6%;" vertical-align="top">
-                    <table>
+                <td style="vertical-align: top;">
+                    <table style="margin-bottom:8px;">
                         <tr>
-                            <td>
+                            <td style="vertical-align: top;">
                                 <div class="company-logo">
-                                    @if($logoBase64)
-                                        <img src="{{ $logoBase64 }}" alt="Logo" style="width: 80px; height: auto;">
+                                    @if ($logoBase64)
+                                        <img src="{{ $logoBase64 }}" alt="Logo" style="width: 100px; height: auto;">
                                     @endif
                                 </div>
                             </td>
-                            <td>
+                            <td style="vertical-align: top;">
                                 <div class="company-name">{{ $nombre_legal }}</div>
                                 <div class="company-details">
                                     <div class="bold">{{ $nombre_comercial }}</div>
-                                    <div>{{ $ruc }}</div>
-                                    <div>{{ $direccion }}</div>
-                                    @if(!empty($informacion['Cabecera']))
-                                        <div class="header-section">
-                                            @foreach($informacion['Cabecera'] as $item)
-                                                <div class="uppercase">{{ $item['clave'] }}: {{ $item['valor'] }}</div>
-                                            @endforeach
-                                        </div>
-                                    @endif
                                 </div>
                             </td>
                         </tr>
                     </table>
+                </td>
+                <td style="width:245px;vertical-align: top;">
+                    <div class="receipt-box">
+                        <div class="receipt-title">R.U.C. N° {{ $ruc }}</div>
+                        <div class="receipt-title">NOTA DE VENTA</div>
+                        <div class="receipt-number">{{ $serie_comprobante }}-{{ $correlativo_comprobante }}</div>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td style="vertical-align: top;">
+
                     <table>
                         <tr>
                             <td>
@@ -330,19 +308,51 @@
                                 {{ $nombre_cliente }}
                             </td>
                         </tr>
+                        <tr>
+                            <td>
+                                <strong>DIRECCIÓN:</strong>
+                            </td>
+                            <td>
+                                {{ $direccion }}
+                            </td>
+                        </tr>
+                        @if (!empty($informacion['Cabecera']))
+
+                            @foreach ($informacion['Cabecera'] as $item)
+                                <tr>
+                                    <td>
+                                        <strong>{{ mb_strtoupper($item['clave']) }}:</strong>
+                                    </td>
+                                    <td> {{ $item['valor'] }}</td>
+                                </tr>
+                            @endforeach
+
+                        @endif
                     </table>
                 </td>
-                <td style="width:33.4%;" vertical-align="top">
-                    <div class="receipt-box">
-                        <div class="receipt-title">NOTA DE VENTA</div>
-                        <div class="receipt-number">{{ $serie_comprobante }}-{{ $correlativo_comprobante }}</div>
-                    </div>
-                    <div><strong>FECHA EMISIÓN:</strong> {{ $fecha_emision }}</div>
-                    <div><strong>MONEDA:</strong> SOLES</div>
+                <td style="vertical-align: top;">
+                    <table>
+                        <tr>
+                            <td>
+                                <strong>FECHA EMISIÓN:</strong>
+                            </td>
+                            <td>
+                                {{ $fecha_emision }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <strong>MONEDA:</strong>
+                            </td>
+                            <td>
+                                SOLES
+                            </td>
+                        </tr>
+                    </table>
                 </td>
             </tr>
         </table>
-        
+
 
         <!-- Items Table -->
         <table class="items-table">
@@ -366,7 +376,8 @@
                         <td>{{ $item['descripcion'] }}</td>
                         <td class="text-center">{{ number_format($item['cantidad'], 2) }}</td>
                         <td class="text-right">{{ number_format($item['monto_precio_unitario'], 2) }}</td>
-                        <td class="text-right">{{ number_format($item['monto_precio_unitario'] * $item['cantidad'], 2) }}
+                        <td class="text-right">
+                            {{ number_format($item['monto_precio_unitario'] * $item['cantidad'], 2) }}
                         </td>
                     </tr>
                 @endforeach
@@ -391,17 +402,17 @@
             <tr>
                 <td class="payment-info">
                     <div><strong>CONDICIÓN DE PAGO:</strong> {{ $modalidad_pago }}</div>
-                    @if(!empty($informacion['Pie']))
+                    @if (!empty($informacion['Pie']))
                         <div class="footer-extra">
-                            @foreach($informacion['Pie'] as $item)
+                            @foreach ($informacion['Pie'] as $item)
                                 <div><strong>{{ mb_strtoupper($item['clave']) }}:</strong> {{ $item['valor'] }}</div>
                             @endforeach
                         </div>
                     @endif
                 </td>
-                <td class="qr-section" style="text-align:right;">
+                <!--<td class="qr-section" style="text-align:right;">
                     <img src="{{ $qrBase64 }}" alt="Código QR" style="width: 70px; height: 70px;">
-                </td>
+                </td>-->
             </tr>
         </table>
     </div>

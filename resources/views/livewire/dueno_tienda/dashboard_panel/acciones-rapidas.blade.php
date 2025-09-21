@@ -11,7 +11,7 @@
                     'icon' => 'fas fa-plus',
                     'label' => 'Nueva Venta',
                     'color' => 'bg-lime-600 hover:bg-lime-700',
-                    'route' => route('ventas'),
+                    'route' => route('vender'),
                 ],
                 [
                     'icon' => 'fas fa-box',

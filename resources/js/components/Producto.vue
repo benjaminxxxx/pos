@@ -30,7 +30,7 @@
           <Button
             v-for="pres in producto.presentaciones"
             :key="pres.id" @click.stop="$emit('seleccionar', { producto, presentacion: pres })">
-            {{ pres.unidad_alt }} {{ pres.descripcion }} x{{ pres.factor }} a {{ formatoSoles(pres.precio) }}
+            {{ pres.unidad_alt }} {{ pres.descripcion }} x{{ Math.round(pres.factor,0) }} a {{ formatoSoles(pres.precio) }}
           </Button>
         </div>
       </div>

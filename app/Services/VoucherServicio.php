@@ -172,18 +172,20 @@ class VoucherServicio
         $view = 'documents.boleta'; // Vista por defecto
         $width = 80 / 25.4 * 72; // Convertir 80 mm a puntos
         $height = 200 / 25.4 * 72; // Longitud de 300 mm convertida a puntos (ajústala según la necesidad)
+        $orientation = 'portrait';
         if ($disenioImpresion && $disenioImpresion->disenioDisponible) {
             $width = $disenioImpresion->disenioDisponible->width_mm / 25.4 * 72; // Convertir mm a puntos
             $height = $disenioImpresion->disenioDisponible->height_mm / 25.4 * 72; // Convertir mm a puntos
 
             $codigo = $disenioImpresion->disenioDisponible->codigo;
             $view = "documents.{$venta->tipo_comprobante_codigo}.{$codigo}";
+            $orientation = 'landscape';
         }
 
         $pdf = Pdf::loadView($view, $data);
 
 
-        $pdf->setPaper([0, 0, $width, $height], 'portrait');
+        $pdf->setPaper([0, 0, $width, $height],  $orientation);
 
 
         $folder = date('Y') . '/' . date('m'); // ejemplo: 2025/09
