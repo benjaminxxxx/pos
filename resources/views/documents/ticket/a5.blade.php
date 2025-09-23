@@ -140,10 +140,9 @@
 
         /* Totals Section */
         .totals-section {
-            margin-top: 15px;
+            margin:3px;
             /* Reduced from 20px */
             border-top: 1px solid #000;
-            padding-top: 8px;
             /* Reduced from 10px */
         }
 
@@ -387,20 +386,12 @@
         <!-- Totals Section -->
         <div class="totals-section">
             <div class="totals-text">{{ $texto_total_letras }}</div>
-
-            <table class="totals-table">
-                <tr style="border-top: 1px solid #000;">
-                    <td class="label">TOTAL</td>
-                    <td class="amount">S/</td>
-                    <td class="amount">{{ number_format($monto_importe_venta, 2) }}</td>
-                </tr>
-            </table>
         </div>
 
         <!-- Footer Section - converted from flex div to table -->
         <table class="footer-table">
             <tr>
-                <td class="payment-info">
+                <td class="payment-info" style="vertical-align: top;">
                     <div><strong>CONDICIÓN DE PAGO:</strong> {{ $modalidad_pago }}</div>
                     @if (!empty($informacion['Pie']))
                         <div class="footer-extra">
@@ -409,6 +400,11 @@
                             @endforeach
                         </div>
                     @endif
+                </td>
+                <td style="text-align:right; vertical-align: top;">
+                    <div  style="border-top: 1px solid #000;">
+                        TOTAL S/. {{ number_format($monto_importe_venta, 2) }}
+                    </div>
                 </td>
                 <!--<td class="qr-section" style="text-align:right;">
                     <img src="{{ $qrBase64 }}" alt="Código QR" style="width: 70px; height: 70px;">
