@@ -97,6 +97,20 @@ class User extends Authenticatable implements MustVerifyEmail
             'id'                              // Clave local en Negocio
         )->orderBy('negocio_id');
     }
+    public function cuenta()
+    {
+        return $this->hasOne(Cuenta::class, 'dueno_id');
+    }
+    public function proveedores()
+    {
+        // Si el usuario tiene rol dueno_tienda, devuelve los proveedores de su cuenta
+        if ($this->hasRole('dueno_tienda') && $this->cuenta) {
+            return $this->cuenta->proveedores();
+        }
+
+        // Por ahora, para otros roles, devolvemos vacío
+        return Proveedor::whereNull('id'); // colección vacía
+    }
     public function getNegocioSeleccionadoAttribute()
     {
         // Si solo hay un negocio, retornar directamente

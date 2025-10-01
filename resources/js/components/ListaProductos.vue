@@ -13,7 +13,7 @@
         <tr v-for="(item, index) in productos" :key="index" class="border-t">
           <!-- Nombre del producto -->
           <td class="p-2">
-            <div class="font-semibold">{{ item.descripcion }}</div>
+            <div class="font-semibold">{{ index + 1 }}) [{{ item.unidad }}] {{ item.descripcion }}</div>
             <div class="text-sm text-gray-500 dark:text-gray-100">{{ formatoSoles(item.monto_precio_unitario) }}</div>
           </td>
 
@@ -23,7 +23,7 @@
               <button @click="$emit('quitarCantidad', item)" class="bg-orange-500 text-white px-2 rounded">−</button>
               <input type="number" v-model.number="item.cantidad"
                 class="w-12 text-center border rounded dark:border-gray-500" min="1"
-                @input="$emit('cambiarCantidad', item)" @focus="$event.target.select()"  />
+                @input="$emit('cambiarCantidad', item)" @focus="$event.target.select()" />
               <button @click="$emit('agregarCantidad', item)" class="bg-orange-500 text-white px-2 rounded">+</button>
             </div>
           </td>
@@ -48,21 +48,46 @@
           </td>
         </tr>
       </tbody>
+      <tfoot>
+        <tr class="border-t font-bold">
+          <td class="p-2 text-right"></td>
+          <td colspan="4" class="p-2">
+            <div class="flex flex-col gap-1 text-right">
+              <div v-for="(total, unidad) in totalesPorUnidad" :key="unidad">
+                {{ total }} {{ unidad }}
+              </div>
+            </div>
+          </td>
+        </tr>
+      </tfoot>
+
     </table>
   </div>
 </template>
 
-
 <script setup>
+import { computed } from 'vue'
 import { formatoSoles } from '@/utils/formato'
-defineProps({
+
+const props = defineProps({
   productos: Array
-});
+})
+
 defineEmits([
   'quitarCarrito',
   'agregarCantidad',
   'quitarCantidad',
   'editarPrecioUnitario',
   'cambiarCantidad'
-]);
+])
+
+const totalesPorUnidad = computed(() => {
+  return props.productos.reduce((acumulador, item) => {
+    if (!acumulador[item.unidad]) {
+      acumulador[item.unidad] = 0
+    }
+    acumulador[item.unidad] += item.cantidad
+    return acumulador
+  }, {})
+})
 </script>

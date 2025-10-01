@@ -30,7 +30,10 @@ class DetalleVenta extends Model
         'es_gratuita',
         'es_icbper',
         'icbper',
-        'factor_icbper'
+        'factor_icbper',
+
+        //nuevos campos
+        'compra_monto', 'compra_igv', 'compra_monto_igv', 'utilidad_neta'
     ];
 
 

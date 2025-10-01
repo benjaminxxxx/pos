@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h3 class="text-lg font-medium text-center mb-4">Venta Procesada Exitosamente</h3>
+    <!--<h3 class="text-lg font-medium text-center mb-4">Venta Procesada Exitosamente</h3>-->
 
     <div class="grid grid-cols-2 gap-3">
       <button

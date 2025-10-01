@@ -7,6 +7,7 @@ use App\Http\Controllers\SuperadminController;
 use App\Http\Controllers\VentaController;
 use App\Livewire\Actualizaciones;
 use App\Livewire\DuenoTienda\ClientePanel\GestionClientes;
+use App\Livewire\DuenoTienda\ProveedorPanel\GestionProveedores;
 use App\Livewire\VentaPanel\GestionVentas;
 use App\Livewire\VentaPanel\Ventas;
 use App\Models\User;
@@ -33,7 +34,7 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::middleware(['auth', 'role:dueno_sistema'])->group(function () {
-    Route::get('/superadmin/clientes', [SuperadminController::class, 'clientes'])->name('superadmin.clientes');
+   // Route::get('/superadmin/clientes', [SuperadminController::class, 'clientes'])->name('superadmin.clientes');
     Route::get('/superadmin/categorias', App\Livewire\Superadmin\Categorias\GestionCategorias::class)->name('superadmin.categorias');
     Route::get('/superadmin/marcas', App\Livewire\Superadmin\Marcas\GestionMarcas::class)->name('superadmin.marcas');
     Route::get('/superadmin/unidades', App\Livewire\Superadmin\Unidades\GestionUnidades::class)->name('superadmin.unidades');
@@ -59,6 +60,9 @@ Route::middleware(['auth', 'role:dueno_tienda'])->prefix('mi-tienda')->group(fun
     Route::get('/servicios', App\Livewire\DuenoTienda\Servicios\GestionServicios::class)->name('dueno_tienda.servicios');
     //modificar esta ruta para que solo accedan los clientes del dueño de la tienda
     Route::get('/clientes', GestionClientes::class)->name('dueno_tienda.clientes');
+    Route::get('/proveedores', function () {
+        return view('livewire.dueno_tienda.proveedores_panel.index-proveedores');
+    })->name('dueno_tienda.proveedores');
 });
 
 Route::middleware(['auth'])->group(function () {

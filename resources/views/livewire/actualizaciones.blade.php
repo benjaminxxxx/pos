@@ -46,6 +46,13 @@
             'Se mejoró la lógica de selección de métodos de pago en el módulo de venta: si el nuevo método cubre el total, reemplaza el anterior; si no, se combina sumando el diferencial hasta completar el total.',
             'Se reorganizó el renderizado de información adicional en comprobantes (cabecera, pie y centro), pasándola como arrays estructurados en lugar de HTML embebido, para mejorar la personalización en las plantillas.',
             'En la generación de PDFs oficiales se estandarizó el uso de tablas en lugar de flexbox para asegurar compatibilidad total con dompdf y evitar problemas de diseño.',
+        ],
+        '2025-10-01' => [
+            'Ahora el sistema cuenta con un módulo completo de proveedores, donde se pueden registrar, editar, eliminar y consultar fácilmente.',
+            'En el carrito de ventas se agregó un indicador que muestra la cantidad total de productos que se han agregado, facilitando el control de la lista.',
+            'Se implementó un nuevo diseño de boleta en tamaño A5, especialmente pensado para impresoras matriciales, mejorando la compatibilidad de impresión.',
+            'Se corrigieron errores que aparecían en los reportes de voucher, asegurando que la información se muestre de manera correcta y confiable.',
+            'Se añadió un nuevo botón en el carrito de ventas que permite duplicar una venta completa con un solo clic, agilizando la atención de pedidos similares.',
         ]
     ];
 

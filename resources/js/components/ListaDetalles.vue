@@ -13,7 +13,8 @@
         <tr v-for="(item, index) in venta.detalles" :key="index" class="border-t">
           <!-- Descripción -->
           <td class="p-2">
-            <div class="font-semibold">[{{ item.unidad }}] {{ item.descripcion }} x{{ parseInt(item.cantidad) }}</div>
+            <div class="font-semibold">{{ index + 1 }}) [{{ item.unidad }}] {{ item.descripcion }} x{{
+              parseInt(item.cantidad) }}</div>
             <div class="text-sm text-gray-500">Categoría: {{ item.categoria_producto }}</div>
           </td>
 
@@ -33,6 +34,17 @@
           </td>
         </tr>
       </tbody>
+      <tfoot>
+        <tr class="border-t font-bold">
+          <td colspan="4" class="p-2">
+            <div class="flex flex-col gap-1 text-right">
+              <div v-for="(total, unidad) in totalesPorUnidad" :key="unidad">
+                {{ total }} {{ unidad }}
+              </div>
+            </div>
+          </td>
+        </tr>
+      </tfoot>
     </table>
 
   </div>
@@ -51,7 +63,7 @@ const esTicket = computed(() => props.venta.tipo_comprobante_codigo === "ticket"
 
 // Calcular valores según el tipo de venta
 function valorUnitario(item) {
-  return esTicket.value 
+  return esTicket.value
     ? item.monto_precio_unitario // sin impuestos
     : item.monto_valor_unitario; // con impuestos
 }
@@ -61,4 +73,14 @@ function subtotal(item) {
     ? item.monto_precio_unitario * parseInt(item.cantidad)
     : item.monto_valor_venta;
 }
+
+const totalesPorUnidad = computed(() => {
+  return props.venta.detalles.reduce((acumulador, item) => {
+    if (!acumulador[item.unidad]) {
+      acumulador[item.unidad] = 0
+    }
+    acumulador[item.unidad] += parseFloat(item.cantidad)
+    return acumulador
+  }, {})
+})
 </script>

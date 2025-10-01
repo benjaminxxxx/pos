@@ -97,6 +97,8 @@
                         Clientes
                     </x-nav-link-child>
 
+                    
+
                     <x-nav-link-child href="{{ route('superadmin.categorias') }}" :active="request()->routeIs('superadmin.categorias')">
                         Categorías
                     </x-nav-link-child>
@@ -118,6 +120,7 @@
                     'dueno_tienda.sucursales',
                     'dueno_tienda.clientes',
                     'dueno_tienda.correlativos',
+                    'dueno_tienda.proveedores'
                 ])">
                     <x-nav-link-child href="{{ route('dueno_tienda.negocios') }}" :active="request()->routeIs('dueno_tienda.negocios')">
                         Mis Negocios
@@ -129,6 +132,10 @@
 
                     <x-nav-link-child href="{{ route('dueno_tienda.clientes') }}" :active="request()->routeIs('dueno_tienda.clientes')">
                         Mis Clientes
+                    </x-nav-link-child>
+
+                    <x-nav-link-child href="{{ route('dueno_tienda.proveedores') }}" :active="request()->routeIs('dueno_tienda.proveedores')">
+                        Proveedores
                     </x-nav-link-child>
 
                     <x-nav-link-child href="{{ route('dueno_tienda.correlativos') }}" :active="request()->routeIs('dueno_tienda.correlativos')">

@@ -42,6 +42,7 @@
             vertical-align: top;
             padding-bottom: 8px;
         }
+
         .company-logo {
             width: 100%;
         }
@@ -123,12 +124,14 @@
             font-weight: bold;
             border: 1px solid #000;
         }
+
         .items-table tfoot th {
             background-color: #c2c2c2ff;
             text-align: center;
             font-weight: bold;
             border: 1px solid #5c5c5cff;
         }
+
         .items-table td {
             padding: 1px;
             border: 1px solid #363636ff;
@@ -145,7 +148,7 @@
 
         /* Totals Section */
         .totals-section {
-            margin:3px;
+            margin: 3px;
             /* Reduced from 20px */
             border-top: 1px solid #000;
             /* Reduced from 10px */
@@ -253,7 +256,8 @@
             margin-bottom: 8px;
             /* Reduced from 10px */
         }
-        *{
+
+        * {
             box-sizing: border-box;
         }
     </style>
@@ -373,12 +377,16 @@
             </thead>
             <tbody>
                 @php
-                    $cantidadTotal = 0;
+                    $unidades = [];
                 @endphp
                 @foreach ($items as $index => $item)
-                @php
-                    $cantidadTotal += $item['cantidad']; 
-                @endphp
+                    @php
+                        // sumar por unidad
+                        if (!isset($unidades[$item['unidad']])) {
+                            $unidades[$item['unidad']] = 0;
+                        }
+                        $unidades[$item['unidad']] += $item['cantidad'];
+                    @endphp
                     <tr>
                         <td class="text-center">{{ $index + 1 }}</td>
                         <td class="text-center">{{ number_format($item['cantidad'], 2) }}</td>
@@ -395,13 +403,17 @@
             <tfoot>
                 <tr>
                     <th></th>
-                    <th>
-                        {{ number_format($cantidadTotal,2) }}
+                    <th class="text-center">
+                        @if (count($unidades) === 1)
+                            {{-- Mostrar solo esa unidad --}}
+                            @php $unidad = array_key_first($unidades); @endphp
+                            {{ number_format($unidades[$unidad], 2) }} {{ $unidad }}
+                        @else
+                            {{-- Mostrar concatenado --}}
+                            {{ collect($unidades)->map(fn($cant, $uni) => number_format($cant, 2) . ' ' . $uni)->implode(', ') }}
+                        @endif
                     </th>
-                    <th></th>
-                    <th></th>
-                    <th></th>
-                    <th></th>
+                    <th colspan="4"></th>
                 </tr>
             </tfoot>
         </table>
@@ -425,7 +437,7 @@
                     @endif
                 </td>
                 <td style="text-align:right; vertical-align: top;">
-                    <div  style="border-top: 1px solid #000;">
+                    <div style="border-top: 1px solid #000;">
                         TOTAL S/. {{ number_format($monto_importe_venta, 2) }}
                     </div>
                 </td>

@@ -11,6 +11,7 @@ class VentaController extends Controller
     public function registrar(Request $request)
     {
         try {
+            
             $venta = VentaServicio::registrar($request->all());
 
             return response()->json([

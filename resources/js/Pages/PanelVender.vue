@@ -64,9 +64,14 @@
                     <Spacing v-if="ventas[ventaActiva]?.registrado" class="flex-shrink-0 !pt-1 !pb-1">
                         <OpcionesVenta :venta-activa="ventas[ventaActiva]" @nueva-venta="resetearVenta" />
 
-                        <Button @click="agregarVenta" class="w-full mt-5">
-                            <i class="fa fa-plus"></i> Nueva Venta
-                        </Button>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-4">
+                            <Button @click="agregarVenta" class="w-full">
+                                <i class="fa fa-plus"></i> Nueva Venta
+                            </Button>
+                            <Button @click="duplicarVenta" variant="secondary" class="w-full">
+                                <i class="fa fa-copy"></i> Duplicar Venta
+                            </Button>
+                        </div>
                     </Spacing>
 
                 </div>
@@ -336,27 +341,7 @@ const agregarPago = (metodoPago) => {
 
     metodosPagoAgregados.value.push(nuevoMetodo);
 };
-/*
-// Función para agregar un pago
-const agregarPago = (metodoPago) => {
-    // Verificar si el método de pago ya ha sido agregado
-    const metodoExistente = metodosPagoAgregados.value.some((pago) => pago.label === metodosPago.value[metodoPago].label);
 
-    // Si el método no ha sido agregado, lo agregamos
-    if (!metodoExistente) {
-        const metodoAgregado = { ...metodosPago.value[metodoPago] };
-        metodoAgregado.codigo = metodoPago;
-        // Si el método es 'Efectivo' y no se ha agregado previamente, asignamos el precio de venta
-        if (metodoPago === 'cash' && metodosPagoAgregados.value.length === 0) {
-            metodoAgregado.amount = ventaAPagar.value.monto_importe_venta;
-
-        }
-
-        metodosPagoAgregados.value.push(metodoAgregado);
-    }
-};
-
-*/
 // Función para eliminar un pago
 const eliminarPago = (index) => {
     metodosPagoAgregados.value.splice(index, 1); // Eliminar el método de pago seleccionado
@@ -371,7 +356,11 @@ const pagar = () => {
     ventaAPagar.value = ventas.value[ventaActiva.value];
     procesarPago.value = true;
     metodosPagoAgregados.value = [];
-    fechaEmision.value = new Date().toISOString().split('T')[0];
+    const hoy = new Date();
+    const year = hoy.getFullYear();
+    const month = String(hoy.getMonth() + 1).padStart(2, '0');
+    const day = String(hoy.getDate()).padStart(2, '0');
+    fechaEmision.value = `${year}-${month}-${day}`;
     agregarPago('cash');
 };
 
@@ -434,6 +423,56 @@ const agregarVenta = async () => {
     ventas.value.push(nuevaVenta)
     ventaActiva.value = ventas.value.length - 1 // Activar la última venta agregada
 }
+const duplicarVenta = () => {
+    if (ventas.value.length === 0) return;
+
+    const ventaOriginal = ventas.value[ventaActiva.value];
+    
+    // 1. Crear una venta vacía
+    const nuevaVenta = {
+        id: Date.now(),
+        precio: 0,
+        subtotal: 0,
+        igv: 0,
+        fecha: new Date().toLocaleDateString(),
+        productos: [],
+        registrado: false
+    };
+    
+    // 2. Agregar y activar la nueva venta
+    ventas.value.push(nuevaVenta);
+    ventaActiva.value = ventas.value.length - 1;
+    
+    // 3. Iterar sobre los detalles y agregar cada producto
+    ventaOriginal.detalles.forEach(detalle => {
+        // Reconstruir el objeto producto desde los datos guardados
+        const producto = {
+            id: detalle.producto_id,
+            descripcion: detalle.descripcion,
+            unidad: detalle.unidad,
+            monto_venta: detalle.monto_precio_unitario,
+            porcentaje_igv: detalle.porcentaje_igv,
+            tipo_afectacion_igv: detalle.tipo_afectacion_igv,
+            categoria: detalle.categoria_producto ? { descripcion: detalle.categoria_producto } : null
+        };
+        
+        // Reconstruir el objeto presentación si existe
+        const presentacion = detalle.presentacion_id ? {
+            id: detalle.presentacion_id,
+            factor: detalle.factor,
+            unidad: detalle.unidad,
+            descripcion: '', // No tenemos este dato guardado, pero no es crítico
+            precio: detalle.monto_precio_unitario
+        } : null;
+        
+        // Agregar el producto la cantidad de veces necesaria
+        const cantidad = parseInt(detalle.cantidad);
+        for (let i = 0; i < cantidad; i++) {
+            console.log(detalle);
+            agregarProducto({ producto, presentacion });
+        }
+    });
+};
 const formatearMonto = (index) => {
     let valor = metodosPagoAgregados.value[index].amount
     if (valor !== null && valor !== undefined && valor !== '') {
@@ -466,6 +505,7 @@ const navegarVenta = (direccion) => {
     }
 }
 const agregarProducto = ({ producto, presentacion }) => {
+    console.log(presentacion);
     // Si no hay ventas, agregamos una nueva
     if (ventas.value.length === 0) {
         agregarVenta()
@@ -500,16 +540,7 @@ const agregarProducto = ({ producto, presentacion }) => {
     if (productoExistente) {
         productoExistente.cantidad += 1
     } else {
-        /*
-        console.log(presentacion?.unidades.validado_sunat,producto.unidades.validado_sunat);
-         const unidad_nosunat = presentacion
-            ? presentacion.unidad
-            : producto.unidad;
-
-        // Decidir la unidad SUNAT para el XML
-        const unidad = presentacion
-            ? (presentacion.unidades?.validado_sunat === 0 ? 'NIU' : presentacion.unidad)
-            : (producto.unidades?.validado_sunat === 0 ? 'NIU' : producto.unidad);*/
+        
         const factor = presentacion?.factor ?? 1
         const unidad = presentacion ? presentacion.unidad : producto.unidad
         const descripcion = presentacion ? `${producto.descripcion}-${presentacion.descripcion}` : `${producto.descripcion}`
@@ -542,7 +573,7 @@ const agregarProducto = ({ producto, presentacion }) => {
             monto_valor_venta = monto_precio_unitario
             precio_sin_igv = monto_precio_unitario
         }
-
+      
         venta.productos.push({
             idUnico: idProducto,
             producto_id: producto.id,
