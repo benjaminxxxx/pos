@@ -184,6 +184,9 @@
                     <x-nav-link-child href="{{ route('dueno_tienda.configuracion.disenio_impresion') }}" :active="request()->routeIs('dueno_tienda.configuracion.disenio_impresion')">
                         Diseños de Impresión
                     </x-nav-link-child>
+                    <!--<x-nav-link-child href="#" :active="request()->routeIs('dueno_tienda.configuracion.disenio_impresion')">
+                        Ajustes de Impresión
+                    </x-nav-link-child>-->
                 </x-nav-link-parent>
             @endrole
 

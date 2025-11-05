@@ -53,7 +53,20 @@
             'Se implementó un nuevo diseño de boleta en tamaño A5, especialmente pensado para impresoras matriciales, mejorando la compatibilidad de impresión.',
             'Se corrigieron errores que aparecían en los reportes de voucher, asegurando que la información se muestre de manera correcta y confiable.',
             'Se añadió un nuevo botón en el carrito de ventas que permite duplicar una venta completa con un solo clic, agilizando la atención de pedidos similares.',
-        ]
+        ],
+        '2025-11-05' => [
+            'Se agregó la nueva opción "Duplicar Venta", que permite copiar una venta anterior de forma automática para ahorrar tiempo al registrar ventas similares.',
+            'Ahora también puedes duplicar ventas directamente desde el módulo de ventas, sin necesidad de ir al historial.',
+            'Se implementó el nuevo sistema de control de stock, que registra todas las entradas y salidas de productos de manera más precisa y confiable.',
+            'Se añadió el módulo de compras, que permite registrar las entradas de productos al inventario y mantener actualizado el costo de cada artículo.',
+            'Las ventas ahora se revalidan automáticamente para calcular correctamente el margen de ganancia en base a los costos reales de los productos.',
+            'Se mejoró el diseño del comprobante de venta (voucher) para que la impresión sea más rápida y clara.',
+            'Se aumentó el tamaño de letra en el detalle del comprobante para una mejor lectura por parte del cliente.',
+            'Se añadieron nuevos filtros en el historial de ventas: ahora puedes buscar por sucursal, nombre del cliente o rango de fechas (desde/hasta).',
+            'Se corrigió un error al generar la descripción del producto durante la venta, asegurando que se muestre correctamente en todos los casos.',
+            'Se aplicaron optimizaciones internas para mejorar la velocidad y estabilidad general del sistema de ventas e inventario.',
+        ],
+
     ];
 
 

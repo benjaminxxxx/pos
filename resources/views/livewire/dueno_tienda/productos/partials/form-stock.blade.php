@@ -8,6 +8,7 @@
                 <flux:input 
                     wire:model="stocks.{{ $sucursal->id }}.cantidad" 
                     label="Cantidad" 
+                    readonly 
                     type="number" 
                     step="0.01"
                 />
@@ -15,7 +16,7 @@
                 <flux:input 
                     wire:model="stocks.{{ $sucursal->id }}.stock_minimo" 
                     label="Stock Mínimo" 
-                    type="number" 
+                    type="number" readonly 
                     step="0.01"
                 />
             </div>

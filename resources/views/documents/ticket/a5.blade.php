@@ -111,13 +111,12 @@
             border-collapse: collapse;
             margin-bottom: 5px;
             /* Reduced from 15px */
-            font-size: 7pt;
+            font-size: 8pt;
             /* Reduced from 10pt */
         }
 
         .items-table thead th {
-            background-color: #000;
-            color: white;
+            color: #000;
             padding: 6px 2px;
             /* Reduced from 8px 4px */
             text-align: center;
@@ -126,10 +125,9 @@
         }
 
         .items-table tfoot th {
-            background-color: #c2c2c2ff;
             text-align: center;
             font-weight: bold;
-            border: 1px solid #5c5c5cff;
+            border: 1px solid #000;
         }
 
         .items-table td {
