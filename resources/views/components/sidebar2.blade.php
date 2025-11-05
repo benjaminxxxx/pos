@@ -143,14 +143,34 @@
                     </x-nav-link-child>
                 </x-nav-link-parent>
 
+                <x-nav-link-parent name="compras" logo="fa fa-cart-arrow-down" text="Compras" :active="request()->routeIs([
+                    'dueno_tienda.realizar_compras'
+                ])">
+                    <x-nav-link-child href="{{ route('dueno_tienda.realizar_compras') }}" :active="request()->routeIs('dueno_tienda.realizar_compras')">
+                        Registrar Compra
+                    </x-nav-link-child>
+                </x-nav-link-parent>
+
                 <!-- Inventario Group -->
-                <x-nav-link-parent name="productos" logo="fa fa-shopping-cart" text="Inventario" :active="request()->routeIs(['dueno_tienda.productos', 'dueno_tienda.servicios'])">
+                <x-nav-link-parent name="productos" logo="fa fa-shopping-cart" text="Inventario" :active="request()->routeIs([
+                    'dueno_tienda.productos', 
+                    'dueno_tienda.servicios',
+                    'dueno_tienda.entrada_productos',
+                    'dueno_tienda.salida_productos'])">
                     <x-nav-link-child href="{{ route('dueno_tienda.productos') }}" :active="request()->routeIs('dueno_tienda.productos')">
                         Productos
                     </x-nav-link-child>
 
                     <x-nav-link-child href="{{ route('dueno_tienda.servicios') }}" :active="request()->routeIs('dueno_tienda.servicios')">
                         Servicios
+                    </x-nav-link-child>
+
+                    <x-nav-link-child href="{{ route('dueno_tienda.entrada_productos') }}" :active="request()->routeIs('dueno_tienda.entrada_productos')">
+                        Entrada Productos
+                    </x-nav-link-child>
+
+                    <x-nav-link-child href="{{ route('dueno_tienda.salida_productos') }}" :active="request()->routeIs('dueno_tienda.salida_productos')">
+                        Salida Productos
                     </x-nav-link-child>
 <!--
                     <x-nav-link-child href="{{ route('dueno_tienda.precios_preferenciales') }}" :active="request()->routeIs('dueno_tienda.precios_preferenciales')">
@@ -179,25 +199,7 @@
 
 
         </nav>
-        <!-- BOTÓN DE MODO CLARO/OSCURO -->
-        <div class="border-t border-gray-200 dark:border-gray-700 p-4">
-            <button @click="darkMode = !darkMode"
-                class="w-full flex items-center p-2 rounded-lg 
-               text-gray-700 hover:bg-gray-100 
-               dark:text-white dark:hover:bg-gray-700 transition-colors"
-                :class="isExpanded ? 'justify-start' : 'justify-center'">
-
-                <i :class="darkMode ? 'fa fa-moon' : 'fa fa-sun'" class="h-5 w-5"></i>
-
-                <template x-if="isExpanded">
-                    <span class="ml-3" x-text="darkMode ? 'Modo Oscuro' : 'Modo Claro'"></span>
-                </template>
-            </button>
-        </div>
-
-
-
-
+       
         <!-- MENÚ DE USUARIO AL FINAL -->
         <div class="border-t border-gray-200 dark:border-gray-700 p-4">
             <div class="relative">

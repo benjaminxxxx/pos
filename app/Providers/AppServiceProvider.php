@@ -37,19 +37,17 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(Authenticated::class, function ($event) {
             $user = $event->user;
 
-            // Solo para dueños de tienda
             if ($user->hasRole('dueno_tienda')) {
 
-                // Revisar si tiene alguna cuenta vinculada
-                if (!$user->cuenta()->exists()) {
+                // Buscar o crear la cuenta del dueño
+                $cuenta = $user->cuenta()->first();
 
-                    // Generar nombre de cuenta secuencial
+                if (!$cuenta) {
                     $ultimaCuenta = Cuenta::latest('id')->first();
                     $indice = $ultimaCuenta ? $ultimaCuenta->id + 1 : 1;
                     $nombreCuenta = 'CUENTA' . str_pad($indice, 4, '0', STR_PAD_LEFT);
 
-                    // Crear cuenta por defecto
-                    Cuenta::create([
+                    $cuenta = Cuenta::create([
                         'dueno_id' => $user->id,
                         'nombre' => $nombreCuenta,
                         'plan' => 'GRATUITO',
@@ -62,6 +60,11 @@ class AppServiceProvider extends ServiceProvider
                         'estado' => 'ACTIVO',
                     ]);
                 }
+
+                // Vincular la cuenta a todos los negocios del usuario que no tengan cuenta
+                $user->negocios()
+                    ->whereNull('cuenta_id')
+                    ->update(['cuenta_id' => $cuenta->id]);
             }
         });
     }

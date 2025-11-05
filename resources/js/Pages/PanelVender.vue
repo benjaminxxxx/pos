@@ -68,9 +68,10 @@
                             <Button @click="agregarVenta" class="w-full">
                                 <i class="fa fa-plus"></i> Nueva Venta
                             </Button>
-                            <Button @click="duplicarVenta" variant="secondary" class="w-full">
+                            <Button :href="`/ventas/duplicar/${ventas[ventaActiva]?.uuid}`" variant="secondary" class="w-full">
                                 <i class="fa fa-copy"></i> Duplicar Venta
                             </Button>
+
                         </div>
                     </Spacing>
 
@@ -223,7 +224,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import api from '@/lib/axios'
 import { formatoSoles } from '@/utils/formato'
 import PanelProductos from '@/Components/PanelProductos.vue'
@@ -283,7 +284,7 @@ const cargarSeleccion = () => {
 
     negocioSeleccionado.value = negocioRaw ? JSON.parse(negocioRaw) : null
     sucursalSeleccionada.value = sucursalRaw ? JSON.parse(sucursalRaw) : null
-    console.log(sucursalSeleccionada.value);
+
     if (negocioSeleccionado.value) {
         if (sucursalSeleccionada.value) {
             sucursalSeleccionadaNombre.value = `${negocioSeleccionado.value.nombre_legal} - ${sucursalSeleccionada.value.nombre}`
@@ -377,9 +378,6 @@ const agregarVenta = async () => {
         const negocio = JSON.parse(negocioSeleccionadoRaw);
         const sucursal = sucursalSeleccionadaRaw ? JSON.parse(sucursalSeleccionadaRaw) : null;
 
-        console.log('Negocio ID:', negocio.id);
-        console.log('Sucursal ID:', sucursal?.id ?? 'null');
-
         // Construir la URL dinámicamente
         let url = `/venta/listar/${negocio.id}`;
         if (sucursal && sucursal.id) {
@@ -406,28 +404,54 @@ const agregarVenta = async () => {
                 title: 'Error al listar las ventas',
                 text: msg
             });
-        } finally {
-
         }
-
-
     }
+    crearVentaVacia()
+
+    const ventaDuplicada = localStorage.getItem('ventaDuplicada')
+
+    if (ventaDuplicada) {
+
+        try {
+            const venta = JSON.parse(ventaDuplicada)
+
+            // Aquí cargas la venta duplicada en el carrito
+
+            cargarVentaDuplicada(venta)
+
+            // Limpias para que no se repita si recarga la página
+            localStorage.removeItem('ventaDuplicada')
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Venta duplicada cargada',
+                text: 'Los productos de la venta se han cargado en el carrito.',
+                timer: 2000,
+                showConfirmButton: false
+            })
+        } catch (e) {
+            console.error('Error al parsear ventaDuplicada:', e)
+        }
+    }
+}
+const crearVentaVacia = () => {
     const nuevaVenta = {
         id: Date.now(),
         precio: 0,
         subtotal: 0,
         igv: 0,
         fecha: new Date().toLocaleDateString(),
-        productos: []
+        productos: [],
+        registrado: false
     }
     ventas.value.push(nuevaVenta)
-    ventaActiva.value = ventas.value.length - 1 // Activar la última venta agregada
+    ventaActiva.value = ventas.value.length - 1
 }
 const duplicarVenta = () => {
     if (ventas.value.length === 0) return;
 
     const ventaOriginal = ventas.value[ventaActiva.value];
-    
+
     // 1. Crear una venta vacía
     const nuevaVenta = {
         id: Date.now(),
@@ -438,11 +462,11 @@ const duplicarVenta = () => {
         productos: [],
         registrado: false
     };
-    
+
     // 2. Agregar y activar la nueva venta
     ventas.value.push(nuevaVenta);
     ventaActiva.value = ventas.value.length - 1;
-    
+
     // 3. Iterar sobre los detalles y agregar cada producto
     ventaOriginal.detalles.forEach(detalle => {
         // Reconstruir el objeto producto desde los datos guardados
@@ -455,7 +479,7 @@ const duplicarVenta = () => {
             tipo_afectacion_igv: detalle.tipo_afectacion_igv,
             categoria: detalle.categoria_producto ? { descripcion: detalle.categoria_producto } : null
         };
-        
+
         // Reconstruir el objeto presentación si existe
         const presentacion = detalle.presentacion_id ? {
             id: detalle.presentacion_id,
@@ -464,11 +488,10 @@ const duplicarVenta = () => {
             descripcion: '', // No tenemos este dato guardado, pero no es crítico
             precio: detalle.monto_precio_unitario
         } : null;
-        
+
         // Agregar el producto la cantidad de veces necesaria
         const cantidad = parseInt(detalle.cantidad);
         for (let i = 0; i < cantidad; i++) {
-            console.log(detalle);
             agregarProducto({ producto, presentacion });
         }
     });
@@ -505,8 +528,7 @@ const navegarVenta = (direccion) => {
     }
 }
 const agregarProducto = ({ producto, presentacion }) => {
-    console.log(presentacion);
-    // Si no hay ventas, agregamos una nueva
+
     if (ventas.value.length === 0) {
         agregarVenta()
     }
@@ -540,10 +562,12 @@ const agregarProducto = ({ producto, presentacion }) => {
     if (productoExistente) {
         productoExistente.cantidad += 1
     } else {
-        
+
         const factor = presentacion?.factor ?? 1
         const unidad = presentacion ? presentacion.unidad : producto.unidad
-        const descripcion = presentacion ? `${producto.descripcion}-${presentacion.descripcion}` : `${producto.descripcion}`
+        const descripcion = presentacion
+            ? `${producto.descripcion}-x${Number(presentacion.factor || 0).toFixed(0)}`
+            : `${producto.descripcion}`;
         // Precio base con o sin presentación
         const monto_precio_unitario = presentacion ? presentacion.precio : producto.monto_venta
         const porcentaje_igv = parseFloat(producto.porcentaje_igv)
@@ -573,7 +597,7 @@ const agregarProducto = ({ producto, presentacion }) => {
             monto_valor_venta = monto_precio_unitario
             precio_sin_igv = monto_precio_unitario
         }
-      
+
         venta.productos.push({
             idUnico: idProducto,
             producto_id: producto.id,
@@ -581,7 +605,7 @@ const agregarProducto = ({ producto, presentacion }) => {
             unidad,
             factor,
             categoria_producto: producto.categoria?.descripcion ?? null,
-            cantidad: 1,
+            cantidad: producto.cantidad ?? 1,
 
             monto_valor_unitario,
             monto_valor_gratuito: 0, // puedes agregar lógica si es necesario
@@ -847,10 +871,17 @@ const procesarVenta = async () => {
         cerrarPanelPago();
     }
 };
+const cargarVentaDuplicada = (venta) => {
 
+    venta.detalles.map(detalle => {
+        const producto = detalle.producto;
+        const presentacion = detalle.presentacion;
+        agregarProducto({ producto, presentacion });
+    });
+
+}
 agregarVenta();
 cargarSeleccion();
-
 
 
 </script>

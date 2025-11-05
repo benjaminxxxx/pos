@@ -21,7 +21,7 @@
                         <tbody>
                             <tr v-for="(producto, index) in venta.productos" :key="producto.idUnico"
                                 class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
-                                <td class="px-6 py-4">{{ index+1 }}</td>
+                                <td class="px-6 py-4">{{ index + 1 }}</td>
                                 <td class="px-6 py-4">[{{ producto.unidad }}] {{ producto.descripcion }}</td>
                                 <td class="px-6 py-4">{{ producto.cantidad }}</td>
                                 <td class="px-6 py-4">S/ {{ parseFloat(producto.monto_venta_sinigv).toFixed(2) }}</td>
@@ -58,7 +58,7 @@ import Spacing from '@/components/ui/Spacing.vue'
 const props = defineProps({
     venta: {
         type: Object,
-        required: true,
+        default: () => ({})
     }
 })
 

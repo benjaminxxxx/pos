@@ -75,7 +75,12 @@ const cambiarSucursal = () => {
 }
 
 onMounted(() => {
+
   obtenerNegocios()
+  if (window.ventaDuplicada) {
+    // Guardar venta duplicada temporalmente
+    localStorage.setItem('ventaDuplicada', JSON.stringify(window.ventaDuplicada))
+  }
 })
 </script>
 
@@ -87,42 +92,27 @@ onMounted(() => {
     <div v-if="error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
       <p class="font-semibold">{{ error }}</p>
       <div class="mt-3 flex gap-3">
-        <button
-          @click="cambiarNegocio"
-          class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium px-3 py-1 rounded"
-        >
+        <button @click="cambiarNegocio"
+          class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium px-3 py-1 rounded">
           Cambiar negocio
         </button>
-        <a
-          href="/mi-tienda/sucursales"
-          class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-3 py-1 rounded"
-        >
+        <a href="/mi-tienda/sucursales" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-3 py-1 rounded">
           Crear sucursal
         </a>
       </div>
     </div>
 
     <!-- Paso 1: seleccionar negocio -->
-    <SeleccionarNegocio
-      v-else-if="!negocioSeleccionado"
-      :negocios="negocios"
-      @negocioSeleccionado="seleccionarNegocio"
-    />
+    <SeleccionarNegocio v-else-if="!negocioSeleccionado" :negocios="negocios"
+      @negocioSeleccionado="seleccionarNegocio" />
 
     <!-- Paso 2: seleccionar sucursal (si hay varias) -->
     <SeleccionarSucursal
       v-else-if="negocioSeleccionado && negocioSeleccionado.sucursales?.length > 1 && !sucursalSeleccionada"
-      :sucursales="negocioSeleccionado.sucursales"
-      @sucursalSeleccionada="seleccionarSucursal"
-    />
+      :sucursales="negocioSeleccionado.sucursales" @sucursalSeleccionada="seleccionarSucursal" />
 
     <!-- Paso 3: mostrar panel de ventas -->
-    <PanelVender
-      v-else-if="negocioSeleccionado && sucursalSeleccionada"
-      :negocio="negocioSeleccionado"
-      :sucursal="sucursalSeleccionada"
-      @cambiarNegocio="cambiarNegocio"
-      @cambiarSucursal="cambiarSucursal"
-    />
+    <PanelVender v-else-if="negocioSeleccionado && sucursalSeleccionada" :negocio="negocioSeleccionado"
+      :sucursal="sucursalSeleccionada" @cambiarNegocio="cambiarNegocio" @cambiarSucursal="cambiarSucursal" />
   </div>
 </template>

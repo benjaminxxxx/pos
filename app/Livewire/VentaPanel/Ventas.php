@@ -2,7 +2,10 @@
 
 namespace App\Livewire\VentaPanel;
 
+use App\Models\Venta;
 use App\Services\Ventas\InformacionVenta;
+use App\Services\VentaServicio;
+use App\Traits\DatosUtiles\ConSucursales;
 use App\Traits\LivewireAlerta;
 use App\Traits\SeleccionaNegocio;
 use Livewire\Component;
@@ -10,18 +13,31 @@ use Livewire\WithPagination;
 
 class Ventas extends Component
 {
-    use SeleccionaNegocio,WithPagination, LivewireAlerta;
+    use SeleccionaNegocio,WithPagination, LivewireAlerta, ConSucursales;
+    public $filtroSucursal;
+    public $filtroCliente = '';
+    public $filtroDesde;
+    public $filtroHasta;
     protected $listeners = ['notaGenerada'];
     public function mount()
     {
-        $this->mountSeleccionaNegocio();
+        //$this->mountSeleccionaNegocio();
     }
-    public function eliminarVenta($uuid){
+    public function revalidarVenta($uuid)
+    {
         try {
-            InformacionVenta::eliminarVenta($uuid);
-            $this->alert('success','Venta eliminada correctamente.');
+            app(VentaServicio::class)->revalidarVenta($uuid);
+            $this->alert('success','Venta Revalidada con éxito.');
+        } catch (\Throwable $th) {
+            $this->alert('error',$th->getMessage());
+        }
+    }
+    public function anularVenta($uuid){
+        try {
+            app(VentaServicio::class)->anularVenta($uuid);
+            $this->alert('success','Venta Anulada Correctamente.');
         } catch (\Exception $e) {
-            $this->alert('error', 'Error al eliminar la venta: ' . $e->getMessage());
+            $this->alert('error', $e->getMessage());
         }
     }
     public function notaGenerada(){
@@ -32,14 +48,18 @@ class Ventas extends Component
         if (!$this->negocioSeleccionado) {
             return view('seleccionar_negocio');
         }
-
-        $ventas = InformacionVenta::listarVentas($this->negocioSeleccionado->id);
+        $filtros = [
+            'sucursal_id' => $this->filtroSucursal,
+            'nombre_cliente' => $this->filtroCliente,
+            'fecha_desde' => $this->filtroDesde,
+            'fecha_hasta' => $this->filtroHasta,
+        ];
+        $ventas = InformacionVenta::listarVentas($this->negocioSeleccionado->id,$filtros);
         return view('livewire.venta_panel.ventas',
             [
                 'ventas' => $ventas,
             ]
         );
     }
-
 }
 

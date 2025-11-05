@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\FacturaController;
+use App\Http\Controllers\SeleccionarNegocioController;
 use App\Http\Controllers\SucursalController;
 use App\Http\Controllers\SuperadminController;
 use App\Http\Controllers\VentaController;
@@ -10,14 +11,17 @@ use App\Livewire\DuenoTienda\ClientePanel\GestionClientes;
 use App\Livewire\DuenoTienda\ProveedorPanel\GestionProveedores;
 use App\Livewire\VentaPanel\GestionVentas;
 use App\Livewire\VentaPanel\Ventas;
+use App\Models\Presentacion;
 use App\Models\User;
+use App\Models\Venta;
+use App\Models\VentaMetodoPago;
 use App\Services\ComprobanteService;
 use App\Services\ComprobanteServicio;
 use App\Services\ComprobanteSinSunatServicio;
 use Illuminate\Support\Facades\Route;
 use Laravel\Socialite\Facades\Socialite;
 use Livewire\Volt\Volt;
-
+use Illuminate\Http\Request;
 
 
 Route::view('/', 'dashboard')
@@ -34,7 +38,7 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::middleware(['auth', 'role:dueno_sistema'])->group(function () {
-   // Route::get('/superadmin/clientes', [SuperadminController::class, 'clientes'])->name('superadmin.clientes');
+    // Route::get('/superadmin/clientes', [SuperadminController::class, 'clientes'])->name('superadmin.clientes');
     Route::get('/superadmin/categorias', App\Livewire\Superadmin\Categorias\GestionCategorias::class)->name('superadmin.categorias');
     Route::get('/superadmin/marcas', App\Livewire\Superadmin\Marcas\GestionMarcas::class)->name('superadmin.marcas');
     Route::get('/superadmin/unidades', App\Livewire\Superadmin\Unidades\GestionUnidades::class)->name('superadmin.unidades');
@@ -44,35 +48,140 @@ Route::middleware(['auth', 'role:dueno_tienda'])->prefix('mi-tienda')->group(fun
     Route::get('/negocios', function () {
         return view('livewire.dueno_tienda.negocio_panel.index-negocios');
     })->name('dueno_tienda.negocios');
+
     Route::get('/sucursales', App\Livewire\DuenoTienda\SucursalPanel\GestionSucursales::class)->name('dueno_tienda.sucursales');
     Route::get('/correlativos', App\Livewire\DuenoTienda\CorrelativoPanel\GestionCorrelativos::class)->name('dueno_tienda.correlativos');
-    Route::get('/productos',function () {
+    Route::get('/productos', function () {
         return view('livewire.dueno_tienda.productos.index-productos');
-    } )->name('dueno_tienda.productos');
-    Route::get('/precios_preferenciales',function () {
+    })->name('dueno_tienda.productos');
+    Route::get('/precios_preferenciales', function () {
         return view('livewire.dueno_tienda.precios_preferenciales.index-precios_preferenciales');
-    } )->name('dueno_tienda.precios_preferenciales');
-    Route::get('/configuracion/disenio_impresion',function () {
+    })->name('dueno_tienda.precios_preferenciales');
+    Route::get('/configuracion/disenio_impresion', function () {
         return view('livewire.dueno_tienda.configuracion.index-disenio_impresion');
-    } )->name('dueno_tienda.configuracion.disenio_impresion');
-    
-    
+    })->name('dueno_tienda.configuracion.disenio_impresion');
+
+
     Route::get('/servicios', App\Livewire\DuenoTienda\Servicios\GestionServicios::class)->name('dueno_tienda.servicios');
     //modificar esta ruta para que solo accedan los clientes del dueño de la tienda
     Route::get('/clientes', GestionClientes::class)->name('dueno_tienda.clientes');
     Route::get('/proveedores', function () {
         return view('livewire.dueno_tienda.proveedores_panel.index-proveedores');
     })->name('dueno_tienda.proveedores');
+    Route::get('/compras/entrada_productos', function () {
+        return view('livewire.dueno_tienda.almacen.entrada_productos.index-entrada-productos');
+    })->name('dueno_tienda.entrada_productos');
+    Route::get('/compras/salida_productos', function () {
+        return view('livewire.dueno_tienda.almacen.salida_productos.index-salida-productos');
+    })->name('dueno_tienda.salida_productos');
+    //compras
+    Route::get('/compras/realizar_compras', function () {
+        return view('livewire.dueno_tienda.compras.index-realizar_compras');
+    })->name('dueno_tienda.realizar_compras');
 });
+
+Route::get('/seleccionar-negocio', [SeleccionarNegocioController::class, 'index'])
+    ->name('seleccionar-negocio');
+Route::post('/seleccionar-negocio', [SeleccionarNegocioController::class, 'store'])
+    ->name('seleccionar-negocio.store');
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/vender', function () {
         return view('livewire.venta_panel.index-gestion-ventas');
     })->name('vender')
         ->middleware('can:gestionar ventas');
-    Route::get('/ventas', Ventas::class)
+
+    Route::get('/ventas', function () {
+        return view('livewire.venta_panel.index-gestion-historia-ventas');
+    })
         ->name('ventas')
         ->middleware('can:gestionar ventas');
+
+    Route::post('/ventas/duplicar', function (Request $request) {
+        $uuid = $request->uuid;
+        $venta = Venta::with(['detalles.producto'])
+            ->where('uuid', $uuid)
+            ->firstOrFail();
+
+        $data = [
+            'detalles' => $venta->detalles->map(function ($detalle) {
+                $presentacion = Presentacion::where('producto_id', $detalle->producto_id)
+                    ->where('unidad', $detalle->unidad)
+                    ->where('factor', $detalle->factor)
+                    ->first();
+
+                return [
+                    'producto' => [
+                        'id' => $detalle->producto_id,
+                        'descripcion' => $detalle->producto->descripcion,
+                        'unidad' => $detalle->unidad,
+                        'monto_venta' => $detalle->monto_precio_unitario,
+                        'porcentaje_igv' => $detalle->porcentaje_igv,
+                        'tipo_afectacion_igv' => $detalle->tipo_afectacion_igv,
+                        'cantidad' => (float) $detalle->cantidad,
+                    ],
+                    'presentacion' => $presentacion ? [
+                        'id' => $presentacion->id,
+                        'unidad' => $presentacion->unidad,
+                        'factor' => $presentacion->factor,
+                        'descripcion' => $presentacion->descripcion,
+                        'precio' => $presentacion->precio,
+                    ] : null,
+                ];
+            })->toArray(),
+        ];
+        $ventaJson = json_encode($data);
+        //dd($ventaJson);
+        // Guardamos temporalmente en sesión (solo para el próximo request)
+        session()->flash('ventaDuplicada', $ventaJson);
+
+        // Redirigimos al panel limpio, sin UUID en la URL
+        return redirect()->route('vender');
+    })->name('venta_panel.ventas.duplicar')
+        ->middleware(['auth', 'can:gestionar ventas']);
+
+    Route::get('/ventas/duplicar/{uuid}', function ($uuid, Request $request) {
+        $venta = Venta::with(['detalles.producto'])
+            ->where('uuid', $uuid)
+            ->firstOrFail();
+
+        $data = [
+            'detalles' => $venta->detalles->map(function ($detalle) {
+                $presentacion = Presentacion::where('producto_id', $detalle->producto_id)
+                    ->where('unidad', $detalle->unidad)
+                    ->where('factor', $detalle->factor)
+                    ->first();
+
+                return [
+                    'producto' => [
+                        'id' => $detalle->producto_id,
+                        'descripcion' => $detalle->producto->descripcion,
+                        'unidad' => $detalle->unidad,
+                        'monto_venta' => $detalle->monto_precio_unitario,
+                        'porcentaje_igv' => $detalle->porcentaje_igv,
+                        'tipo_afectacion_igv' => $detalle->tipo_afectacion_igv,
+                        'cantidad' => (float) $detalle->cantidad,
+                    ],
+                    'presentacion' => $presentacion ? [
+                        'id' => $presentacion->id,
+                        'unidad' => $presentacion->unidad,
+                        'factor' => $presentacion->factor,
+                        'descripcion' => $presentacion->descripcion,
+                        'precio' => $presentacion->precio,
+                    ] : null,
+                ];
+            })->toArray(),
+        ];
+
+        // Guardamos temporalmente en sesión
+        session()->flash('ventaDuplicada', json_encode($data));
+
+        // Redirigimos al panel sin el UUID
+        return redirect()->route('vender');
+    })->name('venta_panel.ventas.duplicar.get')
+        ->middleware(['auth', 'can:gestionar ventas']);
+
+
 });
 
 Route::get('/ver-factura/{serie?}/{numero?}', [FacturaController::class, 'mostrar'])->name('ver_factura');

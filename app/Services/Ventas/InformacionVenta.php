@@ -3,6 +3,9 @@
 namespace App\Services\Ventas;
 use App\Models\Sucursal;
 use App\Models\Venta;
+use App\Services\VentaServicio;
+use DB;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 
 class InformacionVenta
@@ -172,22 +175,44 @@ class InformacionVenta
     public static function listarVentas(int $negocio_id, array $filtros = [])
     {
         $query = Venta::with(['detalles', 'comprobante', 'notas'])
-        ->orderBy('fecha_emision','desc')
-        ->where('negocio_id', $negocio_id);
+            ->orderBy('fecha_emision', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->where('negocio_id', $negocio_id);
 
         if (!empty($filtros['sucursal_id'])) {
             $query->where('sucursal_id', $filtros['sucursal_id']);
         }
+        if (!empty($filtros['nombre_cliente'])) {
+            $query->where('nombre_cliente', 'like', '%' . $filtros['nombre_cliente'] . '%');
+        }
+        if (!empty($filtros['fecha_desde'])) {
+            $query->whereDate('fecha_emision', '>=', $filtros['fecha_desde']);
+        }
+        if (!empty($filtros['fecha_hasta'])) {
+            $query->whereDate('fecha_emision', '<=', $filtros['fecha_hasta']);
+        }
+
+        // Cuando hay un rango de fechas, devolver todo pero sin romper la paginación
+        if (!empty($filtros['fecha_desde']) && !empty($filtros['fecha_hasta'])) {
+            $results = $query->get();
+            $total = $results->count();
+            $perPage = $total > 0 ? $total : 1; // evita división entre cero
+
+            return new LengthAwarePaginator(
+                $results,
+                $total,
+                $perPage,
+                1,
+                ['path' => request()->url(), 'query' => request()->query()]
+            );
+        }
 
         $perPage = $filtros['perPage'] ?? 10;
-
         return $query->paginate($perPage);
     }
-    /**
-     * Elimina una venta por su UUID.
-     *
-     * @param string $uuid
-     */
+
+    /*
+
     public static function eliminarVenta($uuid)
     {
         $venta = Venta::where('uuid', $uuid)->first();
@@ -195,5 +220,5 @@ class InformacionVenta
             throw new \Exception('Venta no encontrada.');
         }
         $venta->delete();
-    }
+    }*/
 }

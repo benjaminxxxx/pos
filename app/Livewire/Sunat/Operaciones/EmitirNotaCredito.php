@@ -5,6 +5,7 @@ use App\Models\SunatCatalogo9;
 use App\Models\Venta;
 use App\Services\ComprobanteServicio;
 use App\Services\Facturacion\Notas\NotaServicio;
+use App\Services\VentaServicio;
 use App\Traits\LivewireAlerta;
 use Exception;
 use Livewire\Component;
@@ -25,6 +26,7 @@ class EmitirNotaCredito extends Component
     public $sucursal_id;
     public $venta_id;
     public $tipo_comprobante_codigo;
+    public $uuid;
     protected $listeners = ['generarNota'];
     public function mount()
     {
@@ -51,6 +53,7 @@ class EmitirNotaCredito extends Component
         }
         $this->sucursal_id = $venta->sucursal_id;
         if ($modo == 'anulacion') {
+            $this->uuid = $uuid;
             $this->tipoNota = '01';
             $this->tipoDoc = '07';
             $this->obtenerMotivo($this->tipoNota);
@@ -83,9 +86,12 @@ class EmitirNotaCredito extends Component
             ]);
 
             if ($this->tipoNota == '01') { //anulacion
+                
+                app(VentaServicio::class)->anularVenta($this->uuid);
+                /*
                 Venta::find($this->venta_id)->update([
                     'estado' => 'anulado'
-                ]);
+                ]);*/
             }
 
 

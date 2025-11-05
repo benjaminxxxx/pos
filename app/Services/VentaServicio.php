@@ -5,9 +5,13 @@ namespace App\Services;
 
 use App\Models\DetalleVenta;
 use App\Models\Negocio;
+use App\Models\ProductoEntrada;
+use App\Models\ProductoSalida;
+use App\Models\Stock;
 use App\Models\Sucursal;
 use App\Models\Venta;
 use App\Models\VentaMetodoPago;
+use App\Services\Inventario\InventarioServicio;
 use Auth;
 use DB;
 use Exception;
@@ -18,6 +22,106 @@ use Illuminate\Support\Str;
 
 class VentaServicio
 {
+    public function anularVenta($uuid)
+    {
+        DB::transaction(function () use ($uuid) {
+            $venta = Venta::with(['detalles'])->where('uuid', $uuid)->first();
+
+            if (!$venta) {
+                throw new Exception('Venta no encontrada.');
+            }
+
+            if ($venta->estado === 'anulado') {
+                throw new Exception('La venta ya está anulada.');
+            }
+
+            foreach ($venta->detalles as $detalle) {
+                // Buscar la salida vinculada a este detalle
+                $salida = ProductoSalida::with('detalles')
+                    ->where('referencia_id', $detalle->id)
+                    ->where('referencia_tipo', get_class($detalle))
+                    ->first();
+
+                // Si no hay salida → nada que revertir
+                if (!$salida) {
+                    continue;
+                }
+
+                // === CASO 1: Salida sin detalles (no se afectó stock) ===
+                if ($salida->detalles->isEmpty()) {
+                    $salida->delete();
+                    continue;
+                }
+
+                // === CASO 2: Salida con detalles (sí afectó stock) ===
+                foreach ($salida->detalles as $detalleSalida) {
+                    $entrada = ProductoEntrada::create([
+                        'producto_id' => $salida->producto_id,
+                        'sucursal_id' => $salida->sucursal_id,
+                        'cantidad' => $detalleSalida->cantidad,
+                        'stock_disponible' => $detalleSalida->cantidad,
+                        'costo_unitario' => $detalleSalida->costo_unitario,
+                        'tipo_entrada' => 'ANULACION VENTA',
+                        'referencia_id' => $venta->id,
+                        'referencia_tipo' => get_class($venta),
+                        'fecha_ingreso' => now(),
+                        'created_by' => auth()->id(),
+                    ]);
+
+                    // Actualizar stock global
+                    $stock = Stock::firstOrCreate([
+                        'producto_id' => $salida->producto_id,
+                        'sucursal_id' => $salida->sucursal_id,
+                    ]);
+                    $stock->increment('cantidad', $detalleSalida->cantidad);
+                }
+
+                // Marcar salida como anulada
+                $salida->update(['estado' => 'anulado']);
+            }
+
+            // Actualizar estado general de la venta
+            $venta->update([
+                'estado' => 'anulado',
+                'fecha_anulacion' => now(),
+            ]);
+        });
+    }
+    public function revalidarVenta($uuid)
+    {
+        $venta = Venta::firstWhere('uuid', $uuid);
+        if (!$venta) {
+            throw new Exception("La venta no existe.");
+        }
+        //Revisamos si cada detalle de esta venta tiene costo
+        foreach ($venta->detalles as $detalle) {
+
+            //verificar si tiene salida registrada
+
+            $cantidad = $detalle->cantidad ?? 1;
+            $factor = $detalle->factor ?? 1;
+            $totalUnidades = $cantidad * $factor;
+
+            $data = [
+                'producto_id' => $detalle->producto_id,
+                'sucursal_id' => $detalle->venta->sucursal_id,
+                'tipo_salida' => 'VENTA',
+                'cantidad' => $totalUnidades,
+                'costo_unitario' => 0,
+                'fecha_salida' => $detalle->venta->fecha_emision,
+                'referencia_id' => $detalle->id,
+                'referencia_tipo' => get_class($detalle),
+                'created_by' => auth()->id(),
+                'estado' => 'pendiente',
+            ];
+
+            $salida = app(SalidaProductoServicio::class)->generarSalida($data);
+
+            app(InventarioServicio::class)->validarStock($salida);
+
+        }
+
+    }
     public static function generarVenta($data)
     {
         $venta = $data['venta'];
@@ -96,14 +200,6 @@ class VentaServicio
         if (!$negocio) {
             throw new Exception('El negocio ya no existe');
         }
-/*
-        if ($sucursalId) {
-            $sucursal = Sucursal::find($sucursalId);
-            if (!$sucursal) {
-                throw new Exception('La sucursal ya no existe');
-            }
-        }*/
-
 
         $modo_venta = $negocio->modo;
         return DB::transaction(function () use ($data, $modo_venta, $negocioId, $cliente, $venta, $tipoComprobante) {
@@ -178,7 +274,10 @@ class VentaServicio
 
             // Guardar detalles de productos desde $venta['productos']
             foreach ($venta['productos'] as $detalle) {
-                DetalleVenta::create([
+                $cantidad = $detalle['cantidad'] ?? 1;
+                $factor = $detalle['factor'] ?? 1;
+                $totalUnidades = $cantidad * $factor;
+                $detalleVenta = DetalleVenta::create([
                     'venta_id' => $ventaModel->id,
                     'producto_id' => $detalle['producto_id'] ?? null,
                     'unidad' => $detalle['unidad'] ?? null,
@@ -203,10 +302,24 @@ class VentaServicio
                     'icbper' => $detalle['icbper'] ?? 0,
                     'factor_icbper' => $detalle['factor_icbper'] ?? 0,
                 ]);
+
+                // === Crear salida y validar stock usando servicios ===
+                $data = [
+                    'producto_id' => $detalleVenta->producto_id,
+                    'sucursal_id' => $ventaModel->sucursal_id,
+                    'tipo_salida' => 'VENTA',
+                    'cantidad' => $totalUnidades,
+                    'costo_unitario' => 0, // se actualizará luego en validarStock()
+                    'fecha_salida' => $ventaModel->fecha_emision,
+                    'referencia_id' => $detalleVenta->id,
+                    'referencia_tipo' => get_class($detalleVenta),
+                    'created_by' => auth()->id(),
+                    'estado' => 'pendiente',
+                ];
+
+                $salida = app(SalidaProductoServicio::class)->generarSalida($data);
+                app(InventarioServicio::class)->validarStock($salida);
             }
-
-
-
             return $ventaModel;
         });
     }
@@ -216,7 +329,15 @@ class VentaServicio
         $tipoComprobante = $data['tipo_comprobante_codigo'] ?? null;
         $sucursalId = $data['sucursal_id'] ?? null;
         $correlativoServicio = new CorrelativoServicio();
+        if (!$sucursalId) {
+            throw new Exception('No hay Sucursal Seleccionada.');
+        }
+        //revisamos el estado del negocio
+        $sucursal = Sucursal::findOrFail($sucursalId);
+        $modo = $sucursal->negocio->modo;
+
         $numeracion = $correlativoServicio->obtenerNumeracion($sucursalId, $tipoComprobante);
+        // throw new Exception(json_encode($data));
 
         $ventaModel = self::generarVenta($data);
 
@@ -224,14 +345,16 @@ class VentaServicio
         if ($tipoComprobante == 'ticket') {
             // Para tickets no se requiere tipo de comprobante específico, se va a facturar o boletear despues
             //Generar Nota de venta simple
-            ComprobanteSinSunatServicio::generarTicket($ventaModel->id,$numeracion);
+            ComprobanteSinSunatServicio::generarTicket($ventaModel->id, $numeracion);
 
-        }else{
+        } else {
             $comprobanteServicio = new ComprobanteServicio();
-            $comprobanteServicio->generar($ventaModel->id,$numeracion);
+            $comprobanteServicio->generar($ventaModel->id, $numeracion);
         }
-        
-        $correlativoServicio->guardarCorrelativo();
+
+        if ($modo == 'produccion') {
+            $correlativoServicio->guardarCorrelativo();
+        }
 
         $ventaConRelaciones = Venta::with(['detalles.producto', 'cliente', 'notas'])
             ->find($ventaModel->id);

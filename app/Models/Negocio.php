@@ -14,6 +14,7 @@ class Negocio extends Model
 
     protected $fillable = [
         'user_id',
+        'cuenta_id',
         'uuid',
         'nombre_legal',
         'nombre_comercial',
@@ -51,7 +52,10 @@ class Negocio extends Model
             $negocio->uuid = Str::uuid();
         });
     }
-
+    public function productos()
+    {
+        return $this->hasMany(Producto::class,'negocio_id');
+    }
     // Relación con el usuario
     public function user()
     {
@@ -71,7 +75,7 @@ class Negocio extends Model
     }
     public function categorias()
     {
-        return CategoriaProducto::where('tipo_negocio',$this->tipo_negocio)->get();
+        return CategoriaProducto::where('tipo_negocio', $this->tipo_negocio)->get();
     }
 }
 

@@ -137,7 +137,10 @@
     <div class="flex h-screen bg-gray-100 dark:bg-gray-900">
         <x-sidebar2 />
         <main class="flex-1 overflow-auto p-6 lg:p-8 bg-neutral-200 dark:bg-gray-900">
-            {{ $slot }}
+            <x-cabecera/>
+            <div>
+                {{ $slot }}
+            </div>
         </main>
     </div>
     @fluxScripts
