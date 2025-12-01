@@ -16,6 +16,15 @@ class DisenioImpresion extends Model
         'sucursal_id',
         'disenio_id',
         'activo',
+
+        'custom_width_mm',
+        'custom_height_mm',
+        'custom_altura_flexible',
+        'custom_orientation',
+        'custom_margin_top_mm',
+        'custom_margin_bottom_mm',
+        'custom_margin_left_mm',
+        'custom_margin_right_mm',
     ];
 
     public function disenioDisponible()

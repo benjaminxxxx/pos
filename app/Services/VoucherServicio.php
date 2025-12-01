@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\DisenioDisponible;
 use App\Models\DisenioImpresion;
 use BaconQrCode\Common\ErrorCorrectionLevel;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
@@ -160,41 +161,134 @@ class VoucherServicio
                 ];
             })->toArray(),
         ];
+        /*
+                $disenioImpresion = DisenioImpresion::with('disenioDisponible')
+                    ->where('negocio_id', $venta->negocio_id)
+                    ->where('sucursal_id', $venta->sucursal_id)
+                    ->whereHas('disenioDisponible', function ($query) use ($venta) {
+                        $query->where('tipo_comprobante_codigo', $venta->tipo_comprobante_codigo);
+                    })
+                    ->first();
+                //throw new Exception($venta->negocio_id .' - ' .   $venta->sucursal_id .' - ' .  $venta->tipo_comprobante_codigo , 2);
+                $view = 'documents.boleta'; // Vista por defecto
+                $width = 80 / 25.4 * 72; // Convertir 80 mm a puntos
+                $height = 200 / 25.4 * 72; // Longitud de 300 mm convertida a puntos (ajústala según la necesidad)
+                $orientation = 'portrait';
+                if ($disenioImpresion && $disenioImpresion->disenioDisponible) {
+                    $width = $disenioImpresion->disenioDisponible->width_mm / 25.4 * 72; // Convertir mm a puntos
+                    $height = $disenioImpresion->disenioDisponible->height_mm / 25.4 * 72; // Convertir mm a puntos
 
+                    $codigo = $disenioImpresion->disenioDisponible->codigo;
+                    $view = "documents.{$venta->tipo_comprobante_codigo}.{$codigo}";
+                    $orientation = 'landscape';
+                }
+
+                $pdf = Pdf::loadView($view, $data);
+
+
+                $pdf->setPaper([0, 0, $width, $height],  $orientation);
+
+
+                $folder = date('Y') . '/' . date('m'); // ejemplo: 2025/09
+                $filename = 'voucher_' . time() . '.pdf';
+                $path = $folder . '/' . $filename;
+
+                Storage::disk('public')->put($path, $pdf->output());
+
+                return $path;*/
+        // ===========================================================
+// 1) BUSCAR DISEÑO ACTIVO DE IMPRESIÓN
+// ===========================================================
         $disenioImpresion = DisenioImpresion::with('disenioDisponible')
             ->where('negocio_id', $venta->negocio_id)
             ->where('sucursal_id', $venta->sucursal_id)
+            ->where('activo', true)
             ->whereHas('disenioDisponible', function ($query) use ($venta) {
                 $query->where('tipo_comprobante_codigo', $venta->tipo_comprobante_codigo);
             })
             ->first();
-        //throw new Exception($venta->negocio_id .' - ' .   $venta->sucursal_id .' - ' .  $venta->tipo_comprobante_codigo , 2);
-        $view = 'documents.boleta'; // Vista por defecto
-        $width = 80 / 25.4 * 72; // Convertir 80 mm a puntos
-        $height = 200 / 25.4 * 72; // Longitud de 300 mm convertida a puntos (ajústala según la necesidad)
-        $orientation = 'portrait';
-        if ($disenioImpresion && $disenioImpresion->disenioDisponible) {
-            $width = $disenioImpresion->disenioDisponible->width_mm / 25.4 * 72; // Convertir mm a puntos
-            $height = $disenioImpresion->disenioDisponible->height_mm / 25.4 * 72; // Convertir mm a puntos
 
-            $codigo = $disenioImpresion->disenioDisponible->codigo;
-            $view = "documents.{$venta->tipo_comprobante_codigo}.{$codigo}";
-            $orientation = 'landscape';
+        // Diseño base
+        $disenioBase = DisenioDisponible::where('tipo_comprobante_codigo', $venta->tipo_comprobante_codigo)->first();
+
+        // Valores iniciales (fallback base → estáticos)
+        $width_mm = $disenioBase?->base_width_mm ?? 80;
+        $height_mm = $disenioBase?->base_height_mm ?? 200;
+        $orientation = $disenioBase?->base_orientation ?? 'portrait';
+        $margin_top_mm = $disenioBase?->base_margin_top_mm ?? 0;
+        $margin_bottom_mm = $disenioBase?->base_margin_bottom_mm ?? 0;
+        $margin_left_mm = $disenioBase?->base_margin_left_mm ?? 0;
+        $margin_right_mm = $disenioBase?->base_margin_right_mm ?? 0;
+
+        $codigoVista = $disenioBase?->codigo ?? 'default';
+
+        // ===========================================================
+// 2) SI HAY DISEÑO ACTIVO → SOBRESCRIBIR
+// ===========================================================
+        if ($disenioImpresion) {
+            $width_mm = $disenioImpresion->custom_width_mm ?? $width_mm;
+            $height_mm = $disenioImpresion->custom_height_mm ?? $height_mm;
+            $orientation = $disenioImpresion->custom_orientation ?? $orientation;
+            $margin_top_mm = $disenioImpresion->custom_margin_top_mm ?? $margin_top_mm;
+            $margin_bottom_mm = $disenioImpresion->custom_margin_bottom_mm ?? $margin_bottom_mm;
+            $margin_left_mm = $disenioImpresion->custom_margin_left_mm ?? $margin_left_mm;
+            $margin_right_mm = $disenioImpresion->custom_margin_right_mm ?? $margin_right_mm;
+
+            // El código de vista del diseño activo
+            $codigoVista = $disenioImpresion->disenioDisponible?->codigo ?? $codigoVista;
         }
 
-        $pdf = Pdf::loadView($view, $data);
+        // ===========================================================
+// 3) CONVERSIÓN mm → puntos PDF
+// ===========================================================
+        $width = $width_mm / 25.4 * 72;
+        $height = $height_mm / 25.4 * 72;
+
+        // ===========================================================
+// 4) DEFINIR LA VISTA
+// ===========================================================
+        $view = "documents.boleta";
+        $tipo = $venta->tipo_comprobante_codigo;
+        if ($disenioImpresion) {
+
+            $view = "documents.{$tipo}.{$codigoVista}";
+        }
 
 
-        $pdf->setPaper([0, 0, $width, $height],  $orientation);
 
+        // ===========================================================
+// 5) GENERAR PDF
+// ===========================================================
+        $pdf = Pdf::loadView($view, [
+            ...$data,
+            'margin_top_mm' => $margin_top_mm,
+            'margin_bottom_mm' => $margin_bottom_mm,
+            'margin_left_mm' => $margin_left_mm,
+            'margin_right_mm' => $margin_right_mm,
+        ]);
 
-        $folder = date('Y') . '/' . date('m'); // ejemplo: 2025/09
+        $pdf->setPaper([0, 0, $width, $height], $orientation);
+        /*
+                $options = [
+                    'margin-top' => $margin_top_mm,
+                    'margin-bottom' => $margin_bottom_mm,
+                    'margin-left' => $margin_left_mm,
+                    'margin-right' => $margin_right_mm,
+                ];
+                throw new Exception(json_encode($options), 1);
+                $pdf->setOptions($options);
+        */
+        // ===========================================================
+// 6) GUARDAR PDF
+// ===========================================================
+        $folder = date('Y') . '/' . date('m');
         $filename = 'voucher_' . time() . '.pdf';
         $path = $folder . '/' . $filename;
 
         Storage::disk('public')->put($path, $pdf->output());
 
         return $path;
+
     }
     protected static function montoEnLetras($monto)
     {

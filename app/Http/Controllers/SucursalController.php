@@ -36,14 +36,7 @@ class SucursalController extends Controller
             ->where('eliminado', false)
             ->get());
     }
-    /*
-    public function buscarProductos(Request $request)
-    {
-        $sucursal_id = $request->input('sucursal_id');
-        $search = $request->input('q');
-        $productos = ProductoServicio::buscarPorTextoYStock($search, $sucursal_id);
-        return response()->json($productos);
-    }*/
+   
     public function buscarProductos(Request $request)
     {
         $negocio_id = $request->input('negocio_id');

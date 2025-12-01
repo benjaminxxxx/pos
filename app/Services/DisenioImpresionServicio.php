@@ -10,6 +10,25 @@ use App\Models\DisenioImpresion;
 
 class DisenioImpresionServicio
 {
+    public function guardarOpcionesConfiguracion($data)
+    {
+        return DisenioImpresion::updateOrCreate(
+            [
+                'negocio_id' => $data['negocio_id'],
+                'sucursal_id' => $data['sucursal_id'],
+                'disenio_id' => $data['disenio_id'],
+            ],
+            $data
+        );
+    }
+
+    public function getDefaultConfig($tipoComprobanteCodigo)
+    {
+        return DisenioDisponible::where('tipo_comprobante_codigo', $tipoComprobanteCodigo)
+            ->where('codigo', 'default')
+            ->firstOrFail();
+    }
+
     public function getNegocios($userId)
     {
         return Negocio::where('user_id', $userId)
@@ -38,31 +57,52 @@ class DisenioImpresionServicio
     {
         return DisenioImpresion::where('negocio_id', $negocioId)
             ->where('sucursal_id', $sucursalId)
+            ->where('activo', true)
             ->whereHas('disenioDisponible', function ($q) use ($tipoComprobanteCodigo) {
                 $q->where('tipo_comprobante_codigo', $tipoComprobanteCodigo);
             })
             ->first();
     }
 
-    public function guardarConfiguracion($data)
-    {
-        if ($data['disenio_id'] === 'default') {
-            // Si existe un registro, lo eliminamos
-            DisenioImpresion::where('negocio_id', $data['negocio_id'])
-                ->where('sucursal_id', $data['sucursal_id'])
-                ->delete();
 
-            return null; // opcional: indicar que no hay registro personalizado
+    public function guardarConfiguracion(array $data)
+    {
+        // Traemos el diseño base para conocer qué tipo de comprobante es
+        $disenioBase = DisenioDisponible::find($data['disenio_id']);
+
+        if (!$disenioBase && $data['disenio_id'] !== 'default') {
+            throw new \Exception("El diseño seleccionado no existe.");
         }
 
-        // Si no es "default", guardamos/actualizamos
+        $tipoComprobante = $disenioBase
+            ? $disenioBase->tipo_comprobante_codigo
+            : $data['tipo_comprobante_codigo']; // cuando es default, el componente te manda este dato
+
+        // 1. DESACTIVAR SOLO LOS DISEÑOS DEL MISMO TIPO DE COMPROBANTE
+        DisenioImpresion::where('negocio_id', $data['negocio_id'])
+            ->where('sucursal_id', $data['sucursal_id'])
+            ->whereHas('disenioDisponible', function ($q) use ($tipoComprobante) {
+                $q->where('tipo_comprobante_codigo', $tipoComprobante);
+            })
+            ->update(['activo' => false]);
+
+        // 2. SI ES DEFAULT → no activamos ninguno
+        if ($data['disenio_id'] === 'default') {
+            return null;
+        }
+
+        // 3. GUARDAR/ACTUALIZAR EL DISEÑO ACTUAL COMO ACTIVO
         return DisenioImpresion::updateOrCreate(
             [
                 'negocio_id' => $data['negocio_id'],
                 'sucursal_id' => $data['sucursal_id'],
+                'disenio_id' => $data['disenio_id'],
             ],
-            ['disenio_id' => $data['disenio_id']]
+            array_merge($data, [
+                'activo' => true,
+            ])
         );
     }
+
 
 }

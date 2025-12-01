@@ -325,7 +325,7 @@ class VentaServicio
     }
     public static function registrar($data)
     {
-        logger($data);
+       
         $tipoComprobante = $data['tipo_comprobante_codigo'] ?? null;
         $sucursalId = $data['sucursal_id'] ?? null;
         $correlativoServicio = new CorrelativoServicio();

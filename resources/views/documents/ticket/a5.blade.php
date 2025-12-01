@@ -7,13 +7,12 @@
     <title>Boleta de Venta Electrónica - A5</title>
     <style>
         @page {
-            margin: 20px;
-            /* Establecer márgenes a cero */
-        }
+    margin: {{ $margin_top_mm }}mm {{ $margin_right_mm }}mm {{ $margin_bottom_mm }}mm {{ $margin_left_mm }}mm;
+}
 
         body {
             margin: 0;
-            /* Eliminar margen del cuerpo */
+            padding: 0;
         }
 
         body {

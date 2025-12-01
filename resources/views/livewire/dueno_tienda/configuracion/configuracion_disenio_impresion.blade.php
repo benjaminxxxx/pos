@@ -17,10 +17,10 @@
                     @foreach($negocios as $negocio)
                                     <button type="button" wire:click="seleccionarNegocio({{ $negocio->id }})"
                                         class="w-full flex items-center justify-between h-auto p-4 rounded-md border
-                                                                                                                                               {{ $selectedNegocio == $negocio->id
+                                                                                                                                                                               {{ $selectedNegocio == $negocio->id
                         ? 'bg-indigo-500 text-white border-indigo-600'
                         : 'bg-white hover:bg-muted border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600'
-                                                                                                                                               }}">
+                                                                                                                                                                               }}">
                                         <div class="text-left">
                                             <div class="font-semibold">{{ $negocio->nombre_legal }}</div>
                                             <div class="text-sm opacity-70">{{ $negocio->nombre_comercial }}</div>
@@ -41,11 +41,12 @@
 
                 <div class="space-y-3">
                     @forelse($sucursales as $sucursal)
-                                    <button type="button" wire:click="$set('selectedSucursal', {{ $sucursal->id }})" class="w-full flex items-center justify-between h-auto p-4 rounded-md border
-                                                                                                       {{ $selectedSucursal == $sucursal->id
+                                    <button type="button" wire:click="$set('selectedSucursal', {{ $sucursal->id }})"
+                                        class="w-full flex items-center justify-between h-auto p-4 rounded-md border
+                                                                                                                                       {{ $selectedSucursal == $sucursal->id
                         ? 'bg-indigo-500 text-white border-indigo-600'
                         : 'bg-white hover:bg-muted border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600'
-                                                                                                       }}">
+                                                                                                                                       }}">
                                         <div class="text-left">
                                             <div class="font-semibold">{{ $sucursal->nombre }}</div>
                                             <div class="text-sm opacity-70">{{ $sucursal->direccion }}</div>
@@ -69,10 +70,10 @@
                     @if($selectedSucursal)
                         @foreach($tiposComprobante as $tipo)
                                     <button type="button" wire:click="seleccionarTipoComprobante('{{ $tipo->codigo }}')" class="w-full flex items-center justify-between h-auto p-4 rounded-md border
-                                                                        {{ $selectedTipoComprobante == $tipo->codigo
+                                                                                                        {{ $selectedTipoComprobante == $tipo->codigo
                             ? 'bg-indigo-500 text-white border-indigo-600'
                             : 'bg-white hover:bg-muted border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600'
-                                                                        }}">
+                                                                                                        }}">
 
                                         <div class="flex items-center gap-3">
                                             <span class="font-semibold">{{ $tipo->descripcion }}</span>
@@ -105,7 +106,7 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div wire:click="seleccionarDiseno('default')" class="cursor-pointer rounded-lg border p-4 transition-all
-                                        {{ $selectedDiseno === 'default'
+                                                {{ $selectedDiseno === 'default'
             ? 'ring-2 ring-primary bg-primary/5 border-primary'
             : 'hover:bg-muted border-gray-300 dark:border-gray-600' }}">
 
@@ -130,7 +131,7 @@
 
                     @foreach($disenosDisponibles as $diseno)
                             <div wire:click="seleccionarDiseno({{ $diseno->id }})" class="cursor-pointer rounded-lg border p-4 transition-all
-                                                {{ $selectedDiseno === $diseno->id
+                                                                        {{ $selectedDiseno === $diseno->id
                         ? 'ring-2 ring-primary bg-primary/5 border-primary'
                         : 'hover:bg-muted border-gray-300 dark:border-gray-600' }}">
 
@@ -156,6 +157,69 @@
                 </div>
             </x-card>
         @endif
+
+        @if($selectedTipoComprobante && $selectedDiseno != 'default')
+            <x-card class="mt-6 p-6 space-y-4">
+                <x-flex>
+                    <h2 class="text-xl font-semibold flex items-center gap-2">
+                        <i class="fa fa-cog text-primary"></i>
+                        Configuración del Diseño
+                    </h2>
+                    <x-button wire:click="resetearConfig">
+                        <i class="fa fa-arrow-left"></i> Resetear a Valores Predeterminados
+                    </x-button>
+                </x-flex>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+                    <div>
+                        <x-label>Ancho (mm)</x-label>
+                        <x-input type="number" wire:model="configForm.width_mm" />
+                    </div>
+
+                    <div>
+                        <x-label>Alto (mm)</x-label>
+                        <x-input type="number" wire:model="configForm.height_mm" />
+                    </div>
+
+                    <div>
+                        <x-label>Orientación</x-label>
+                        <x-select wire:model="configForm.orientation">
+                            <option value="portrait">Vertical</option>
+                            <option value="landscape">Horizontal</option>
+                        </x-select>
+                    </div>
+
+                    <div>
+                        <x-label>Margen Superior (mm)</x-label>
+                        <x-input type="number" wire:model="configForm.margin_top_mm" />
+                    </div>
+
+                    <div>
+                        <x-label>Margen Inferior (mm)</x-label>
+                        <x-input type="number" wire:model="configForm.margin_bottom_mm" />
+                    </div>
+
+                    <div>
+                        <x-label>Margen Izquierdo (mm)</x-label>
+                        <x-input type="number" wire:model="configForm.margin_left_mm" />
+                    </div>
+
+                    <div>
+                        <x-label>Margen Derecho (mm)</x-label>
+                        <x-input type="number" wire:model="configForm.margin_right_mm" />
+                    </div>
+
+                </div>
+
+                <x-flex class="pt-4 justify-end">
+                    <x-button wire:click="guardarConfig()">
+                        <i class="fa fa-save"></i> Guardar Configuración
+                    </x-button>
+                </x-flex>
+            </x-card>
+        @endif
+
     </x-card>
 </div>
 @script
