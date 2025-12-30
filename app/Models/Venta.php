@@ -60,7 +60,10 @@ class Venta extends Model
         'fecha_emision',
         'fecha_pago',
         'negocio_id',
-        'tipo_factura'
+        'tipo_factura',
+
+        //valores temporales
+        'flag_contabilizado'
     ];
     public function metodosPago(): HasMany
     {
@@ -73,6 +76,17 @@ class Venta extends Model
     public function negocio(): BelongsTo
     {
         return $this->belongsTo(Negocio::class, 'negocio_id');
+    }
+    public function cuenta()
+    {
+        return $this->hasOneThrough(
+            Cuenta::class,   // modelo final
+            Negocio::class,  // modelo intermedio
+            'id',            // FK en Negocio (referenciada por ventas.negocio_id)
+            'id',            // PK en Cuenta
+            'negocio_id',    // FK en Venta
+            'cuenta_id'      // FK en Negocio
+        );
     }
     public function detalles(): HasMany
     {

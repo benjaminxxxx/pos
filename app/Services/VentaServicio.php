@@ -9,8 +9,10 @@ use App\Models\ProductoEntrada;
 use App\Models\ProductoSalida;
 use App\Models\Stock;
 use App\Models\Sucursal;
+use App\Models\TipoMovimiento;
 use App\Models\Venta;
 use App\Models\VentaMetodoPago;
+use App\Services\Caja\MovimientoCajaServicio;
 use App\Services\Inventario\InventarioServicio;
 use Auth;
 use DB;
@@ -34,6 +36,7 @@ class VentaServicio
             if ($venta->estado === 'anulado') {
                 throw new Exception('La venta ya está anulada.');
             }
+
 
             foreach ($venta->detalles as $detalle) {
                 // Buscar la salida vinculada a este detalle
@@ -79,6 +82,28 @@ class VentaServicio
                 // Marcar salida como anulada
                 $salida->update(['estado' => 'anulado']);
             }
+
+            // =========================
+            // 2. Movimiento de CAJA (EGRESO)
+            // =========================
+            $tipoVenta = TipoMovimiento::where('slug', 'anulacion_venta')->first();
+            if(!$tipoVenta){
+                throw new Exception('No existe un indicador de tipo de venta válido.');
+            }
+            $dataAnulacion = [
+                'tipo_movimiento_id' => $tipoVenta->id, // o ID directo
+                'cuenta_id' => $venta->cuenta->id,
+                'sucursal_id' => $venta->sucursal_id,
+                'usuario_id' => auth()->id(),
+                'monto' => $venta->monto_importe_venta,
+                'metodo_pago' => $venta->metodo_pago,
+                'observacion' => 'Anulación de venta #' . $venta->id,
+                'fecha' => now(),
+                'referencia_tipo' => Venta::class,
+                'referencia_id' => $venta->id,
+            ];
+
+            app(MovimientoCajaServicio::class)->registrar($dataAnulacion);
 
             // Actualizar estado general de la venta
             $venta->update([
@@ -262,6 +287,22 @@ class VentaServicio
                 'negocio_id' => $negocioId,
                 'tipo_factura' => '0101'
             ]);
+
+            $tipoVenta = TipoMovimiento::where('slug', 'venta_sistema')->first();
+
+            $dataMovimiento = [
+                'tipo_movimiento_id' => $tipoVenta->id,
+                'cuenta_id' => Auth::user()->cuenta->id,
+                'sucursal_id' => $ventaModel->sucursal_id,
+                'usuario_id' => auth()->id(),
+                'monto' => $ventaModel->monto_importe_venta,
+                'referencia_tipo' => Venta::class,
+                'referencia_id' => $ventaModel->id,
+                'observacion' => "Venta realizada folio #{$ventaModel->id}",
+            ];
+
+            app(MovimientoCajaServicio::class)->registrar($dataMovimiento);
+
             // Guardar métodos de pago
             VentaMetodoPago::where('venta_id', $ventaModel->id)->delete();
             foreach ($data['metodos_pagos'] ?? [] as $metodo) {
@@ -325,7 +366,7 @@ class VentaServicio
     }
     public static function registrar($data)
     {
-       
+
         $tipoComprobante = $data['tipo_comprobante_codigo'] ?? null;
         $sucursalId = $data['sucursal_id'] ?? null;
         $correlativoServicio = new CorrelativoServicio();

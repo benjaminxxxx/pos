@@ -7,6 +7,7 @@ use App\Traits\DatosUtiles\ConProductos;
 use App\Traits\DatosUtiles\ConProveedores;
 use App\Traits\DatosUtiles\ConSucursales;
 use App\Traits\LivewireAlerta;
+use Auth;
 use Livewire\Component;
 use Illuminate\Validation\ValidationException;
 use DB;
@@ -16,7 +17,7 @@ class RealizarComprasComponent extends Component
     use ConProveedores, ConSucursales, ConProductos, LivewireAlerta;
 
     // Propiedades de la Cabecera de la Compra
-    public $cuentaId = 1; // Asumiendo ID de cuenta fijo para esta demo.
+    public $cuentaId; // Asumiendo ID de cuenta fijo para esta demo.
     public $tipoComprobante = 'FACTURA'; // Ajustado a mayúsculas para el servicio
     public $numeroComprobante;
     public $fechaComprobante;
@@ -46,6 +47,7 @@ class RealizarComprasComponent extends Component
         if ($this->sucursales->count() > 0) {
             $this->sucursalSeleccionada = $this->sucursales->first()->id;
         }
+        $this->cuentaId = Auth::user()->cuenta->id;
     }
 
     /**

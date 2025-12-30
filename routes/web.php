@@ -29,7 +29,7 @@ Route::view('/', 'dashboard')
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
 
-   Route::get('/clave/{texto?}', function ($texto = '12345678') {
+Route::get('/clave/{texto?}', function ($texto = '12345678') {
     dd([
         'texto' => $texto,
         'hash' => Hash::make($texto),
@@ -45,7 +45,7 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::middleware(['auth', 'role:dueno_sistema'])->group(function () {
-     Route::get('/superadmin/clientes', [SuperadminController::class, 'clientes'])->name('superadmin.clientes');
+    Route::get('/superadmin/clientes', [SuperadminController::class, 'clientes'])->name('superadmin.clientes');
     Route::get('/superadmin/categorias', App\Livewire\Superadmin\Categorias\GestionCategorias::class)->name('superadmin.categorias');
     Route::get('/superadmin/marcas', App\Livewire\Superadmin\Marcas\GestionMarcas::class)->name('superadmin.marcas');
     Route::get('/superadmin/unidades', App\Livewire\Superadmin\Unidades\GestionUnidades::class)->name('superadmin.unidades');
@@ -55,6 +55,15 @@ Route::middleware(['auth', 'role:dueno_tienda'])->prefix('mi-tienda')->group(fun
     Route::get('/negocios', function () {
         return view('livewire.dueno_tienda.negocio_panel.index-negocios');
     })->name('dueno_tienda.negocios');
+
+    Route::get('/registrar_movimiento', function () {
+        return view('livewire.dueno_tienda.movimiento_panel.index-movimiento-form');
+    })->name('dueno_tienda.registrar_movimiento');
+
+    Route::get('/movimientos', function () {
+        return view('livewire.dueno_tienda.movimiento_panel.index-movimientos');
+    })->name('dueno_tienda.movimientos');
+
 
     Route::get('/sucursales', App\Livewire\DuenoTienda\SucursalPanel\GestionSucursales::class)->name('dueno_tienda.sucursales');
     Route::get('/correlativos', App\Livewire\DuenoTienda\CorrelativoPanel\GestionCorrelativos::class)->name('dueno_tienda.correlativos');

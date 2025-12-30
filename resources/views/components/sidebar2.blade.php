@@ -178,6 +178,18 @@
                     </x-nav-link-child>-->
                 </x-nav-link-parent>
 
+                <x-nav-link-parent name="movimientos" logo="fa fa-money-bill" text="Movimientos" :active="request()->routeIs([
+                    'dueno_tienda.registrar_movimiento',
+                    
+                    'dueno_tienda.movimientos'])">
+                    <x-nav-link-child href="{{ route('dueno_tienda.movimientos') }}" :active="request()->routeIs('dueno_tienda.movimientos')">
+                        Ver Movimientos
+                    </x-nav-link-child>
+                    <x-nav-link-child href="{{ route('dueno_tienda.registrar_movimiento') }}" :active="request()->routeIs('dueno_tienda.registrar_movimiento')">
+                        Registrar Movimiento
+                    </x-nav-link-child>
+                </x-nav-link-parent>
+
                 <x-nav-link-parent name="configuracion" logo="fa fa-cogs" text="Configuración" :active="request()->routeIs([
                     'dueno_tienda.configuracion.disenio_impresion',
                 ])">

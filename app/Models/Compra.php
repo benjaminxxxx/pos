@@ -53,6 +53,9 @@ class Compra extends Model
         // Auditoría
         'created_by',
         'updated_by',
+
+        //TEMPORAL
+        'flag_contabilizado'
     ];
 
     /**

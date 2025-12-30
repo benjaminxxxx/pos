@@ -7,7 +7,10 @@ use App\Models\DetalleCompra;
 use App\Models\Producto;
 use App\Models\ProductoEntrada;
 use App\Models\Proveedor;
+use App\Models\TipoMovimiento;
+use App\Services\Caja\MovimientoCajaServicio;
 use DB;
+use Exception;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Arr;
@@ -80,6 +83,33 @@ class CompraServicio
             // 6️⃣ Disparar evento de Stock (Aquí iría el evento para aumentar el stock)
             // Actualizar Inventario
             $this->registrarEntradaDesdeCompra($compra, $detallesProcesados);
+
+            //SISTEMA DE MOVIMIENTOS DE DINERO
+            $tipoCompra = TipoMovimiento::where('slug', 'compra_sistema')
+                ->where('activo', true)
+                ->first();
+
+            if (!$tipoCompra) {
+                throw new Exception('No existe el tipo de movimiento compra_sistema');
+            }
+            
+            if ($compra->total > 0 && $compra->forma_pago == 'CONTADO') {
+
+                app(MovimientoCajaServicio::class)->registrar([
+                    'tipo_movimiento_id' => $tipoCompra->id,
+                    'cuenta_id' => $compra->cuenta_id,
+                    'sucursal_id' => $compra->sucursal_id,
+                    'usuario_id' => auth()->id(), // o usuario sistema si aplica
+                    'monto' => $compra->total, // EGRESO
+                    'metodo_pago' => $validatedData['forma_pago'] ?? null,
+                    'observacion' => "Compra registrada N° {$compra->id}",
+                    'fecha' => now(),
+                    'referencia_tipo' => Compra::class,
+                    'referencia_id' => $compra->id,
+                ]);
+            }
+
+
 
             return $compra;
         });

@@ -73,6 +73,10 @@ class Negocio extends Model
     {
         return $this->hasMany(Sucursal::class);
     }
+    public function cuenta()
+    {
+        return $this->belongsTo(Cuenta::class);
+    }
     public function categorias()
     {
         return CategoriaProducto::where('tipo_negocio', $this->tipo_negocio)->get();
