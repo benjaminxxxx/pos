@@ -217,7 +217,9 @@ Route::get('/ticketTest', function () {
     return ComprobanteSinSunatServicio::generarTicket(115);
 })->name('ticketTest');
 
-Route::get('/actualizaciones', Actualizaciones::class)->name('actualizaciones');
+Route::get('/actualizaciones', function () {
+        return view('livewire.actualizaciones.index-actualizaciones');
+    })->name('actualizaciones');
 
 Route::prefix('api')->middleware('auth')->group(function () {
     Route::get('/mis-sucursales', [SucursalController::class, 'sucursalesPorUsuario'])->name('listar.sucursales.porusuario');
