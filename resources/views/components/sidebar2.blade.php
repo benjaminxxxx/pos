@@ -180,13 +180,16 @@
 
                 <x-nav-link-parent name="movimientos" logo="fa fa-money-bill" text="Movimientos" :active="request()->routeIs([
                     'dueno_tienda.registrar_movimiento',
-                    
+                    'dueno_tienda.resumen_mensual_movimientos',
                     'dueno_tienda.movimientos'])">
                     <x-nav-link-child href="{{ route('dueno_tienda.movimientos') }}" :active="request()->routeIs('dueno_tienda.movimientos')">
                         Ver Movimientos
                     </x-nav-link-child>
                     <x-nav-link-child href="{{ route('dueno_tienda.registrar_movimiento') }}" :active="request()->routeIs('dueno_tienda.registrar_movimiento')">
                         Registrar Movimiento
+                    </x-nav-link-child>
+                    <x-nav-link-child href="{{ route('dueno_tienda.resumen_mensual_movimientos') }}" :active="request()->routeIs('dueno_tienda.resumen_mensual_movimientos')">
+                        Resumen Mensual de Movimientos
                     </x-nav-link-child>
                 </x-nav-link-parent>
 

@@ -60,6 +60,10 @@ Route::middleware(['auth', 'role:dueno_tienda'])->prefix('mi-tienda')->group(fun
         return view('livewire.dueno_tienda.movimiento_panel.index-movimiento-form');
     })->name('dueno_tienda.registrar_movimiento');
 
+    Route::get('/resumen_mensual_movimientos', function () {
+        return view('livewire.dueno_tienda.movimiento_panel.index-movimiento-resumen-mensual');
+    })->name('dueno_tienda.resumen_mensual_movimientos');
+
     Route::get('/movimientos', function () {
         return view('livewire.dueno_tienda.movimiento_panel.index-movimientos');
     })->name('dueno_tienda.movimientos');

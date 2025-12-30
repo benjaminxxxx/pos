@@ -103,6 +103,7 @@ class AppServiceProvider extends ServiceProvider
                             'usuario_id' => $duenoCuenta,
                             'monto' => $venta->monto_importe_venta,
                             'metodo_pago' => $venta->metodo_pago,
+                            'fecha' => $venta->fecha_emision,
                             'referencia_tipo' => Venta::class,
                             'referencia_id' => $venta->id,
                             'observacion' => "Venta histórica folio #{$venta->id}",
@@ -116,10 +117,10 @@ class AppServiceProvider extends ServiceProvider
                                 'usuario_id' => $duenoCuenta,
                                 'monto' => $venta->monto_importe_venta,
                                 'metodo_pago' => $venta->metodo_pago,
+                                'fecha' => $venta->fecha_emision,
                                 'observacion' => "Venta histórica anulada #{$venta->id}",
                                 'referencia_tipo' => Venta::class,
                                 'referencia_id' => $venta->id,
-                                'fecha' => now(),
                             ]);
                         }
 
@@ -172,7 +173,7 @@ class AppServiceProvider extends ServiceProvider
                                 'observacion' => "Compra histórica N° {$compra->id}",
                                 'referencia_tipo' => Compra::class,
                                 'referencia_id' => $compra->id,
-                                'fecha' => now(),
+                                'fecha' => $compra->fecha_comprobante,
                             ]);
                         }
 
