@@ -6,9 +6,9 @@
 
     <div class="space-y-3 mt-4">
         @foreach ($alertas_inventario as $alert)
-            <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            <x-card2 class="flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                    <i class="fas fa-box text-gray-500 text-sm"></i>
+                    <i class="fas fa-box text-gray-500 text-sm dark:text-white"></i>
                     <div>
                         <p class="text-sm font-medium text-gray-900 dark:text-gray-200">{{ $alert['product'] }}</p>
                         <p class="text-xs text-gray-600 dark:text-gray-300">{{ $alert['stock'] }} unidades</p>
@@ -20,7 +20,7 @@
                             {{ $alert['status'] === 'critical' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700' }}">
                     {{ $alert['status'] === 'critical' ? 'Crítico' : 'Bajo' }}
                 </span>
-            </div>
+            </x-card2>
         @endforeach
     </div>
 </x-card>

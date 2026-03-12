@@ -8,15 +8,15 @@ use App\Models\TipoComprobante;
 use App\Services\Comercial\SucursalServicio;
 use App\Services\Facturacion\Configuracion\CorrelativoServicio;
 use App\Traits\LivewireAlerta;
-use App\Traits\SeleccionaNegocio;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 use Jantinnerezo\LivewireAlert\Facades\LivewireAlert;
 //gestion correlativo
 class GestionCorrelativos extends Component
 {
-    use SeleccionaNegocio, LivewireAlerta;
+    use LivewireAlerta;
+    public $negocio;
+    
     public $correlativos;
     public $tiposComprobante;
     public $sucursales;
@@ -43,15 +43,12 @@ class GestionCorrelativos extends Component
     #region Base
     public function mount()
     {
-        $this->mountSeleccionaNegocio();
+        $this->negocio = Auth::user()->negocio_activo;
         $this->loadCorrelativos();
         $this->loadTiposComprobante();
         $this->loadSucursales();
     }
-    public function render()
-    {
-        return view('livewire.dueno_tienda.correlativo_panel.gestion-correlativos');
-    }
+    
     #endregion
     #region Metodos
     public function regenerarValores(){
@@ -62,7 +59,7 @@ class GestionCorrelativos extends Component
     public function loadCorrelativos()
     {
         try {
-            $this->correlativos = CorrelativoServicio::listarPorNegocio($this->negocioSeleccionado->id);
+            $this->correlativos = CorrelativoServicio::listarPorNegocio();
         } catch (\Exception $e) {
             $this->alert('error', $e->getMessage());
             $this->correlativos = collect();
@@ -77,7 +74,7 @@ class GestionCorrelativos extends Component
     public function loadSucursales()
     {
         try {
-            $this->sucursales = SucursalServicio::listarSucursales($this->negocioSeleccionado->id);
+            $this->sucursales = SucursalServicio::listarSucursales($this->negocio->id);
         } catch (\Exception $e) {
             $this->alert('error', $e->getMessage());
             $this->sucursales = collect();
@@ -125,7 +122,7 @@ class GestionCorrelativos extends Component
                 'correlativo_actual' => $this->correlativo_actual,
                 'estado' => $this->estado,
                 'sucursales' => $this->sucursal_ids,
-                'negocio_id' => $this->negocioSeleccionado->id,
+                'negocio_id' => $this->negocio->id,
             ];
 
             CorrelativoServicio::guardar($data, $this->isEditing ? $this->correlativo : null);
@@ -174,5 +171,9 @@ class GestionCorrelativos extends Component
         $this->resetValidation();
     }
     #endregion
+    public function render()
+    {
+        return view('livewire.dueno_tienda.correlativo_panel.gestion-correlativos');
+    }
 }
 

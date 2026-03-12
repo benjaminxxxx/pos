@@ -1,14 +1,15 @@
-<div x-data="resumenMensual">
+<div x-data="resumenMensual" class="space-y-4">
+    <x-title>
+        Resumen Mensual de Movimientos de Caja
+    </x-title>
     <x-card>
         <!-- Header -->
-        <flux:heading size="lg" class="mb-8">
-            Resumen Mensual de Movimientos de Caja
-        </flux:heading>
+
 
         <!-- Filtros -->
         <x-flex>
             <flux:select wire:model.live="year" label="Año">
-                @foreach($years as $y)
+                @foreach ($years as $y)
                     <option value="{{ $y }}">{{ $y }}</option>
                 @endforeach
             </flux:select>
@@ -43,7 +44,7 @@
                         <x-th class="bg-gray-50 dark:bg-gray-800 sticky left-0 z-10 text-left">
                             Concepto / {{ $month ? 'Día' : 'Mes' }}
                         </x-th>
-                        @foreach($tablaData as $row)
+                        @foreach ($tablaData as $row)
                             <x-th class="text-center">
                                 {{ $row['periodo'] ?? $row['dia'] }}
                             </x-th>
@@ -52,12 +53,12 @@
                 </x-slot>
 
                 <x-slot name="tbody">
-                    @if(count($tablaData) > 0)
+                    @if (count($tablaData) > 0)
                         <x-tr>
                             <x-td class="font-semibold text-green-600 bg-gray-50 dark:bg-gray-800 sticky left-0">
                                 Ingresos
                             </x-td>
-                            @foreach($tablaData as $row)
+                            @foreach ($tablaData as $row)
                                 <x-td class="text-right text-green-600">
                                     {{ number_format($row['ingresos'], 2, ',', '.') }}
                                 </x-td>
@@ -68,7 +69,7 @@
                             <x-td class="font-semibold text-red-600 bg-gray-50 dark:bg-gray-800 sticky left-0">
                                 Egresos
                             </x-td>
-                            @foreach($tablaData as $row)
+                            @foreach ($tablaData as $row)
                                 <x-td class="text-right text-red-600">
                                     {{ number_format($row['egresos'], 2, ',', '.') }}
                                 </x-td>
@@ -79,7 +80,7 @@
                             <x-td class="font-bold text-blue-600 bg-gray-50 dark:bg-gray-800 sticky left-0">
                                 Margen
                             </x-td>
-                            @foreach($tablaData as $row)
+                            @foreach ($tablaData as $row)
                                 <x-td class="text-right text-blue-600 font-bold">
                                     {{ number_format($row['diferencia'], 2, ',', '.') }}
                                 </x-td>
@@ -113,94 +114,95 @@
 </div>
 
 @script
-<script>
-    Alpine.data('resumenMensual', () => ({
-        chartInstance: null, // Usamos este nombre para mayor claridad
-        chartData: @js($chartData),
+    <script>
+        Alpine.data('resumenMensual', () => ({
+            chartInstance: null, // Usamos este nombre para mayor claridad
+            chartData: @js($chartData),
 
-        init() {
-            // Inicializamos el gráfico por primera vez
-            this.iniciarGrafico();
-
-            // Escuchamos el evento de Livewire
-            Livewire.on('regenerarChartMovimiento', (data) => {
-                // Actualizamos los datos locales
-                this.chartData = data[0];
-
-                // Si ya existe un gráfico, lo destruimos antes de crear el nuevo
-                if (this.chartInstance) {
-                    this.chartInstance.destroy();
-                }
-
-                // Volvemos a renderizar
+            init() {
+                // Inicializamos el gráfico por primera vez
                 this.iniciarGrafico();
-            });
-        },
 
-        iniciarGrafico() {
-            const ctx = document.getElementById('chartMovimientos');
-            if (!ctx) return;
+                // Escuchamos el evento de Livewire
+                Livewire.on('regenerarChartMovimiento', (data) => {
+                    // Actualizamos los datos locales
+                    this.chartData = data[0];
 
-            // Creamos la nueva instancia
-            this.chartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: this.chartData.labels,
-                    datasets: [
-                        {
-                            label: 'Ingresos',
-                            data: this.chartData.ingresos,
-                            borderColor: '#10b981',
-                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                            borderWidth: 2,
-                            tension: 0.4,
-                            fill: true,
-                            pointRadius: 4,
-                            pointBackgroundColor: '#10b981',
-                            pointBorderColor: '#fff',
-                            pointBorderWidth: 2,
-                        },
-                        {
-                            label: 'Egresos',
-                            data: this.chartData.egresos,
-                            borderColor: '#ef4444',
-                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                            borderWidth: 2,
-                            tension: 0.4,
-                            fill: true,
-                            pointRadius: 4,
-                            pointBackgroundColor: '#ef4444',
-                            pointBorderColor: '#fff',
-                            pointBorderWidth: 2,
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                            labels: {
-                                font: { size: 12 },
-                                padding: 20,
-                                usePointStyle: true,
+                    // Si ya existe un gráfico, lo destruimos antes de crear el nuevo
+                    if (this.chartInstance) {
+                        this.chartInstance.destroy();
+                    }
+
+                    // Volvemos a renderizar
+                    this.iniciarGrafico();
+                });
+            },
+
+            iniciarGrafico() {
+                const ctx = document.getElementById('chartMovimientos');
+                if (!ctx) return;
+
+                // Creamos la nueva instancia
+                this.chartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: this.chartData.labels,
+                        datasets: [{
+                                label: 'Ingresos',
+                                data: this.chartData.ingresos,
+                                borderColor: '#10b981',
+                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                borderWidth: 2,
+                                tension: 0.4,
+                                fill: true,
+                                pointRadius: 4,
+                                pointBackgroundColor: '#10b981',
+                                pointBorderColor: '#fff',
+                                pointBorderWidth: 2,
+                            },
+                            {
+                                label: 'Egresos',
+                                data: this.chartData.egresos,
+                                borderColor: '#ef4444',
+                                backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                                borderWidth: 2,
+                                tension: 0.4,
+                                fill: true,
+                                pointRadius: 4,
+                                pointBackgroundColor: '#ef4444',
+                                pointBorderColor: '#fff',
+                                pointBorderWidth: 2,
                             }
-                        }
+                        ]
                     },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                callback: function (value) {
-                                    return 'S/ ' + value.toLocaleString('es-PE');
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    font: {
+                                        size: 12
+                                    },
+                                    padding: 20,
+                                    usePointStyle: true,
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return 'S/ ' + value.toLocaleString('es-PE');
+                                    }
                                 }
                             }
                         }
                     }
-                }
-            });
-        }
-    }));
-</script>
+                });
+            }
+        }));
+    </script>
 @endscript

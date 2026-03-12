@@ -4,15 +4,13 @@ namespace App\Livewire\DuenoTienda\NegocioPanel;
 
 use App\Models\Negocio;
 use App\Models\InformacionAdicional;
+use App\Services\Negocio\NegocioServicio;
 use App\Traits\LivewireAlerta;
 use Exception;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
-use Intervention\Image\Laravel\Facades\Image;
 use Livewire\Component;
 use Livewire\WithFileUploads;
+use Session;
 
 class GestionNegocios extends Component
 {
@@ -21,7 +19,7 @@ class GestionNegocios extends Component
 
     public $negocios;
     public $negocio;
-    public $showForm = false;
+    public $mostrarFormularioNegocio = false;
     public $isEditing = false;
     public $activeTab = 'general';
 
@@ -52,16 +50,17 @@ class GestionNegocios extends Component
     public $logo_factura_a_eliminar;
     public $logo_factura_eliminada = false;
 
-    // Información adicional
-    public $infoAdicionalCabecera = [];
-    public $infoAdicionalCentro = [];
-    public $infoAdicionalPie = [];
-
     // Campos temporales para agregar nueva información
     public $nuevaClave = '';
     public $nuevoValor = '';
     public $nuevaUbicacion = 'Cabecera';
     public $tiposNegocio = [];
+    public $infoAdicional = [
+        'Cabecera' => [],
+        'Centro' => [],
+        'Pie' => [],
+    ];
+
 
     protected $rules = [
         'nombre_legal' => 'required|string|max:255',
@@ -75,6 +74,7 @@ class GestionNegocios extends Component
         'modo' => 'required|in:desarrollo,produccion',
         'certificado' => 'nullable|file|max:2048', // sin validar mimes
         'logo_factura' => 'nullable|file|mimes:jpg,jpeg,png',
+        'codigo_pais' => 'required'
     ];
 
     public function mount()
@@ -85,13 +85,10 @@ class GestionNegocios extends Component
 
     public function loadNegocios()
     {
-        $this->negocios = Auth::user()->negocios()->where('eliminado', false)->get();
+        $this->negocios = Auth::user()->negocios;
     }
 
-    public function render()
-    {
-        return view('livewire.dueno_tienda.negocio_panel.gestion-negocios');
-    }
+
 
     public function setActiveTab($tab)
     {
@@ -101,7 +98,7 @@ class GestionNegocios extends Component
     public function create()
     {
         $this->resetForm();
-        $this->showForm = true;
+        $this->mostrarFormularioNegocio = true;
         $this->isEditing = false;
         $this->activeTab = 'general';
     }
@@ -145,7 +142,7 @@ class GestionNegocios extends Component
         // Cargar información adicional
         $this->cargarInformacionAdicional($negocio->id);
 
-        $this->showForm = true;
+        $this->mostrarFormularioNegocio = true;
         $this->isEditing = true;
         $this->activeTab = 'general';
     }
@@ -165,178 +162,68 @@ class GestionNegocios extends Component
     }
     public function cargarInformacionAdicional($negocioId)
     {
-        // Limpiar arrays
-        $this->infoAdicionalCabecera = [];
-        $this->infoAdicionalCentro = [];
-        $this->infoAdicionalPie = [];
+        $this->infoAdicional = [
+            'Cabecera' => [],
+            'Centro' => [],
+            'Pie' => [],
+        ];
 
-        // Cargar información desde la base de datos
         $informacionAdicional = InformacionAdicional::where('negocio_id', $negocioId)->get();
 
         foreach ($informacionAdicional as $info) {
-            switch ($info->ubicacion) {
-                case 'Cabecera':
-                    $this->infoAdicionalCabecera[] = [
-                        'id' => $info->id,
-                        'clave' => $info->clave,
-                        'valor' => $info->valor
-                    ];
-                    break;
-                case 'Centro':
-                    $this->infoAdicionalCentro[] = [
-                        'id' => $info->id,
-                        'clave' => $info->clave,
-                        'valor' => $info->valor
-                    ];
-                    break;
-                case 'Pie':
-                    $this->infoAdicionalPie[] = [
-                        'id' => $info->id,
-                        'clave' => $info->clave,
-                        'valor' => $info->valor
-                    ];
-                    break;
-            }
+
+            $this->infoAdicional[$info->ubicacion][] = [
+                'id' => $info->id,
+                'clave' => $info->clave,
+                'valor' => $info->valor
+            ];
         }
     }
 
-    public function agregarInformacionAdicional()
-    {
-        // Validar
-        $this->validate([
-            'nuevaClave' => 'required|string|max:255',
-            'nuevoValor' => 'required|string',
-            'nuevaUbicacion' => 'required|in:Cabecera,Centro,Pie'
-        ]);
-
-        // Agregar a la colección correspondiente
-        $nuevoItem = [
-            'id' => null, // Será null porque aún no está en la base de datos
-            'clave' => $this->nuevaClave,
-            'valor' => $this->nuevoValor
-        ];
-
-        switch ($this->nuevaUbicacion) {
-            case 'Cabecera':
-                $this->infoAdicionalCabecera[] = $nuevoItem;
-                break;
-            case 'Centro':
-                $this->infoAdicionalCentro[] = $nuevoItem;
-                break;
-            case 'Pie':
-                $this->infoAdicionalPie[] = $nuevoItem;
-                break;
-        }
-
-        // Limpiar campos
-        $this->nuevaClave = '';
-        $this->nuevoValor = '';
-    }
-
-    public function eliminarInformacionAdicional($ubicacion, $index)
-    {
-        switch ($ubicacion) {
-            case 'Cabecera':
-                array_splice($this->infoAdicionalCabecera, $index, 1);
-                break;
-            case 'Centro':
-                array_splice($this->infoAdicionalCentro, $index, 1);
-                break;
-            case 'Pie':
-                array_splice($this->infoAdicionalPie, $index, 1);
-                break;
-        }
-    }
-
-    public function save()
+    public function guardarNegocio()
     {
         $this->validate();
-
+        $info = [
+            'info_cabecera' => $this->infoAdicional['Cabecera'] ?? [],
+            'info_centro' => $this->infoAdicional['Centro'] ?? [],
+            'info_pie' => $this->infoAdicional['Pie'] ?? [],
+        ];
         try {
-            DB::beginTransaction();
+            $data = [
+                'nombre_legal' => $this->nombre_legal,
+                'nombre_comercial' => $this->nombre_comercial,
+                'ruc' => $this->ruc,
+                'direccion' => $this->direccion,
+                'ubigeo' => $this->ubigeo,
+                'departamento' => $this->departamento,
+                'provincia' => $this->provincia,
+                'distrito' => $this->distrito,
+                'codigo_pais' => $this->codigo_pais,
+                'urbanizacion' => $this->urbanizacion,
+                'tipo_negocio' => $this->tipo_negocio,
+                'usuario_sol' => $this->usuario_sol,
+                'clave_sol' => $this->clave_sol,
+                'client_secret' => $this->client_secret,
+                'modo' => $this->modo,
+                'logo_factura' => $this->logo_factura,
+                'logo_factura_a_eliminar' => $this->logo_factura_a_eliminar,
+                'logo_factura_eliminada' => $this->logo_factura_eliminada,
+                'certificado' => $this->certificado,
+                'certificado_a_eliminar' => $this->certificado_a_eliminar,
+                'certificado_eliminada' => $this->certificado_eliminada,
+                'info_cabecera' => $info['info_cabecera'],
+                'info_centro' => $info['info_centro'],
+                'info_pie' => $info['info_pie'],
+            ];
 
-            if ($this->isEditing) {
-                $negocio = $this->negocio;
-            } else {
-                $negocio = new Negocio();
-                $negocio->user_id = Auth::id();
-            }
+            NegocioServicio::guardar($data, $this->isEditing ? $this->negocio : null);
 
-            $negocio->nombre_legal = $this->nombre_legal;
-            $negocio->nombre_comercial = $this->nombre_comercial;
-            $negocio->ruc = $this->ruc;
-            $negocio->direccion = $this->direccion;
-            $negocio->ubigeo = $this->ubigeo;
-            $negocio->departamento = $this->departamento;
-            $negocio->provincia = $this->provincia;
-            $negocio->distrito = $this->distrito;
-            $negocio->codigo_pais = $this->codigo_pais;
-            $negocio->urbanizacion = $this->urbanizacion;
-            $negocio->tipo_negocio = $this->tipo_negocio;
-            $negocio->usuario_sol = $this->usuario_sol;
-            $negocio->clave_sol = $this->clave_sol;
-            $negocio->client_secret = $this->client_secret;
-            $negocio->modo = $this->modo;
-
-
-            if (!empty($this->logo_factura_a_eliminar) && $this->logo_factura_eliminada) {
-
-                Storage::disk('public')->delete($this->logo_factura_a_eliminar);
-                $negocio->logo_factura = null;
-            }
-            if (!empty($this->certificado_a_eliminar) && $this->certificado_eliminada) {
-
-                Storage::disk('public')->delete($this->certificado_a_eliminar);
-                $negocio->certificado = null;
-            }
-
-            if ($this->logo_factura) {
-                // Guarda el nuevo archivo
-                $logoPath = $this->storeFile($this->logo_factura, 'logos');
-                $negocio->logo_factura = $logoPath;
-            }
-
-            if ($this->certificado) {
-                // Guarda el nuevo archivo
-                $certificadoPath = $this->storeFile($this->certificado, 'certificados');
-                //dd($certificadoPath);
-                $negocio->certificado = $certificadoPath;
-            }
-
-
-            $negocio->save();
-
-            // Guardar información adicional
-            if ($this->isEditing) {
-                // Eliminar información adicional existente
-                InformacionAdicional::where('negocio_id', $negocio->id)->delete();
-            }
-
-            // Guardar nueva información adicional
-            $this->guardarInformacionAdicional($negocio->id, $this->infoAdicionalCabecera, 'Cabecera');
-            $this->guardarInformacionAdicional($negocio->id, $this->infoAdicionalCentro, 'Centro');
-            $this->guardarInformacionAdicional($negocio->id, $this->infoAdicionalPie, 'Pie');
-
-            DB::commit();
-            $this->alert('success', $this->isEditing ? 'Negocio actualizado correctamente' : 'Negocio creado correctamente');
+            $this->alert('success', $this->isEditing ? 'Negocio actualizado.' : 'Negocio creado.');
             $this->resetForm();
             $this->loadNegocios();
 
-        } catch (Exception $e) {
-            DB::rollBack();
-            $this->alert('error', 'Error al guardar el negocio: ' . $e->getMessage());
-        }
-    }
-
-    private function guardarInformacionAdicional($negocioId, $items, $ubicacion)
-    {
-        foreach ($items as $item) {
-            InformacionAdicional::create([
-                'negocio_id' => $negocioId,
-                'clave' => $item['clave'],
-                'valor' => $item['valor'],
-                'ubicacion' => $ubicacion
-            ]);
+        } catch (\Throwable $e) {
+            $this->alert('error', 'Error: ' . $e->getMessage());
         }
     }
 
@@ -347,47 +234,10 @@ class GestionNegocios extends Component
             $this->alert('error', 'El negocio ya no existe');
             return;
         }
-        $negocio->update(['eliminado' => true]);
+        $negocio->delete();
         $this->loadNegocios();
         $this->alert('success', 'El negocio ha sido eliminado');
-        /*
-                try {
-                    DB::beginTransaction();
 
-                    // Eliminar información adicional
-                    InformacionAdicional::where('negocio_id', $negocio->id)->delete();
-
-                    // Eliminar archivos asociados
-                    if ($negocio->certificado) {
-                        Storage::delete($negocio->certificado);
-                    }
-
-                    if ($negocio->logo_factura) {
-                        Storage::delete($negocio->logo_factura);
-                    }
-
-                    $negocio->delete();
-
-                    DB::commit();
-
-                    LivewireAlert::text('Negocio eliminado correctamente')
-                        ->success()
-                        ->toast()
-                        ->position('top-end')
-                        ->show();
-
-                    $this->loadNegocios();
-
-                } catch (\Exception $e) {
-                    DB::rollBack();
-
-                    LivewireAlert::text('Error al eliminar el negocio: ' . $e->getMessage())
-                        ->error()
-                        ->toast()
-                        ->position('top-end')
-                        ->show();
-                }
-                        */
     }
 
     public function cancel()
@@ -418,74 +268,27 @@ class GestionNegocios extends Component
             'logo_factura',
             'certificado_actual',
             'logo_actual',
-            'showForm',
+            'mostrarFormularioNegocio',
             'isEditing',
-            'infoAdicionalCabecera',
-            'infoAdicionalCentro',
-            'infoAdicionalPie',
             'nuevaClave',
             'nuevoValor',
             'nuevaUbicacion',
             'activeTab'
         ]);
 
+        $this->infoAdicional = [
+            'Cabecera' => [],
+            'Centro' => [],
+            'Pie' => [],
+        ];
+
         $this->resetValidation();
     }
-    private function storeFile($file, $type)
+
+
+    public function render()
     {
-        try {
-            $user = Auth::user();
-            $userSlug = Str::slug($user->uuid);
-            $year = date('Y');
-            $month = date('m');
-            $randomId = Str::random(32);
-            $extension = $file->getClientOriginalExtension();
-
-            $fileName = "{$randomId}.{$extension}";
-            $path = "{$userSlug}/{$year}/{$month}/{$type}";
-
-            // Asegúrate de que el directorio exista
-            if (!Storage::disk('public')->exists($path)) {
-                Storage::disk('public')->makeDirectory($path);
-            }
-
-            $fullPath = Storage::disk('public')->path("{$path}/{$fileName}");
-
-            if ($type === 'logos') {
-                // Redimensionar si es logo
-                $image = Image::read($file)->scale(500);
-                $image->save($fullPath);
-            } else {
-                // Guardar directamente
-                $file->storeAs($path, $fileName, 'public');
-            }
-
-            return "{$path}/{$fileName}";
-        } catch (\Throwable $th) {
-            throw new \Exception($th->getMessage());
-        }
+        return view('livewire.dueno_tienda.negocio_panel.gestion-negocios');
     }
-
-    /*
-        private function storeFile($file, $type)
-        {
-            try {
-                $user = Auth::user();
-                $userSlug = Str::slug($user->uuid);
-                $year = date('Y');
-                $month = date('m');
-                $randomId = Str::random(32);
-                $extension = $file->getClientOriginalExtension();
-
-                $fileName = "{$randomId}.{$extension}";
-                $path = "{$userSlug}/{$year}/{$month}/{$type}";
-
-                $file->storeAs($path, $fileName, 'public');
-
-                return "{$path}/{$fileName}";
-            } catch (\Throwable $th) {
-                throw new Exception($th->getMessage());
-            }
-        }*/
 }
 

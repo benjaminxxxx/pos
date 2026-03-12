@@ -1,10 +1,7 @@
 <x-card>
     @if(!$sucursales || $sucursales->isEmpty())
-        <div class="p-6 text-center">
-            <p class="text-gray-500 dark:text-gray-400">No hay sucursales registradas.</p>
-            <flux:button wire:click="create" type="link" class="mt-2">
-                Agregar una sucursal
-            </flux:button>
+        <div class="text-center">
+            <p>No hay sucursales registradas.</p>
         </div>
     @else
         <x-table responsive>

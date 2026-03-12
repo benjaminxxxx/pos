@@ -7,7 +7,7 @@
 
 @php
     // Changed table-fixed to table-auto for automatic column width
-    $tableClasses = 'w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 ' . $class;
+    $tableClasses = 'w-full text-sm text-left rtl:text-right text-accent border-1 border-border' . $class;
  
     if ($striped) {
         $tableClasses .= ' table-striped';
@@ -23,17 +23,17 @@
 @endif
     <table {{ $attributes->merge(['class' => $tableClasses]) }}>
         @if(isset($thead))
-            <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+            <thead class="text-xs text-gray-700 uppercase bg-zinc-200 dark:bg-zinc-950 dark:text-white">
                 {{ $thead }}
             </thead>
         @endif
         
         @if(isset($tbody))
-            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody class="bg-zinc-100 dark:bg-zinc-900  dark:text-zinc-100">
                 {{ $tbody }}
             </tbody>
         @else
-            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody class="bg-zinc-100 dark:bg-zinc-900  dark:text-zinc-100">
                 {{ $slot }}
             </tbody>
         @endif

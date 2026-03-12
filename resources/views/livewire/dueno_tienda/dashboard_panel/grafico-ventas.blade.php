@@ -43,13 +43,13 @@
 
     </div>
     @if (isset($ventas_semanales['total']))
-        <div class="mt-6 p-4 bg-blue-50 dark:bg-gray-700 rounded-lg">
+        <x-card2 class="mt-10">
             <div class="flex justify-between items-center">
                 <span class="text-sm font-medium text-blue-900 dark:text-blue-200">Total Semanal</span>
                 <span class="text-lg font-bold text-blue-900 dark:text-blue-200">
                     S/. {{ number_format($ventas_semanales['total'] ?? 0, 2, ',', '.') }}
                 </span>
             </div>
-        </div>
+        </x-card2>
     @endif
 </x-card>

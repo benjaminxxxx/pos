@@ -11,16 +11,18 @@ class PosServicio
     public static function obtenerEstadisticas($filtro)
     {
         $user = Auth::user();
-
         // Validación: Filtro general
         if ($filtro === 'general') {
             if (!$user->hasRole('dueno_tienda')) {
                 throw new \Exception("No tienes permiso para acceder a la vista general.");
             }
+            
+            
         }
 
         // Validación: Filtro negocio-{id}
         elseif (str_starts_with($filtro, 'negocio-')) {
+            
             $negocioId = (int) str_replace('negocio-', '', $filtro);
 
             if (!$user->hasRole('dueno_tienda')) {
@@ -35,6 +37,7 @@ class PosServicio
 
         // Validación: Filtro sucursal-{id}
         elseif (str_starts_with($filtro, 'sucursal-')) {
+            
             $sucursalId = (int) str_replace('sucursal-', '', $filtro);
 
             if ($user->hasRole('dueno_tienda')) {

@@ -22,6 +22,7 @@ return new class extends Migration
             $table->boolean('es_principal')->default(false);
             $table->boolean('estado')->default(true);
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

@@ -10,7 +10,7 @@
                 </svg>
             </div>
             <input ref="inputRef" type="search" id="default-search" v-model="busqueda" @input="buscarProductos"
-                class="input-energy block w-full p-4 ps-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                class="input-energy block w-full p-4 ps-10 text-sm border border-border rounded-lg bg-muted"
                 placeholder="Buscar producto..." required />
         </div>
 
@@ -29,7 +29,6 @@
 import { ref, onMounted } from 'vue'
 import api from '@/lib/axios'
 import Producto from '@/components/Producto.vue'
-import Input from '@/components/ui/Input.vue'
 
 const busqueda = ref('')
 const inputRef = ref(null)
@@ -44,20 +43,12 @@ const buscarProductos = async () => {
     }
 
     cargando.value = true
-    let negocio = null
     let sucursal = null
 
     try {
-        negocio = JSON.parse(localStorage.getItem('negocioSeleccionado'))
         sucursal = JSON.parse(localStorage.getItem('sucursalSeleccionada'))
     } catch (e) {
         console.error('Error al parsear localStorage:', e)
-    }
-
-    // validar negocio (obligatorio)
-    if (!negocio || !negocio.id) {
-        alert('Debe seleccionar un negocio antes de continuar')
-        return
     }
 
     // validar sucursal (opcional, solo si existe en localStorage)
@@ -68,7 +59,6 @@ const buscarProductos = async () => {
     try {
 
         const params = {
-            negocio_id: negocio.id,
             q: texto
         }
 

@@ -27,19 +27,25 @@ class SucursalController extends Controller
         $user = Auth::user();
 
         if ($user->hasRole('vendedor')) {
-            return response()->json([$user->empleado->sucursal->negocio]);
+            return response()->json([
+                $user->empleado->sucursal->negocio
+            ]);
         }
 
-        return response()->json($user->negocios()
-            ->with('sucursales')
-            ->where('estado', true)
-            ->where('eliminado', false)
-            ->get());
+        return response()->json(
+            $user->negocios()
+                ->with('sucursales')
+                // Especificamos que el 'estado' es de la tabla 'negocios'
+                ->where('negocios.estado', true)
+                ->where('negocios.eliminado', false)
+                ->get()
+        );
     }
-   
+
+
     public function buscarProductos(Request $request)
     {
-        $negocio_id = $request->input('negocio_id');
+        $negocio_id = Auth::user()->negocio_activo->id;
         $sucursal_id = $request->input('sucursal_id');
         $search = $request->input('q');
 

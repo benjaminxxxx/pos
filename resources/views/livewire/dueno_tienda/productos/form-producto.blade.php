@@ -5,7 +5,7 @@
         </flux:button>
     </div>
 
-    <form wire:submit.prevent="store">
+    <form wire:submit.prevent="guardarProducto">
         @php
             $tabs = [
                 'general' => 'Información General',

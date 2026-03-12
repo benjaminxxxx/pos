@@ -13,7 +13,7 @@ return new class extends Migration {
         Schema::create('negocios', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            //$table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->string('nombre_legal')->nullable();
             $table->string('nombre_comercial')->nullable();
             $table->string('ruc', 11)->nullable();
@@ -36,6 +36,7 @@ return new class extends Migration {
             $table->enum('tipo_negocio', ['ferreteria', 'hotel', 'panaderia', 'libreria', 'polleria', 'restaurante','ganaderia'])
                 ->default('ferreteria');
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

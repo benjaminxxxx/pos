@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Scopes\NegocioActivoScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -53,6 +54,14 @@ class Venta extends Model
         'voucher_pdf',
         'sunat_xml_firmado',
         'sunat_cdr',
+        'sunat_estado',
+        'sunat_cdr_descripcion',
+        'sunat_cdr_codigo',
+
+        'venta_origen_id',
+        'serie_origen',
+        'correlativo_origen',
+        'motivo_regularizacion',
 
         'caja_id',
         'sucursal_id',
@@ -110,5 +119,9 @@ class Venta extends Model
     public function notas()
     {
         return $this->hasMany(Nota::class);
+    }
+    protected static function booted()
+    {
+        static::addGlobalScope(new NegocioActivoScope());
     }
 }

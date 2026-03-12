@@ -66,13 +66,20 @@ usuario.',
         <div class="rounded-2xl overflow-hidden max-h-[18rem]">
             <img src="{{ asset('image/portal.jpg') }}" class="object-fit w-full" alt="" />
         </div>
-        <div class="p-2 md:p-10">
-            <x-auth-header title="Optimiza tu Negocio con un Punto de Venta Ágil y Eficiente"
-                description="Gestiona tus ventas con facilidad. Controla inventarios, registra productos y agiliza transacciones en tiempo real, brindando una experiencia rápida, profesional y sin errores." />
+        <div class="space-y-3 md:p-10 text-center">
+            <x-title>
+                Optimiza tu Negocio con un Punto de Venta Ágil y Eficiente
+            </x-title>
+            <flux:subheading>
+                Gestiona tus ventas con facilidad. Controla inventarios, registra productos y agiliza transacciones en
+                tiempo real, brindando una experiencia rápida, profesional y sin errores.
+            </flux:subheading>
         </div>
     </div>
     <div class="bg-panel-primary md:rounded-2xl p-5 md:px-20 md:py-15 dark:bg-neutral-700">
-        <x-auth-header title="Iniciar Sesión" />
+        <x-title>
+            Iniciar Sesión
+        </x-title>
 
         <!-- Session Status -->
         <x-auth-session-status class="text-center" :status="session('status')" />
@@ -109,8 +116,8 @@ usuario.',
         <div>
             <div class="flex items-center justify-end">
                 <a class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-white text-neutral-800 font-medium text-sm block rounded-lg hover:bg-neutral-100 transition"
-                    href="{{ route('google_auth') }}">                    
-                    <x-icon-google/> Iniciar con Google
+                    href="{{ route('google_auth') }}">
+                    <x-icon-google /> Iniciar con Google
                 </a>
             </div>
         </div>

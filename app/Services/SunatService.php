@@ -22,9 +22,12 @@ class SunatService
 {
     public function getSee(string $certContent, string $ruc, string $solUser, string $solPass, bool $isProduction = false)
     {
+        $url = $isProduction ? SunatEndpoints::FE_PRODUCCION : SunatEndpoints::FE_BETA;
+        //https://e-factura.sunat.gob.pe/ol-ti-itcpfegem/billService
+        
         $see = new See();
         $see->setCertificate($certContent);
-        $see->setService($isProduction ? SunatEndpoints::FE_PRODUCCION : SunatEndpoints::FE_BETA);
+        $see->setService($url);
         $see->setClaveSOL($ruc, $solUser, $solPass);
 
         return $see;

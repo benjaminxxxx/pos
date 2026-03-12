@@ -29,13 +29,6 @@ class DisenioImpresionServicio
             ->firstOrFail();
     }
 
-    public function getNegocios($userId)
-    {
-        return Negocio::where('user_id', $userId)
-            ->with('sucursales')
-            ->get();
-    }
-
     public function getSucursales($negocioId)
     {
         return Sucursal::where('negocio_id', $negocioId)->get();

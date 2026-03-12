@@ -1,148 +1,214 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+
 <head>
     @include('partials.head')
-    <style>
-        /* Sidebar Styles */
-        .sidebar {
-            width: 82px;
-            transition: width 0.3s ease-in-out;
-            position: fixed;
-            left: 0;
-            top: 0;
-            height: 100vh;
-            z-index: 9999;
-            background: #1F2937;
-            overflow: hidden;
-        }
 
-        .sidebar.expanded {
-            width: 18rem;
-        }
-
-        /* Menu text animations */
-        .menu-text {
-            opacity: 0;
-            width: 0;
-        }
-
-        .sidebar.expanded .menu-text {
-            opacity: 1;
-            width: auto;
-        }
-
-        .sidebar.expanded .hidden-on-expanded {
-            opacity: 0;
-            width: 0;
-        }
-
-        .sidebar.expanded .buton-on-sidebar {
-            gap: 0.75rem;
-        }
-
-        /* Submenu animations */
-        .submenu {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease-in-out;
-        }
-
-        .submenu.open {
-            max-height: 500px;
-        }
-
-        /* Content area adjustment */
-        .content-area {
-            margin-left: 82px;
-            transition: margin-left 0.3s ease-in-out;
-            width: calc(100% - 82px);
-        }
-
-        .sidebar .ultra-thin-scroll {
-            overflow-y: hidden;
-        }
-
-        .sidebar.expanded .ultra-thin-scroll {
-            overflow-y: auto;
-        }
-
-
-        /* Scroll ultrafino y moderno */
-        .ultra-thin-scroll {
-            scrollbar-width: thin;
-            /* Firefox */
-            scrollbar-color: transparent transparent;
-        }
-
-        .ultra-thin-scroll:hover {
-            scrollbar-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0);
-        }
-
-        /* Webkit (Chrome, Edge, Safari) */
-        .ultra-thin-scroll::-webkit-scrollbar {
-            width: 4px;
-            height: 4px;
-        }
-
-        .ultra-thin-scroll::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        .ultra-thin-scroll::-webkit-scrollbar-thumb {
-            background-color: rgba(0, 0, 0, 0.1);
-            border-radius: 9999px;
-            border: none;
-        }
-
-        .ultra-thin-scroll::-webkit-scrollbar-thumb:hover {
-            background-color: rgba(0, 0, 0, 0.2);
-        }
-
-
-        /* Mobile styles */
-        @media (max-width: 1024px) {
-            .sidebar {
-                transform: translateX(-100%);
-                width: 18rem;
-            }
-
-            .sidebar.mobile-open {
-                transform: translateX(0);
-            }
-
-            .content-area {
-                margin-left: 0;
-                width: 100%;
-            }
-
-            .mobile-overlay {
-                position: fixed;
-                inset: 0;
-                background-color: rgba(0, 0, 0, 0.5);
-                z-index: 9998;
-                opacity: 0;
-                visibility: hidden;
-                transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
-            }
-
-            .mobile-overlay.active {
-                opacity: 1;
-                visibility: visible;
-            }
-        }
-    </style>
 </head>
 
-<body class="min-h-screen bg-white dark:bg-zinc-800">
-    <div class="flex h-screen bg-gray-100 dark:bg-gray-900">
-        <x-sidebar2 />
-        <main class="flex-1 overflow-auto p-6 lg:p-8 bg-neutral-200 dark:bg-gray-900">
-            <x-cabecera/>
-            <div>
-                {{ $slot }}
-            </div>
-        </main>
-    </div>
+<body class="min-h-screen  bg-gray-200 dark:bg-zinc-900">
+    <flux:sidebar sticky collapsible class="bg-zinc-50 dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-700">
+        <flux:sidebar.header>
+            <flux:sidebar.brand logo="{{ asset('image/posicon.png') }}" name="Sistema POS" />
+            <flux:sidebar.collapse
+                class="in-data-flux-sidebar-on-desktop:not-in-data-flux-sidebar-collapsed-desktop:-mr-2" />
+        </flux:sidebar.header>
+
+        <flux:sidebar.nav>
+            {{-- Dashboard --}}
+            <flux:sidebar.item icon="home" href="{{ route('dashboard') }}" :current="request()->routeIs('dashboard')">
+                Dashboard
+            </flux:sidebar.item>
+
+            {{-- Ventas --}}
+            @can('gestionar ventas')
+                <flux:sidebar.group expandable heading="Ventas" icon="table-cells"
+                    :open="request()->routeIs(['vender', 'ventas','ventas.reporte'])">
+                    <flux:sidebar.item href="{{ route('vender') }}" :current="request()->routeIs('vender')">Vender
+                    </flux:sidebar.item>
+                    <flux:sidebar.item href="{{ route('ventas') }}" :current="request()->routeIs('ventas')">Historial de
+                        Ventas</flux:sidebar.item>
+                    <flux:sidebar.item href="{{ route('ventas.reporte') }}" :current="request()->routeIs('ventas.reporte')">
+                        Reporte de Ventas</flux:sidebar.item>
+                </flux:sidebar.group>
+            @endcan
+
+            {{-- Catálogos --}}
+            @can('general')
+                <flux:sidebar.group expandable heading="Catálogos" icon="tag"
+                    :open="request()->routeIs(['superadmin.clientes', 'superadmin.categorias', 'superadmin.marcas', 'superadmin.unidades'])">
+                    <flux:sidebar.item href="{{ route('superadmin.clientes') }}"
+                        :current="request()->routeIs('superadmin.clientes')">Clientes</flux:sidebar.item>
+                    <flux:sidebar.item href="{{ route('superadmin.categorias') }}"
+                        :current="request()->routeIs('superadmin.categorias')">Categorías</flux:sidebar.item>
+                    <flux:sidebar.item href="{{ route('superadmin.marcas') }}"
+                        :current="request()->routeIs('superadmin.marcas')">Marcas</flux:sidebar.item>
+                    <flux:sidebar.item href="{{ route('superadmin.unidades') }}"
+                        :current="request()->routeIs('superadmin.unidades')">Unidades</flux:sidebar.item>
+                </flux:sidebar.group>
+            @endcan
+
+            @role('dueno_tienda')
+                {{-- Mi Negocio --}}
+                <flux:sidebar.group expandable heading="Mi Negocio" icon="building-office"
+                    :open="request()->routeIs(['dueno_tienda.negocios', 'dueno_tienda.sucursales', 'dueno_tienda.clientes', 'dueno_tienda.correlativos', 'dueno_tienda.proveedores'])">
+                    <flux:sidebar.item href="{{ route('dueno_tienda.negocios') }}"
+                        :current="request()->routeIs('dueno_tienda.negocios')">Mis Negocios</flux:sidebar.item>
+                    <flux:sidebar.item href="{{ route('dueno_tienda.sucursales') }}"
+                        :current="request()->routeIs('dueno_tienda.sucursales')">Sucursales</flux:sidebar.item>
+                    <flux:sidebar.item href="{{ route('dueno_tienda.clientes') }}"
+                        :current="request()->routeIs('dueno_tienda.clientes')">Mis Clientes</flux:sidebar.item>
+                    <flux:sidebar.item href="{{ route('dueno_tienda.proveedores') }}"
+                        :current="request()->routeIs('dueno_tienda.proveedores')">Proveedores</flux:sidebar.item>
+                    <flux:sidebar.item href="{{ route('dueno_tienda.correlativos') }}"
+                        :current="request()->routeIs('dueno_tienda.correlativos')">Correlativos</flux:sidebar.item>
+                </flux:sidebar.group>
+
+                {{-- Compras --}}
+                <flux:sidebar.group expandable heading="Compras" icon="shopping-cart"
+                    :open="request()->routeIs('dueno_tienda.realizar_compras')">
+                    <flux:sidebar.item href="{{ route('dueno_tienda.realizar_compras') }}"
+                        :current="request()->routeIs('dueno_tienda.realizar_compras')">Registrar Compra</flux:sidebar.item>
+                </flux:sidebar.group>
+
+                {{-- Inventario --}}
+                <flux:sidebar.group expandable heading="Inventario" icon="archive-box"
+                    :open="request()->routeIs(['dueno_tienda.productos', 'dueno_tienda.servicios', 'dueno_tienda.entrada_productos', 'dueno_tienda.salida_productos'])">
+                    <flux:sidebar.item href="{{ route('dueno_tienda.productos') }}"
+                        :current="request()->routeIs('dueno_tienda.productos')">Productos</flux:sidebar.item>
+                    {{-- request()->routeIs('dueno_tienda.servicios')">Servicios --}}
+                    <flux:sidebar.item href="{{ route('dueno_tienda.entrada_productos') }}"
+                        :current="request()->routeIs('dueno_tienda.entrada_productos')">Entrada Productos
+                    </flux:sidebar.item>
+                    <flux:sidebar.item href="{{ route('dueno_tienda.salida_productos') }}"
+                        :current="request()->routeIs('dueno_tienda.salida_productos')">Salida Productos</flux:sidebar.item>
+                </flux:sidebar.group>
+
+                {{-- Movimientos --}}
+                <flux:sidebar.group expandable heading="Movimientos" icon="currency-dollar"
+                    :open="request()->routeIs(['dueno_tienda.registrar_movimiento', 'dueno_tienda.resumen_mensual_movimientos', 'dueno_tienda.movimientos'])">
+                    <flux:sidebar.item href="{{ route('dueno_tienda.movimientos') }}"
+                        :current="request()->routeIs('dueno_tienda.movimientos')">Ver Movimientos</flux:sidebar.item>
+                    <flux:sidebar.item href="{{ route('dueno_tienda.registrar_movimiento') }}"
+                        :current="request()->routeIs('dueno_tienda.registrar_movimiento')">Registrar Movimiento
+                    </flux:sidebar.item>
+                    <flux:sidebar.item href="{{ route('dueno_tienda.resumen_mensual_movimientos') }}"
+                        :current="request()->routeIs('dueno_tienda.resumen_mensual_movimientos')">Resumen Mensual
+                    </flux:sidebar.item>
+                </flux:sidebar.group>
+
+                {{-- Configuración --}}
+                <flux:sidebar.group expandable heading="Configuración" icon="cog-6-tooth"
+                    :open="request()->routeIs('dueno_tienda.configuracion.disenio_impresion')">
+                    <flux:sidebar.item href="{{ route('dueno_tienda.configuracion.disenio_impresion') }}"
+                        :current="request()->routeIs('dueno_tienda.configuracion.disenio_impresion')">Diseños de Impresión
+                    </flux:sidebar.item>
+                </flux:sidebar.group>
+            @endrole
+        </flux:sidebar.nav>
+
+        <flux:sidebar.spacer />
+
+        <flux:sidebar.nav>
+            {{-- Enlaces Inferiores --}}
+            <flux:sidebar.item icon="folder" href="{{ route('ventas.reporte') }}">Reportes</flux:sidebar.item>
+            <flux:sidebar.item icon="check-circle" href="{{ route('actualizaciones') }}"
+                :current="request()->routeIs('actualizaciones')">
+                Actualizaciones
+            </flux:sidebar.item>
+        </flux:sidebar.nav>
+
+        <flux:dropdown x-data align="end">
+            <flux:button variant="subtle" square class="group" aria-label="Preferred color scheme">
+                <flux:icon.sun x-show="$flux.appearance === 'light'" variant="mini"
+                    class="text-zinc-500 dark:text-white" />
+                <flux:icon.moon x-show="$flux.appearance === 'dark'" variant="mini"
+                    class="text-zinc-500 dark:text-white" />
+                <flux:icon.moon x-show="$flux.appearance === 'system' && $flux.dark" variant="mini" />
+                <flux:icon.sun x-show="$flux.appearance === 'system' && ! $flux.dark" variant="mini" />
+            </flux:button>
+
+            <flux:menu>
+                <flux:menu.item icon="sun" x-on:click="$flux.appearance = 'light'">Light</flux:menu.item>
+                <flux:menu.item icon="moon" x-on:click="$flux.appearance = 'dark'">Dark</flux:menu.item>
+                <flux:menu.item icon="computer-desktop" x-on:click="$flux.appearance = 'system'">System</flux:menu.item>
+            </flux:menu>
+        </flux:dropdown>
+
+        {{-- Perfil de Usuario --}}
+        <flux:dropdown position="top" align="start" class="max-lg:hidden">
+
+            <flux:sidebar.profile name="{{ auth()->user()->name }}" />
+
+            <flux:menu>
+
+                <form method="POST" action="{{ route('logout') }}">
+                    @csrf
+
+                    <flux:menu.item type="submit" icon="arrow-right-start-on-rectangle" variant="danger">
+
+                        Cerrar Sesión
+
+                    </flux:menu.item>
+                </form>
+
+            </flux:menu>
+
+        </flux:dropdown>
+        
+    </flux:sidebar>
+
+
+
+    <flux:header class="lg:hidden">
+
+        <flux:sidebar.toggle class="lg:hidden" icon="bars-2" inset="left" />
+
+        <flux:spacer />
+
+        <flux:dropdown position="bottom" align="end">
+
+            {{-- Botón perfil --}}
+            <flux:profile :name="Auth::user()->name" :avatar="null" />
+
+            {{-- Menú --}}
+            <flux:menu>
+
+                {{-- Información del usuario --}}
+                <flux:menu.item disabled>
+                    <div class="flex flex-col">
+                        <span class="font-semibold text-sm">{{ Auth::user()->name }}</span>
+                        <span class="text-xs text-muted-foreground">{{ Auth::user()->email }}</span>
+                    </div>
+                </flux:menu.item>
+
+                <flux:menu.separator />
+
+                {{-- Configuración --}}
+                <flux:menu.item href="{{ route('settings.profile') }}" icon="cog-6-tooth">
+                    Configuración
+                </flux:menu.item>
+
+                {{-- Logout --}}
+                <form method="POST" action="{{ route('logout') }}">
+                    @csrf
+
+                    <flux:menu.item type="submit" icon="arrow-right-start-on-rectangle" variant="danger">
+
+                        Salir
+
+                    </flux:menu.item>
+                </form>
+
+            </flux:menu>
+
+        </flux:dropdown>
+
+    </flux:header>
+
+    {{ $slot }}
+
     @fluxScripts
 </body>
+
 </html>

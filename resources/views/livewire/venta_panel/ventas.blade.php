@@ -1,16 +1,10 @@
 <div>
     <x-loading wire:loading />
     <x-card>
-        @if ($negocioSeleccionado)
+        @if ($negocio)
             <x-flex class="justify-between mb-4">
                 <div>
-                    <x-h2>Gestión de Ventas</x-h2>
-                    <flux:heading>Negocio: {{ $negocioSeleccionado->nombre_legal }}</flux:heading>
-                </div>
-                <div class="flex space-x-2">
-                    <flux:button wire:click="cambiarNegocio" variant="filled">
-                        Cambiar Negocio
-                    </flux:button>
+                    <flux:heading>Gestión de Ventas</flux:heading>
                 </div>
             </x-flex>
 
@@ -23,9 +17,9 @@
                         </flux:select.option>
                     @endforeach
                 </flux:select>
-                <flux:input wire:model.live="filtroCliente" label="Nombre del cliente"/>
-                <flux:input type="date" wire:model.live="filtroDesde" label="Fecha Desde"/>
-                <flux:input type="date" wire:model.live="filtroHasta" label="Fecha Hasta"/>
+                <flux:input wire:model.live="filtroCliente" label="Nombre del cliente" />
+                <flux:input type="date" wire:model.live="filtroDesde" label="Fecha Desde" />
+                <flux:input type="date" wire:model.live="filtroHasta" label="Fecha Hasta" />
             </x-flex>
 
             <div x-data="{ openVentaId: null }" class="mt-3">
@@ -59,22 +53,24 @@
                                             </a>
                                         @endif
                                         @if ($venta->voucher_pdf)
-                                            <a href="{{ Storage::disk('public')->url($venta->voucher_pdf) }}" target="_blank"
-                                                class="text-blue-600 hover:underline" download>
+                                            <a href="{{ Storage::disk('public')->url($venta->voucher_pdf) }}"
+                                                target="_blank" class="text-blue-600 hover:underline" download>
                                                 <img src="{{ asset('image/pdf.png') }}" width="32px" alt="PDF">
                                             </a>
                                         @endif
                                         @if ($venta->sunat_xml_firmado)
-                                            <a href="{{ Storage::disk('public')->url($venta->sunat_xml_firmado) }}" target="_blank"
-                                                class="text-blue-600 hover:underline" download>
-                                                <img src="{{ asset('image/xml.png') }}" width="32px" alt="Archivo XML">
+                                            <a href="{{ Storage::disk('public')->url($venta->sunat_xml_firmado) }}"
+                                                target="_blank" class="text-blue-600 hover:underline" download>
+                                                <img src="{{ asset('image/xml.png') }}" width="32px"
+                                                    alt="Archivo XML">
                                             </a>
                                         @endif
                                         @if ($venta->sunat_cdr)
-                                            <a href="{{ Storage::disk('public')->url($venta->sunat_cdr) }}" target="_blank"
-                                                class="text-blue-600 hover:underline" download>
+                                            <a href="{{ Storage::disk('public')->url($venta->sunat_cdr) }}"
+                                                target="_blank" class="text-blue-600 hover:underline" download>
 
-                                                <img src="{{ asset('image/cdr.png') }}" width="32px" alt="Archivo CDR">
+                                                <img src="{{ asset('image/cdr.png') }}" width="32px"
+                                                    alt="Archivo CDR">
                                             </a>
                                         @endif
 
@@ -112,7 +108,7 @@
                                                     Duplicar
                                                 </flux:menu.item>
 
-                                                @if($venta->estado != 'anulado')
+                                                @if ($venta->estado != 'anulado')
                                                     <flux:menu.item icon="clipboard-document-check"
                                                         wire:click="revalidarVenta('{{ $venta->uuid }}')">
                                                         Revalidar
@@ -124,6 +120,22 @@
                                                     Ver Detalles
                                                 </flux:menu.item>
 
+                                                {{-- Reenvío directo: solo para errores técnicos --}}
+                                                @if (in_array($venta->sunat_estado, ['error_sistema', 'error_fecha', 'pendiente_sunat']))
+                                                    <flux:menu.item icon="arrow-path"
+                                                        wire:click="reenviarSunat('{{ $venta->uuid }}')">
+                                                        Reenviar a SUNAT
+                                                    </flux:menu.item>
+                                                @endif
+
+                                                {{-- Regularización: para rechazadas con correlativo quemado --}}
+                                                @if ($venta->sunat_estado === 'rechazada_requiere_nuevo_correlativo' || $venta->sunat_estado === 'rechazada' || $venta->sunat_estado === null)
+                                                    <flux:menu.item icon="document-arrow-up"
+                                                        @click="$wire.dispatch('abrirRegularizacion', {uuid: '{{ $venta->uuid }}'})">
+                                                        Regularizar factura
+                                                    </flux:menu.item>
+                                                @endif
+
                                                 <!-- Anular Factura -->
                                                 @if ($venta->tipo_comprobante_codigo === '01')
                                                     <flux:menu.item icon="document-arrow-down"
@@ -134,7 +146,8 @@
 
                                                 <!-- Eliminar -->
                                                 <flux:menu.item icon="arrow-left-start-on-rectangle" variant="danger"
-                                                    wire:confirm="Anular venta?" wire:click="anularVenta('{{ $venta->uuid }}')">
+                                                    wire:confirm="Anular venta?"
+                                                    wire:click="anularVenta('{{ $venta->uuid }}')">
                                                     Anular Venta
                                                 </flux:menu.item>
                                             </flux:menu>
@@ -144,7 +157,8 @@
                                 </x-table.td>
                             </tr>
 
-                            <tr x-show="openVentaId === '{{ $venta->id }}'" x-cloak class="bg-gray-50 dark:bg-gray-800">
+                            <tr x-show="openVentaId === '{{ $venta->id }}'" x-cloak
+                                class="bg-gray-50 dark:bg-gray-800">
                                 <td colspan="100%" class="p-2">
                                     <x-card class="mb-4 dark:bg-gray-900">
                                         <flux:heading>
@@ -210,19 +224,22 @@
                                                                 @if ($nota->sunat_comprobante_pdf)
                                                                     <a href="{{ Storage::disk('public')->url($nota->sunat_comprobante_pdf) }}"
                                                                         target="_blank" download>
-                                                                        <img src="{{ asset('image/pdf.png') }}" width="24px" alt="PDF">
+                                                                        <img src="{{ asset('image/pdf.png') }}"
+                                                                            width="24px" alt="PDF">
                                                                     </a>
                                                                 @endif
                                                                 @if ($nota->sunat_xml_firmado)
                                                                     <a href="{{ Storage::disk('public')->url($nota->sunat_xml_firmado) }}"
                                                                         target="_blank" download>
-                                                                        <img src="{{ asset('image/xml.png') }}" width="24px" alt="XML">
+                                                                        <img src="{{ asset('image/xml.png') }}"
+                                                                            width="24px" alt="XML">
                                                                     </a>
                                                                 @endif
                                                                 @if ($nota->sunat_cdr)
                                                                     <a href="{{ Storage::disk('public')->url($nota->sunat_cdr) }}"
                                                                         target="_blank" download>
-                                                                        <img src="{{ asset('image/cdr.png') }}" width="24px" alt="CDR">
+                                                                        <img src="{{ asset('image/cdr.png') }}"
+                                                                            width="24px" alt="CDR">
                                                                     </a>
                                                                 @endif
                                                             </td>
@@ -250,7 +267,7 @@
         @endif
     </x-card>
 
-    <!-- Modal para seleccionar negocio -->
-    <x-seleccionar-negocio-modal :mostrar="$mostrarModalSeleccionNegocio" :negocios="$negocios" />
+
     <livewire:sunat.operaciones.emitir-nota-credito />
+    <livewire:sunat.operaciones.regularizar-factura />
 </div>

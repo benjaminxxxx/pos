@@ -1,5 +1,5 @@
 <template>
-    <div class="bg-white rounded-lg shadow-md overflow-hidden flex flex-col hover:shadow-lg transition cursor-pointer dark:bg-gray-700">
+    <div class="bg-white rounded-lg shadow-md overflow-hidden flex flex-col hover:shadow-lg transition cursor-pointer dark:bg-white/5">
       <img
         :src="imagen"
         alt="Imagen del producto"

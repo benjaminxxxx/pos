@@ -62,14 +62,50 @@ class ComprobanteServicio
      * @return mixed
      * @throws Exception
      */
-    public function generar(int $ventaId,$numeracion)
+    public function generarV2(Venta $venta, array $numeracion, $negocio): array
+    {
+        $opciones = $this->prepararOpcionesSunat($negocio);
+        
+        $see = $this->obtenerServicioSunat($opciones);
+
+        $invoice = $this->prepararDatosInvoice([
+            'negocio' => $negocio,
+            'fecha_emision' => $venta->fecha_emision,
+            'tipo_documento' => $venta->tipo_comprobante_codigo,
+            'venta' => $venta,
+        ], $numeracion);
+        
+        $result = $see->send($invoice);
+//dd($result);
+        // Error de comunicación (red, credenciales SOL incorrectas)
+        if (!$result->isSuccess()) {
+            $error = $result->getError();
+            throw new Exception("Comunicación SUNAT {$error->getCode()}: {$error->getMessage()}");
+        }
+//dd($result);
+        // Guardar XML y CDR físicamente
+        $sunatResponse = $this->procesarRespuestaSunat($invoice, $result, $see);
+
+        // Generar PDFs
+        $sunatResponse['sunat_pdf'] = A4VoucherGenerator::generarDocumento($invoice, $negocio);
+        $sunatResponse['voucher_pdf'] = VoucherServicio::generarDocumento(
+            $venta,
+            $numeracion['serie'],
+            $numeracion['correlativo']
+        );
+
+        // Ya NO hace $venta->save() aquí
+        // El estado lo maneja enviarASunat()
+        return $sunatResponse;
+    }
+    public function generar(int $ventaId, $numeracion)
     {
         $venta = $this->obtenerVenta($ventaId);
         $opciones = $this->prepararOpcionesSunat($venta->negocio);
         $see = $this->obtenerServicioSunat($opciones);
         $tipoDoc = $venta->tipo_comprobante_codigo;
 
-         $data = [
+        $data = [
             'negocio' => $venta->negocio,
             'fecha_emision' => $venta->fecha_emision,
             'tipo_documento' => $tipoDoc,
@@ -105,7 +141,7 @@ class ComprobanteServicio
     {
         $nota = $this->obtenerNota($notaId);
         $opciones = $this->prepararOpcionesSunat($nota->negocio);
-        
+
         $see = $this->obtenerServicioSunat($opciones);
         $tipoDoc = $nota->tipo_doc;
         $numeracion = $this->obtenerNumeracion($nota->sucursal_id, $tipoDoc);
@@ -118,17 +154,17 @@ class ComprobanteServicio
             'nota' => $nota,
         ];
         $invoice = $this->prepararDatosInvoice($data, $numeracion);
-        
+
         $result = $see->send($invoice);
 
         if (!$result->isSuccess()) {
             $error = $result->getError();
             throw new Exception("SUNAT Error {$error->getCode()}: {$error->getMessage()}");
         }
-        
+
         // Procesar respuesta de SUNAT y guardar XML y CDR
         $sunatResponse = $this->procesarRespuestaSunat($invoice, $result, $see);
-        
+
         $sunatComprobantePdf = A4VoucherGenerator::generarDocumento($invoice, $nota->negocio);
         $voucherPdf = null;
 
@@ -519,14 +555,14 @@ class ComprobanteServicio
                 'rznSocial' => $venta->nombre_cliente,
                 'email' => $venta->cliente_email,
                 'telephone' => $venta->cliente_telefono,
-                'address'=>[
-                    'ubigueo'=> $venta->cliente_ubigeo,
-                    'departamente'=> $venta->cliente_departamento,
-                    'provincia'=> $venta->cliente_provincia,
-                    'distrito'=> $venta->cliente_distrito,
-                    'urbanizacion'=> $venta->cliente_urbanizacion,
-                    'direccion'=> $venta->cliente_direccion,
-                    'codLocal'=> $venta->cliente_cod_local,
+                'address' => [
+                    'ubigueo' => $venta->cliente_ubigeo,
+                    'departamente' => $venta->cliente_departamento,
+                    'provincia' => $venta->cliente_provincia,
+                    'distrito' => $venta->cliente_distrito,
+                    'urbanizacion' => $venta->cliente_urbanizacion,
+                    'direccion' => $venta->cliente_direccion,
+                    'codLocal' => $venta->cliente_cod_local,
                 ]
             ];
         }
@@ -542,14 +578,14 @@ class ComprobanteServicio
                 'rznSocial' => $ventaAfectada->nombre_cliente,
                 'email' => $ventaAfectada->cliente_email,
                 'telephone' => $ventaAfectada->cliente_telefono,
-                'address'=>[
-                    'ubigueo'=> $ventaAfectada->cliente_ubigeo,
-                    'departamente'=> $ventaAfectada->cliente_departamento,
-                    'provincia'=> $ventaAfectada->cliente_provincia,
-                    'distrito'=> $ventaAfectada->cliente_distrito,
-                    'urbanizacion'=> $ventaAfectada->cliente_urbanizacion,
-                    'direccion'=> $ventaAfectada->cliente_direccion,
-                    'codLocal'=> $ventaAfectada->cliente_cod_local,
+                'address' => [
+                    'ubigueo' => $ventaAfectada->cliente_ubigeo,
+                    'departamente' => $ventaAfectada->cliente_departamento,
+                    'provincia' => $ventaAfectada->cliente_provincia,
+                    'distrito' => $ventaAfectada->cliente_distrito,
+                    'urbanizacion' => $ventaAfectada->cliente_urbanizacion,
+                    'direccion' => $ventaAfectada->cliente_direccion,
+                    'codLocal' => $ventaAfectada->cliente_cod_local,
                 ]
             ];
         }
@@ -651,8 +687,8 @@ class ComprobanteServicio
         return $venta->detalles->map(function ($detalle) {
             $unidad = 'NIU';
             $unidadData = Unidad::where('codigo', $detalle->unidad)->first();
-            if($unidadData){
-                $unidad = $unidadData->validado_sunat?$detalle->unidad:'NIU';
+            if ($unidadData) {
+                $unidad = $unidadData->validado_sunat ? $detalle->unidad : 'NIU';
             }
             return [
                 'codProducto' => $this->generarCodigoProducto($detalle->producto_id),

@@ -75,12 +75,15 @@
             <x-nav-link-simple href="{{ route('dashboard') }}" logo="fa fa-home" text="Dashboard" :active="request()->routeIs('dashboard')" />
 
             @can('gestionar ventas')
-                <x-nav-link-parent name="ventas" :active="request()->routeIs(['vender', 'ventas'])" logo='fa fa-table' text="Ventas">
+                <x-nav-link-parent name="ventas" :active="request()->routeIs(['vender', 'ventas','ventas.reporte'])" logo='fa fa-table' text="Ventas">
                     <x-nav-link-child href="{{ route('vender') }}" :active="request()->routeIs('vender')">
                         Vender
                     </x-nav-link-child>
                     <x-nav-link-child href="{{ route('ventas') }}" :active="request()->routeIs('ventas')">
                         Historial de Ventas
+                    </x-nav-link-child>
+                    <x-nav-link-child href="{{ route('ventas.reporte') }}" :active="request()->routeIs('ventas.reporte')">
+                        Reporte de Ventas
                     </x-nav-link-child>
 
                 </x-nav-link-parent>
@@ -209,7 +212,7 @@
             <div class="my-4 border-t border-zinc-200 dark:border-zinc-700"></div>
 
             <!-- Reportes (enlace simple) -->
-            <x-nav-link-simple href="#" logo="fa fa-folder" text="Reportes" />
+            <x-nav-link-simple href="{{ route('ventas.reporte') }}" logo="fa fa-folder" text="Reportes" />
 
             <!-- Actualizaciones -->
             <x-nav-link-simple href="{{ route('actualizaciones') }}" logo="fa fa-check" text="Actualizaciones"

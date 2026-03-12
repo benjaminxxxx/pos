@@ -1,3 +1,3 @@
-<tr {{ $attributes->merge(['class' => "bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200"]) }}>
+<tr {{ $attributes->merge(['class' => "bg-muted border-b border-border"]) }}>
     {{$slot ?? $value}}
 </tr>

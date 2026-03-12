@@ -172,12 +172,11 @@ class InformacionVenta
      * @param array $filtros ['sucursal_id' => int|null, 'page' => int|null]
      * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator|null
      */
-    public static function listarVentas(int $negocio_id, array $filtros = [])
+    public static function listarVentas(array $filtros = [])
     {
         $query = Venta::with(['detalles', 'comprobante', 'notas'])
             ->orderBy('fecha_emision', 'desc')
-            ->orderBy('created_at', 'desc')
-            ->where('negocio_id', $negocio_id);
+            ->orderBy('created_at', 'desc');
 
         if (!empty($filtros['sucursal_id'])) {
             $query->where('sucursal_id', $filtros['sucursal_id']);

@@ -7,7 +7,7 @@ use App\Models\Marca;
 use App\Models\Sucursal;
 use App\Services\ProductoServicio;
 use App\Traits\LivewireAlerta;
-use App\Traits\SeleccionaNegocio;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
@@ -18,8 +18,8 @@ use App\Traits\Sunat\UnidadesTrait;
 
 class GestionProductos extends Component
 {
-    use WithPagination, WithFileUploads, SeleccionaNegocio, AfectacionesIgvTrait, UnidadesTrait, LivewireAlerta;
-
+    use WithPagination, WithFileUploads, AfectacionesIgvTrait, UnidadesTrait, LivewireAlerta;
+    public $negocio;
     // ------------------------------
     // Filtros y búsqueda
     // ------------------------------
@@ -54,7 +54,6 @@ class GestionProductos extends Component
 
     public $categoria_id;
     public $marca_id;
-    public $negocio_id;
     public $unidad;
     public $activo = true;
 
@@ -82,17 +81,12 @@ class GestionProductos extends Component
 
     public function mount()
     {
-        // Inicializar la selección de negocio
-        $this->mountSeleccionaNegocio();
+        $this->negocio = Auth::user()->negocio_activo;
         $this->afectaciones = $this->getAfectacionesIgv();
         $this->unidades = $this->getUnidades();
         $this->unidad = $this->getUnidadPreseleccionada();
 
-        // Si hay un negocio seleccionado, cargar sus sucursales
-        if ($this->negocioSeleccionado) {
-            $this->negocio_id = $this->negocioSeleccionado->id;
-            $this->cargarSucursales();
-        }
+        $this->cargarSucursales();
     }
     public function updatedTipoAfectacionIgv()
     {
@@ -110,62 +104,26 @@ class GestionProductos extends Component
         // Este método se llama cuando se cambia de negocio
         $this->reset(['search', 'categoriaFilter', 'marcaFilter', 'activoFilter']);
         $this->resetPage();
-
-        if ($this->negocioSeleccionado) {
-            $this->negocio_id = $this->negocioSeleccionado->id;
-            $this->cargarSucursales();
-        }
+        $this->cargarSucursales();
     }
 
     public function cargarSucursales()
     {
-        if ($this->negocio_id) {
-            $this->sucursales = Sucursal::where('negocio_id', $this->negocio_id)->get();
-            $this->stocks = [];
-
-            foreach ($this->sucursales as $sucursal) {
-                $this->stocks[$sucursal->id] = [
-                    'cantidad' => 0,
-                    'stock_minimo' => 0,
-                ];
-            }
+        if (!$this->negocio) {
+            return;
         }
-    }
+        $this->sucursales = $this->negocio->sucursales;
+        $this->stocks = [];
 
-    public function render()
-    {
-        if (!$this->negocioSeleccionado) {
-            return view('livewire.dueno_tienda.productos.gestion-productos', [
-                'productos' => collect(),
-                'categorias' => collect(),
-                'marcas' => collect()
-            ]);
+        foreach ($this->sucursales as $sucursal) {
+            $this->stocks[$sucursal->id] = [
+                'cantidad' => 0,
+                'stock_minimo' => 0,
+            ];
         }
 
-        $productos = ProductoServicio::buscar([
-            'negocio_id' => $this->negocioSeleccionado->id,
-            'search' => $this->search,
-            'categoria_id' => $this->categoriaFilter,
-            'marca_id' => $this->marcaFilter,
-            'activo' => $this->activoFilter,
-        ]);
-
-        $categorias = CategoriaProducto::where(function ($query) {
-            $query->whereNull('tipo_negocio')
-                ->orWhere('tipo_negocio', $this->negocioSeleccionado->tipo_negocio);
-        })->get();
-
-        $marcas = Marca::where(function ($query) {
-            $query->whereNull('tipo_negocio')
-                ->orWhere('tipo_negocio', $this->negocioSeleccionado->tipo_negocio);
-        })->get();
-
-        return view('livewire.dueno_tienda.productos.gestion-productos', [
-            'productos' => $productos,
-            'categorias' => $categorias,
-            'marcas' => $marcas
-        ]);
     }
+
 
     public function resetFormulario()
     {
@@ -189,10 +147,9 @@ class GestionProductos extends Component
             'minimo_mayorista',
             'categoria_id',
             'marca_id',
-            'negocio_id',
             'stocks',
         ]);
-        $this->negocio_id = $this->negocioSeleccionado ? $this->negocioSeleccionado->id : null;
+
         $this->tipo_afectacion_igv = $this->afectaciones[0]['codigo'] ?? null; // Preseleccionar la primera afectación
         $this->aplicaIgv = $this->afectaciones[0]['aplica_igv'] ?? true; // Preseleccionar el primer valor de aplica_igv
         $this->unidad = $this->getUnidadPreseleccionada();
@@ -235,7 +192,6 @@ class GestionProductos extends Component
 
             $this->categoria_id = $producto->categoria_id;
             $this->marca_id = $producto->marca_id;
-            $this->negocio_id = $producto->negocio_id;
             $this->activo = $producto->activo;
 
             // Cargar presentaciones (si las manejas aún)
@@ -256,7 +212,7 @@ class GestionProductos extends Component
         }
     }
 
-    public function store()
+    public function guardarProducto()
     {
         $this->validate([
             'codigo_barra' => [
@@ -276,7 +232,6 @@ class GestionProductos extends Component
             'unidad' => 'required|string|max:5',
             'categoria_id' => 'nullable|exists:categorias_productos,id',
             'marca_id' => 'nullable|exists:marcas,id',
-            'negocio_id' => 'required|exists:negocios,id',
             'activo' => 'boolean',
             'stocks.*.cantidad' => 'required|numeric|min:0',
             'stocks.*.stock_minimo' => 'required|numeric|min:0',
@@ -291,7 +246,7 @@ class GestionProductos extends Component
                 'descripcion' => $this->descripcion,
                 'detalle' => $this->detalle,
                 'imagen' => $this->imagen,
-                'imagen_url'=> $this->imagen_url,
+                'imagen_url' => $this->imagen_url,
                 'imagen_eliminada' => $this->imagen_eliminada,
                 'imagen_a_eliminar' => $this->imagen_a_eliminar,
                 'porcentaje_igv' => $this->porcentaje_igv,
@@ -303,12 +258,12 @@ class GestionProductos extends Component
                 'tipo_afectacion_igv' => $this->tipo_afectacion_igv,
                 'categoria_id' => $this->categoria_id,
                 'marca_id' => $this->marca_id,
-                'negocio_id' => $this->negocio_id,
+                'negocio_id' => $this->negocio->id,
                 'activo' => $this->activo,
                 'stocks' => $this->stocks,
                 'presentaciones' => $this->presentaciones,
             ];
-            
+
             ProductoServicio::guardar($data);
 
             $this->alert('success', $this->producto_id ? 'Producto actualizado correctamente.' : 'Producto creado correctamente.');
@@ -333,7 +288,7 @@ class GestionProductos extends Component
     }
     public function eliminarImagen()
     {
-        $this->imagen = null;        
+        $this->imagen = null;
         $this->imagen_a_eliminar = $this->imagen_url;
         $this->imagen_url = null;
         $this->imagen_eliminada = true;
@@ -347,8 +302,8 @@ class GestionProductos extends Component
             'descripcion' => '',
             'factor' => 1,
             'precio' => 0,
-            'precio_mayorista'=>null,
-            'minimo_mayorista'=>null,
+            'precio_mayorista' => null,
+            'minimo_mayorista' => null,
             'activo' => true
         ];
     }
@@ -363,5 +318,40 @@ class GestionProductos extends Component
     {
         $this->isOpen = false;
     }
+    public function render()
+    {
+        if (!$this->negocio) {
+            return view('livewire.dueno_tienda.productos.gestion-productos', [
+                'productos' => collect(),
+                'categorias' => collect(),
+                'marcas' => collect()
+            ]);
+        }
+
+        $productos = ProductoServicio::buscar([
+            'negocio_id' => $this->negocio->id,
+            'search' => $this->search,
+            'categoria_id' => $this->categoriaFilter,
+            'marca_id' => $this->marcaFilter,
+            'activo' => $this->activoFilter,
+        ]);
+
+        $categorias = CategoriaProducto::where(function ($query) {
+            $query->whereNull('tipo_negocio')
+                ->orWhere('tipo_negocio', $this->negocio->tipo_negocio);
+        })->get();
+
+        $marcas = Marca::where(function ($query) {
+            $query->whereNull('tipo_negocio')
+                ->orWhere('tipo_negocio', $this->negocio->tipo_negocio);
+        })->get();
+
+        return view('livewire.dueno_tienda.productos.gestion-productos', [
+            'productos' => $productos,
+            'categorias' => $categorias,
+            'marcas' => $marcas
+        ]);
+    }
+
 }
 

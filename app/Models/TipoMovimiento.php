@@ -14,6 +14,7 @@ class TipoMovimiento extends Model
 
         'tipo_flujo',
         'es_sistema',
+        'es_automatico',
         'activo',
         
         'cuenta_id',

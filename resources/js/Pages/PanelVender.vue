@@ -1,10 +1,9 @@
 <template>
     <Card>
         <PanelProductos>
-            <div>
-                <b>{{ sucursalSeleccionadaNombre }}</b>
-            </div>
-            <Title titulo="Panel de Ventas">
+           
+            <Title :titulo="`Panel de Ventas - ${sucursalSeleccionada.nombre}`">
+
 
                 <div class="md:flex items-center gap-3">
 
@@ -12,8 +11,8 @@
                         <i class="fa fa-plus"></i> Nueva Venta
                     </Button>
 
-                    <Button @click="$emit('cambiarNegocio', true)">
-                        <i class="fa fa-save"></i> Cambiar negocio o sucursal
+                    <Button @click="$emit('cambiarSucursal', true)">
+                        <i class="fa fa-sync"></i> Cambiar sucursal
                     </Button>
                 </div>
             </Title>
@@ -80,7 +79,7 @@
 
 
                 <!-- Footer fijo -->
-                <div class="bg-neutral-200 dark:bg-gray-700 border-t dark:border-gray-600 flex-shrink-0">
+                <div class="bg-zinc-200 dark:bg-zinc-900 border-t border-border flex-shrink-0">
                     <Spacing class="!pt-1">
                         <Flex class="justify-between my-3">
                             <table class="w-full">
@@ -192,11 +191,6 @@
                                 v-model="tipoComprobante" />
                             <Label for="default-radio-2">Factura</Label>
                         </div>
-                        <!--<div class="flex items-center">
-                            <input id="default-radio-3" type="radio" value="ticket" class="w-4 h-4"
-                                v-model="tipoComprobante" />
-                            <Label for="default-radio-3">Ticket</Label>
-                        </div>-->
 
                     </Spacing>
                     <div class="flex items-center">
@@ -271,26 +265,17 @@ const procesandoVenta = ref(false)
 const mostrarModalPrecioUnitario = ref(false);
 const productoParaEditar = ref(null);
 const panelBuscarProductoRef = ref(null)
-// negocio y sucursal seleccionados desde localStorage
-const negocioSeleccionado = ref(null)
 const sucursalSeleccionada = ref(null)
 
 // nombre combinado para mostrar
 const sucursalSeleccionadaNombre = ref('')
 
 const cargarSeleccion = () => {
-    const negocioRaw = localStorage.getItem('negocioSeleccionado')
     const sucursalRaw = localStorage.getItem('sucursalSeleccionada')
-
-    negocioSeleccionado.value = negocioRaw ? JSON.parse(negocioRaw) : null
     sucursalSeleccionada.value = sucursalRaw ? JSON.parse(sucursalRaw) : null
 
-    if (negocioSeleccionado.value) {
-        if (sucursalSeleccionada.value) {
-            sucursalSeleccionadaNombre.value = `${negocioSeleccionado.value.nombre_legal} - ${sucursalSeleccionada.value.nombre}`
-        } else {
-            sucursalSeleccionadaNombre.value = negocioSeleccionado.value.nombre_legal
-        }
+    if (sucursalSeleccionada.value) {
+        sucursalSeleccionadaNombre.value = `${sucursalSeleccionada.value.nombre}`
     } else {
         sucursalSeleccionadaNombre.value = ''
     }
@@ -368,18 +353,16 @@ const pagar = () => {
 const agregarVenta = async () => {
     if (ventas.value.length == 0) {
         // Cargar 10 últimas ventas
-        const negocioSeleccionadoRaw = localStorage.getItem('negocioSeleccionado');
         const sucursalSeleccionadaRaw = localStorage.getItem('sucursalSeleccionada');
 
-        if (!negocioSeleccionadoRaw) {
+        if (!sucursalSeleccionadaRaw) {
             return; // Si no hay negocio, no continuar
         }
 
-        const negocio = JSON.parse(negocioSeleccionadoRaw);
         const sucursal = sucursalSeleccionadaRaw ? JSON.parse(sucursalSeleccionadaRaw) : null;
 
         // Construir la URL dinámicamente
-        let url = `/venta/listar/${negocio.id}`;
+        let url = `/venta/listar`;
         if (sucursal && sucursal.id) {
             url += `/${sucursal.id}`;
         }
@@ -532,9 +515,9 @@ const agregarProducto = ({ producto, presentacion }) => {
     if (ventas.value.length === 0) {
         agregarVenta()
     }
-
     let venta = ventas.value[ventaActiva.value]
 
+    console.log(venta);
     // Si la venta activa ya está registrada, buscar otra no registrada
     if (venta.registrado) {
         // Buscar la primera venta no registrada
@@ -820,8 +803,8 @@ const procesarVenta = async () => {
         }
 
         // validar negocio (obligatorio)
-        if (!negocio || !negocio.id) {
-            alert('Debe seleccionar un negocio antes de continuar')
+        if (!sucursal || !sucursal.id) {
+            alert('Debe seleccionar una sucursal antes de continuar')
             return
         }
 
@@ -830,7 +813,7 @@ const procesarVenta = async () => {
             cliente: cliente.value,
             venta: ventaAPagar.value,
             tipo_comprobante_codigo: tipoComprobante.value,
-            negocio_id: negocio.id,
+            //negocio_id: negocio.id,
             sucursal_id: sucursal.id ?? null,
             fecha_emision: fechaEmision.value,
             totalPago: totalPago.value,

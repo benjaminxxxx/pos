@@ -19,12 +19,7 @@ class GestionDashboard extends Component
     public $tarjetas_estadisticas = [];
     public $ventas_semanales = [];
     public $alertas_inventario = [];
-    #endregion
-    public function updatedFiltro($filtro)
-    {
-        $this->obtenerDatos($filtro);
-    }
-    #region Base
+    
     public function mount()
     {
         $user = auth()->user();
@@ -35,6 +30,10 @@ class GestionDashboard extends Component
             $this->filtro = $this->filtros[0]['value'];
             $this->obtenerDatos($this->filtro);
         }
+    }
+    public function updatedFiltro($filtro)
+    {
+        $this->obtenerDatos($filtro);
     }
     public function render()
     {

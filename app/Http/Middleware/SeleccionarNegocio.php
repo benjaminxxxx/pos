@@ -19,12 +19,15 @@ class SeleccionarNegocio
         if (!auth()->check()) {
             return $next($request);
         }
+        
+        //Nuevo parche, que al cerrar sesion el nuevo usuario tenga acceso al uudi incorrecto
+        //Pronto
 
         // Si ya existe negocio seleccionado, continuar
         if (session()->has('negocio_actual_uuid')) {
             return $next($request);
         }
-
+        
         $user = auth()->user();
         $negocios = $user->negocios ?? [];
 

@@ -1,10 +1,7 @@
 <?php
 
 namespace App\Traits\DatosUtiles;
-use App\Models\Negocio;
-use App\Models\Proveedor;
-use App\Models\Sucursal;
-use Session;
+use Illuminate\Support\Facades\Auth;
 
 trait ConSucursales
 {
@@ -15,26 +12,15 @@ trait ConSucursales
     }
     public function cargarSucursales()
     {
-        $user = auth()->user();
-        $negocioUuid = Session::get('negocio_actual_uuid');
+         $user = Auth::user();
 
-        if (!$user || !$user->cuenta) {
+        if (!$user || !$user->negocio_activo) {
             $this->sucursales = collect();
             return;
         }
 
-        $negocio = Negocio::query()
-            ->where('cuenta_id', $user->cuenta->id)
-            ->when($negocioUuid, fn($q) => $q->where('uuid', $negocioUuid))
-            ->first();
-
-        if (!$negocio) {
-            // No se encontró el negocio activo
-            $this->sucursales = collect();
-            return;
-        }
-
-        $this->sucursales = Sucursal::where('negocio_id', $negocio->id)
+        $this->sucursales = $user->negocio_activo
+            ->sucursales()
             ->orderBy('nombre')
             ->get();
     }

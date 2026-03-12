@@ -2,10 +2,13 @@
 
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\FacturaController;
+use App\Http\Controllers\ReporteVentasController;
 use App\Http\Controllers\SeleccionarNegocioController;
 use App\Http\Controllers\SucursalController;
 use App\Http\Controllers\SuperadminController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\VentaController;
+use App\Http\Controllers\VentaTestController;
 use App\Livewire\Actualizaciones;
 use App\Livewire\DuenoTienda\ClientePanel\GestionClientes;
 use App\Livewire\DuenoTienda\ProveedorPanel\GestionProveedores;
@@ -18,6 +21,7 @@ use App\Models\VentaMetodoPago;
 use App\Services\ComprobanteService;
 use App\Services\ComprobanteServicio;
 use App\Services\ComprobanteSinSunatServicio;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Route;
 use Laravel\Socialite\Facades\Socialite;
@@ -117,6 +121,10 @@ Route::middleware(['auth'])->group(function () {
         ->name('ventas')
         ->middleware('can:gestionar ventas');
 
+    Route::get('/ventas/reporte', [ReporteVentasController::class, 'index'])
+        ->name('ventas.reporte')
+        ->middleware('can:gestionar ventas');
+
     Route::post('/ventas/duplicar', function (Request $request) {
         $uuid = $request->uuid;
         $venta = Venta::with(['detalles.producto'])
@@ -206,6 +214,7 @@ Route::middleware(['auth'])->group(function () {
 
 Route::get('/ver-factura/{serie?}/{numero?}', [FacturaController::class, 'mostrar'])->name('ver_factura');
 
+Route::get('/test-venta', [VentaTestController::class, 'testear']);
 
 Route::get('/ventaTest', function () {
     return ComprobanteService::generar(30);
@@ -218,24 +227,55 @@ Route::get('/ticketTest', function () {
 })->name('ticketTest');
 
 Route::get('/actualizaciones', function () {
-        return view('livewire.actualizaciones.index-actualizaciones');
-    })->name('actualizaciones');
+    return view('livewire.actualizaciones.index-actualizaciones');
+})->name('actualizaciones');
 
 Route::prefix('api')->middleware('auth')->group(function () {
+
+    //NUEVA VERSION DE ESCRITORIO
+  
+    //FIN NUEVA VERSION
+
     Route::get('/mis-sucursales', [SucursalController::class, 'sucursalesPorUsuario'])->name('listar.sucursales.porusuario');
     Route::get('/mis-negocios', [SucursalController::class, 'negociosPorUsuario'])->name('listar.negocios.porusuario');
     Route::get('/mis-productos', [SucursalController::class, 'buscarProductos'])->name('buscar.productos.porsucursal');
+    Route::get('/mi-negocio-activo', function () {
+        $negocio = Auth::user()->negocioActivo;
+
+        if (!$negocio) {
+            return response()->json(null, 404);
+        }
+
+        // Cargamos solo los campos necesarios de las sucursales
+        $negocio->load([
+            'sucursales' => function ($query) {
+                $query->select('id', 'negocio_id', 'nombre', 'direccion');
+            }
+        ]);
+
+        // Retornamos solo los campos esenciales del negocio
+        return response()->json([
+            'id' => $negocio->id,
+            'nombre_legal' => $negocio->nombre_legal,
+            'logo_factura' => $negocio->logo_factura,
+            'sucursales' => $negocio->sucursales
+        ]);
+    })->name('negocio.activo');
     Route::get('/cliente/buscar', [ClienteController::class, 'buscar'])->name('cliente.buscar');
     Route::post('/cliente/sunat', [ClienteController::class, 'sunatPorRuc']);
     Route::post('/cliente/crear', [ClienteController::class, 'registrar'])->name('cliente.registrar');
     Route::post('/venta/registrar', [VentaController::class, 'registrar'])->name('venta.registrar');
-    Route::get('/venta/listar/{negocio}/{sucursal?}', [VentaController::class, 'listar'])->name('venta.listar');
+    Route::get('/venta/listar/{sucursal?}', [VentaController::class, 'listar'])->name('venta.listar');
 });
 
 Route::get('/auth/google', function () {
     return Socialite::driver('google')->redirect();
 })->name('google_auth');
-
+Route::get('/auth/google/desktop', function () {
+    // Guardamos en sesión que este login viene de Electron
+    session(['is_desktop' => true]);
+    return Socialite::driver('google')->redirect();
+});
 Route::get('/auth/google/callback', function () {
     $user = Socialite::driver('google')->user();
 
@@ -259,7 +299,6 @@ Route::get('/auth/google/callback', function () {
     } else {
         // Crea un nuevo usuario con el rol 'dueno_tienda'
         $newUser = User::create([
-            'code' => Str::random(15),
             'name' => $user->getName(),
             'email' => $user->getEmail(),
             'google_account_id' => $user->getId(),
@@ -270,6 +309,12 @@ Route::get('/auth/google/callback', function () {
         $newUser->assignRole('dueno_tienda');
 
         Auth::login($newUser);
+    }
+
+    if (session('is_desktop')) {
+        session()->forget('is_desktop');
+        $uuid = Auth::user()->uuid; // Usamos tu campo 'code' como identificador
+        return view('auth.desktop_success', ['uuid' => $uuid]);
     }
 
     return to_route('dashboard');  // Redirige al dashboard

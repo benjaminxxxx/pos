@@ -1,15 +1,9 @@
 <x-card>
-    <flux:heading size="lg" class="mb-6">{{ $isEditing ? 'Editar Sucursal' : 'Nueva Sucursal' }}</flux:heading>
+    <flux:heading class="mb-6">{{ $isEditing ? 'Editar Sucursal' : 'Nueva Sucursal' }} para {{ $negocioSeleccionado->nombre_legal }}</flux:heading>
 
     <form wire:submit.prevent="save" class="space-y-6">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <flux:select wire:model="negocio_id" label="Negocio" required>
-                <option value="">Seleccione un negocio</option>
-                @foreach ($negocios as $negocio)
-                    <option value="{{ $negocio->id }}">{{ $negocio->nombre_legal }}</option>
-                @endforeach
-            </flux:select>
-            <flux:input wire:model="nombre" label="Nombre" placeholder="Nombre de la sucursal" required />
+            <flux:input wire:model="nombre" label="Nombre de Sucursal" placeholder="Nombre de la sucursal" required />
             <flux:input wire:model="direccion" label="Dirección" placeholder="Dirección de la sucursal" required />
             <flux:input wire:model="telefono" label="Teléfono" placeholder="Teléfono de contacto" />
             <flux:input wire:model="email" label="Email" type="email" placeholder="Email de contacto" />

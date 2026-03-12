@@ -4,16 +4,17 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
 class Negocio extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'negocios';
 
     protected $fillable = [
-        'user_id',
+        //'user_id', Ahora todo se maneja con cuenta_id
         'cuenta_id',
         'uuid',
         'nombre_legal',
@@ -55,11 +56,6 @@ class Negocio extends Model
     public function productos()
     {
         return $this->hasMany(Producto::class,'negocio_id');
-    }
-    // Relación con el usuario
-    public function user()
-    {
-        return $this->belongsTo(User::class);
     }
 
     // Relación con Información Adicional

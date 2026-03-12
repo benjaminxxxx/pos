@@ -23,7 +23,7 @@ class SalidaProductosComponent extends Component
 
         // Obtener todas las IDs de las sucursales del negocio
         $sucursalIds = $this->negocioSeleccionado->sucursales()->pluck('id');
-
+        
         // Buscar todas las salidas de esas sucursales
         $salidas = ProductoSalida::with(['producto', 'sucursal', 'detalles'])
             ->whereIn('sucursal_id', $sucursalIds)

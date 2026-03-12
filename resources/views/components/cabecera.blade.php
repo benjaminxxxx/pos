@@ -1,7 +1,7 @@
 <div>
-    @if($negocioActual)
-    <x-flux::badge color="green" class="mb-4">
-        {{ $negocioActual->nombre_legal }}
-    </x-flux::badge>
+    @if ($negocioActual)
+        <flux:navbar.item :href="route('dashboard')" :current="request()->routeIs('dashboard')">
+            {{ $negocioActual->nombre_legal }}
+        </flux:navbar.item>
     @endif
 </div>

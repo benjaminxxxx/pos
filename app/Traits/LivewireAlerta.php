@@ -30,5 +30,33 @@ trait LivewireAlerta
         }
 
     }
+    public function alertModal(string $type = 'success', string $title = '', string $message = '')
+    {
+        $alert = LivewireAlert::title($title)
+            ->text($message)
+            ->withConfirmButton('Cerrar')
+            ->timer(0);
+
+        switch ($type) {
+            case 'error':
+                $alert->error();
+                break;
+
+            case 'warning':
+                $alert->warning();
+                break;
+
+            case 'info':
+                $alert->info();
+                break;
+
+            case 'success':
+            default:
+                $alert->success();
+                break;
+        }
+
+        $alert->show();
+    }
 }
 

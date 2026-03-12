@@ -15,10 +15,14 @@ class SeleccionarNegocioController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate(['negocio_uuid' => 'required|exists:negocios,uuid']);
+        $request->validate([
+            'negocio_uuid' => 'required|exists:negocios,uuid'
+        ]);
 
-        session(['negocio_actual_uuid' => $request->negocio_uuid]);
+        session([
+            'negocio_actual_uuid' => $request->negocio_uuid
+        ]);
 
-        return redirect()->intended('/dashboard'); // o la ruta inicial del sistema
+        return redirect()->intended(route('dashboard'));
     }
 }

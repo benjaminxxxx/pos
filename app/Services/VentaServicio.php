@@ -20,10 +20,65 @@ use Exception;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Session;
 
 
 class VentaServicio
 {
+    public static function regularizar(Venta $ventaOrigen, array $opciones): Venta
+    {
+        // Marcar origen como descartada
+        $ventaOrigen->update(['sunat_estado' => 'descartada']);
+
+        // Nuevo correlativo
+        $correlativoServicio = new CorrelativoServicio();
+        $numeracion = $correlativoServicio->obtenerSiguienteCorrelativo(
+            $ventaOrigen->sucursal_id,
+            $ventaOrigen->tipo_comprobante_codigo
+        );
+
+        // Clonar venta con nueva fecha y referencia al origen
+        $nuevaVenta = DB::transaction(function () use ($ventaOrigen, $numeracion, $opciones) {
+
+            $nueva = $ventaOrigen->replicate();
+            $nueva->uuid = \Str::uuid();
+            $nueva->serie_comprobante = $numeracion['serie'];
+            $nueva->correlativo_comprobante = $numeracion['correlativo'];
+            $nueva->fecha_emision = $opciones['nueva_fecha_emision'];
+            $nueva->sunat_estado = 'pendiente_sunat';
+            $nueva->sunat_cdr_codigo = null;
+            $nueva->sunat_cdr_descripcion = null;
+            $nueva->sunat_xml_firmado = null;
+            $nueva->sunat_cdr = null;
+            $nueva->sunat_comprobante_pdf = null;
+            $nueva->voucher_pdf = null;
+
+            // Referencia al origen
+            $nueva->modo_venta = $ventaOrigen->negocio->modo;
+            $nueva->venta_origen_id = $ventaOrigen->id;
+            $nueva->serie_origen = $ventaOrigen->serie_comprobante;
+            $nueva->correlativo_origen = $ventaOrigen->correlativo_comprobante;
+            $nueva->motivo_regularizacion = $opciones['motivo_regularizacion'];
+
+            $nueva->save();
+
+            // Incrementar correlativo
+            $numeracion['model']->increment('correlativo_actual');
+
+            // Replicar detalles (sin recalcular stock, ya salió con la venta original)
+            foreach ($ventaOrigen->detalles as $detalle) {
+                $nuevoDetalle = $detalle->replicate();
+                $nuevoDetalle->venta_id = $nueva->id;
+                $nuevoDetalle->save();
+            }
+
+            return $nueva;
+        });
+        // Enviar a SUNAT
+        self::enviarASunat($nuevaVenta);
+
+        return self::cargarVentaCompleta($nuevaVenta->id);
+    }
     public function anularVenta($uuid)
     {
         DB::transaction(function () use ($uuid) {
@@ -87,7 +142,7 @@ class VentaServicio
             // 2. Movimiento de CAJA (EGRESO)
             // =========================
             $tipoVenta = TipoMovimiento::where('slug', 'anulacion_venta')->first();
-            if(!$tipoVenta){
+            if (!$tipoVenta) {
                 throw new Exception('No existe un indicador de tipo de venta válido.');
             }
             $dataAnulacion = [
@@ -149,6 +204,7 @@ class VentaServicio
     }
     public static function generarVenta($data)
     {
+        //real current
         $venta = $data['venta'];
         $tipoComprobante = $data['tipo_comprobante_codigo'] ?? null;
         $cliente = $data['cliente'] ?? null;
@@ -158,10 +214,7 @@ class VentaServicio
         if (!$tipoComprobante || !in_array($tipoComprobante, ['01', '03', 'ticket'])) {
             throw new Exception('Debe seleccionar un tipo de comprobante.');
         }
-        /*
-        if ($tipoComprobante == 'ticket') {
-            $tipoComprobante = null; // Para tickets no se requiere tipo de comprobante específico, se va a facturar o boletear despues
-        }*/
+
         if ($tipoComprobante == '01' && !$cliente) {
             throw new Exception('Debe agregar un cliente para emitir una factura.');
         }
@@ -218,13 +271,16 @@ class VentaServicio
 
         self::validarFechaEmision($fechaEmision, $tipoComprobante);
 
-        $negocioId = $data['negocio_id'] ?? null;
+
         $sucursalId = $data['sucursal_id'] ?? null;
 
-        $negocio = Negocio::find($negocioId);
+
+        $sucursal = Sucursal::findOrFail($sucursalId);
+        $negocio = $sucursal->negocio;
         if (!$negocio) {
             throw new Exception('El negocio ya no existe');
         }
+        $negocioId = $negocio->id;
 
         $modo_venta = $negocio->modo;
         return DB::transaction(function () use ($data, $modo_venta, $negocioId, $cliente, $venta, $tipoComprobante) {
@@ -364,9 +420,314 @@ class VentaServicio
             return $ventaModel;
         });
     }
+    public static function registrarv2(array $data): Venta
+    {
+        $tipoComprobante = $data['tipo_comprobante_codigo'] ?? null;
+        $sucursalId = $data['sucursal_id'] ?? null;
+
+        // PASO 1: Obtener numeración
+        $correlativoServicio = new CorrelativoServicio();
+        $numeracion = $correlativoServicio->obtenerSiguienteCorrelativo($sucursalId, $tipoComprobante);
+
+        // PASO 2: Guardar venta en DB (transaction)
+        // Si falla aquí, no pasa nada, no llegó nada a SUNAT
+        $venta = self::guardarVenta($data, $numeracion);
+
+        // PASO 3: Ticket/Nota de venta - no va a SUNAT, termina aquí
+        if ($tipoComprobante === 'ticket') {
+            ComprobanteSinSunatServicio::generarTicket($venta->id, $numeracion);
+            return self::cargarVentaCompleta($venta->id);
+        }
+
+        // PASO 4: Enviar a SUNAT (fuera del transaction)
+        self::enviarASunat($venta);
+
+        return self::cargarVentaCompleta($venta->id);
+    }
+    private static function cargarVentaCompleta(int $ventaId): Venta
+    {
+        $venta = Venta::with(['detalles.producto', 'cliente', 'notas'])->findOrFail($ventaId);
+
+        $discos = ['voucher_pdf', 'sunat_comprobante_pdf', 'sunat_xml_firmado', 'sunat_cdr'];
+        foreach ($discos as $campo) {
+            $venta->$campo = $venta->$campo
+                ? Storage::disk('public')->url($venta->$campo)
+                : null;
+        }
+
+        return $venta;
+    }
+    public static function enviarASunat(Venta $venta): void
+    {
+        // Validar fecha de emisión antes de enviar
+        $fechaEmision = new \DateTime($venta->fecha_emision);
+        $limite = (new \DateTime())->modify('-3 days');
+
+        if ($fechaEmision < $limite) {
+            $venta->update([
+                'sunat_estado' => 'error_fecha',
+                'sunat_cdr_descripcion' => "Fecha de emisión {$venta->fecha_emision} excede los 3 días permitidos. Corrija la fecha manualmente.",
+            ]);
+            return; // No lanzar excepción, dejar que el controller informe al usuario
+        }
+
+        // Numeracion viene de la venta ya guardada
+        $numeracion = [
+            'serie' => $venta->serie_comprobante,
+            'correlativo' => $venta->correlativo_comprobante,
+        ];
+
+        // Negocio viene de la relación
+        $negocio = $venta->negocio;
+        //dd(1);
+        try {
+            $comprobanteServicio = new ComprobanteServicio();
+            $sunatResponse = $comprobanteServicio->generarV2($venta, $numeracion, $negocio);
+
+            // ── Validar código CDR ── (aquí estaba el bug original)
+            $cdrCode = (int) ($sunatResponse['cdrResponse']['code'] ?? -1);
+            $cdrDesc = $sunatResponse['cdrResponse']['description'] ?? 'Sin descripción';
+
+            if ($cdrCode === 0) {
+                $venta->update([
+                    'sunat_estado' => 'aceptada',
+                    'sunat_xml_firmado' => $sunatResponse['xml_path'],
+                    'sunat_cdr' => $sunatResponse['cdr_path'],
+                    'sunat_comprobante_pdf' => $sunatResponse['sunat_pdf'],
+                    'voucher_pdf' => $sunatResponse['voucher_pdf'],
+                    'sunat_cdr_codigo' => $cdrCode,
+                    'sunat_cdr_descripcion' => $cdrDesc,
+                ]);
+            } else {
+                // SUNAT recibió pero rechazó (ej: 2326 certificado de baja, 1033 duplicado, etc.)
+                $venta->update([
+                    'sunat_estado' => 'rechazada',
+                    'sunat_cdr_codigo' => $cdrCode,
+                    'sunat_cdr_descripcion' => $cdrDesc,
+                    // Igual guardamos xml/cdr para poder inspeccionarlos
+                    'sunat_xml_firmado' => $sunatResponse['xml_path'] ?? null,
+                    'sunat_cdr' => $sunatResponse['cdr_path'] ?? null,
+                ]);
+            }
+
+        } catch (\Throwable $e) {
+
+            // Error de red, certificado no encontrado, timeout, etc.
+            $venta->update([
+                'sunat_estado' => 'error_sistema',
+                'sunat_cdr_descripcion' => $e->getMessage(),
+            ]);
+        }
+    }
+    private static function guardarVenta(array $data, array $numeracion): Venta
+    {
+        $venta = $data['venta'];
+        $tipoComprobante = $data['tipo_comprobante_codigo'] ?? null;
+        $cliente = $data['cliente'] ?? null;
+        $sucursalId = $data['sucursal_id'] ?? null;
+
+        // ── Validaciones ANTES del transaction ──────────────────────────────
+        if (!$tipoComprobante || !in_array($tipoComprobante, ['01', '03', 'ticket'])) {
+            throw new Exception('Debe seleccionar un tipo de comprobante.');
+        }
+
+        if ($tipoComprobante == '01' && !$cliente) {
+            throw new Exception('Debe agregar un cliente para emitir una factura.');
+        }
+
+        if (empty($venta['productos'])) {
+            throw new Exception('Falta agregar productos a la venta.');
+        }
+
+        $pagado = (float) $data['totalPago'];
+        $monto_importe_venta = (float) $venta['monto_importe_venta'];
+
+        if ($pagado != $monto_importe_venta) {
+            $diferencia = abs($pagado - $monto_importe_venta);
+
+            if ($diferencia > 0.05) {
+                throw new Exception(
+                    "El monto ingresado (S/ " . number_format($pagado, 2) .
+                    ") no coincide con el total (S/ " . number_format($monto_importe_venta, 2) . ")."
+                );
+            }
+
+            $decimal = round(fmod($pagado, 1), 2);
+            $fraccionesValidas = [0.00, 0.10, 0.20, 0.30, 0.50, 0.60, 0.70, 0.80, 0.90];
+
+            if (!in_array($decimal, $fraccionesValidas)) {
+                throw new Exception(
+                    "El monto S/ " . number_format($pagado, 2) . " no es válido. " .
+                    "Ingrese el monto exacto: S/ " . number_format($monto_importe_venta, 2)
+                );
+            }
+        }
+
+        if ($tipoComprobante == '03' && $monto_importe_venta > 700 && !$cliente) {
+            throw new Exception('Para boletas con monto mayor a S/ 700 debe agregar un cliente.');
+        }
+
+        self::validarFechaEmision($data['fecha_emision'] ?? null, $tipoComprobante);
+
+        $sucursal = Sucursal::findOrFail($sucursalId);
+        $negocio = $sucursal->negocio;
+
+        if (!$negocio) {
+            throw new Exception('El negocio ya no existe');
+        }
+
+        // ── Transaction: solo escrituras en DB ──────────────────────────────
+        return DB::transaction(function () use ($data, $numeracion, $venta, $cliente, $tipoComprobante, $negocio) {
+
+            // Bloqueo pesimista: evita correlativo duplicado por race condition
+            $correlativoDuplicado = Venta::where('serie_comprobante', $numeracion['serie'])
+                ->where('correlativo_comprobante', $numeracion['correlativo'])
+                ->where('sucursal_id', $data['sucursal_id'])
+                ->lockForUpdate()
+                ->exists();
+
+            if ($correlativoDuplicado) {
+                throw new Exception(
+                    "Correlativo {$numeracion['serie']}-{$numeracion['correlativo']} ya existe."
+                );
+            }
+
+            // ── Crear venta ──────────────────────────────────────────────────
+            $nombreCliente = $cliente ? $cliente['nombre_completo'] : 'VARIOS';
+
+            $ventaModel = Venta::create([
+                'uuid' => Str::uuid(),
+
+                // Cliente
+                'cliente_id' => $cliente['id'] ?? null,
+                'nombre_cliente' => $nombreCliente,
+                'documento_cliente' => $cliente['numero_documento'] ?? '00000000',
+                'tipo_documento_cliente' => $cliente['tipo_documento_id'] ?? '1',
+                'cliente_ubigeo' => $cliente['ubigeo'] ?? null,
+                'cliente_departamento' => $cliente['departamento'] ?? null,
+                'cliente_provincia' => $cliente['provincia'] ?? null,
+                'cliente_distrito' => $cliente['distrito'] ?? null,
+                'cliente_urbanizacion' => $cliente['urbanizacion'] ?? null,
+                'cliente_direccion' => $cliente['direccion'] ?? null,
+                'cliente_email' => $cliente['email'] ?? null,
+                'cliente_telefono' => $cliente['telefono'] ?? null,
+
+                // Montos
+                'valor_venta' => $venta['valor_venta'] ?? 0,
+                'sub_total' => $venta['subtotal'] ?? 0,
+                'redondeo' => $data['redondeo'] ?? 0,
+                'monto_importe_venta' => $venta['monto_importe_venta'] ?? 0,
+                'monto_operaciones_gravadas' => $venta['monto_operaciones_gravadas'] ?? 0,
+                'monto_operaciones_exoneradas' => $venta['monto_operaciones_exoneradas'] ?? 0,
+                'monto_operaciones_inafectas' => $venta['monto_operaciones_inafectas'] ?? 0,
+                'monto_operaciones_exportacion' => $venta['monto_operaciones_exportacion'] ?? 0,
+                'monto_operaciones_gratuitas' => $venta['monto_operaciones_gratuitas'] ?? 0,
+                'monto_igv' => $venta['monto_igv'] ?? 0,
+                'monto_igv_gratuito' => $venta['monto_igv_gratuito'] ?? 0,
+                'icbper' => $venta['icbper'] ?? 0,
+                'total_impuestos' => $venta['total_impuestos'] ?? 0,
+
+                // Comprobante - viene del numeracion calculado
+                'tipo_comprobante_codigo' => $tipoComprobante,
+                'serie_comprobante' => $numeracion['serie'],
+                'correlativo_comprobante' => $numeracion['correlativo'],
+
+                // Estado inicial
+                'sunat_estado' => 'pendiente_sunat',
+                'sunat_xml_firmado' => null,
+                'sunat_cdr' => null,
+                'sunat_comprobante_pdf' => null,
+                'voucher_pdf' => null,
+
+                // Otros
+                'modo_venta' => $negocio->modo,
+                'estado' => 'pagado',
+                'tipo_factura' => '0101',
+                'caja_id' => $data['caja_id'] ?? null,
+                'sucursal_id' => $data['sucursal_id'] ?? null,
+                'fecha_emision' => $data['fecha_emision'] ?? null,
+                'fecha_pago' => $data['fecha_pago'] ?? null,
+                'negocio_id' => $negocio->id,
+            ]);
+
+            // ── Movimiento de caja ───────────────────────────────────────────
+            $tipoVenta = TipoMovimiento::where('slug', 'venta_sistema')->firstOrFail();
+
+            app(MovimientoCajaServicio::class)->registrar([
+                'tipo_movimiento_id' => $tipoVenta->id,
+                'cuenta_id' => Auth::user()->cuenta->id,
+                'sucursal_id' => $ventaModel->sucursal_id,
+                'usuario_id' => auth()->id(),
+                'monto' => $ventaModel->monto_importe_venta,
+                'referencia_tipo' => Venta::class,
+                'referencia_id' => $ventaModel->id,
+                'observacion' => "Venta realizada folio #{$ventaModel->id}",
+            ]);
+
+            // ── Métodos de pago ──────────────────────────────────────────────
+            foreach ($data['metodos_pagos'] ?? [] as $metodo) {
+                VentaMetodoPago::create([
+                    'venta_id' => $ventaModel->id,
+                    'metodo' => $metodo['codigo'],
+                    'monto' => $metodo['monto'],
+                ]);
+            }
+
+            // ── Detalles y stock ─────────────────────────────────────────────
+            foreach ($venta['productos'] as $detalle) {
+                $totalUnidades = ($detalle['cantidad'] ?? 1) * ($detalle['factor'] ?? 1);
+
+                $detalleVenta = DetalleVenta::create([
+                    'venta_id' => $ventaModel->id,
+                    'producto_id' => $detalle['producto_id'] ?? null,
+                    'unidad' => $detalle['unidad'] ?? null,
+                    'descripcion' => $detalle['descripcion'] ?? null,
+                    'cantidad' => $detalle['cantidad'] ?? 0,
+                    'monto_valor_unitario' => $detalle['monto_valor_unitario'] ?? 0,
+                    'monto_valor_gratuito' => $detalle['monto_valor_gratuito'] ?? 0,
+                    'monto_valor_venta' => $detalle['monto_valor_venta'] ?? 0,
+                    'monto_base_igv' => $detalle['monto_base_igv'] ?? 0,
+                    'monto_precio_unitario' => $detalle['monto_precio_unitario'] ?? 0,
+                    'porcentaje_igv' => $detalle['porcentaje_igv'] ?? 0,
+                    'igv' => $detalle['igv'] ?? 0,
+                    'tipo_afectacion_igv' => $detalle['tipo_afectacion_igv'] ?? null,
+                    'total_impuestos' => $detalle['total_impuestos'] ?? 0,
+                    'categoria_producto' => $detalle['categoria_producto'] ?? null,
+                    'factor' => $detalle['factor'] ?? 1,
+                    'es_gratuita' => $detalle['es_gratuita'] ?? false,
+                    'es_icbper' => $detalle['es_icbper'] ?? false,
+                    'icbper' => $detalle['icbper'] ?? 0,
+                    'factor_icbper' => $detalle['factor_icbper'] ?? 0,
+                ]);
+
+                $salida = app(SalidaProductoServicio::class)->generarSalida([
+                    'producto_id' => $detalleVenta->producto_id,
+                    'sucursal_id' => $ventaModel->sucursal_id,
+                    'tipo_salida' => 'VENTA',
+                    'cantidad' => $totalUnidades,
+                    'costo_unitario' => 0,
+                    'fecha_salida' => $ventaModel->fecha_emision,
+                    'referencia_id' => $detalleVenta->id,
+                    'referencia_tipo' => get_class($detalleVenta),
+                    'created_by' => auth()->id(),
+                    'estado' => 'pendiente',
+                ]);
+
+                app(InventarioServicio::class)->validarStock($salida);
+            }
+
+            $numeracion['model']->increment('correlativo_actual');
+
+            return $ventaModel;
+        });
+    }
     public static function registrar($data)
     {
+        /*
+        $sesion  = Session::all();
+        throw new Exception(json_encode($sesion));
 
+*/
         $tipoComprobante = $data['tipo_comprobante_codigo'] ?? null;
         $sucursalId = $data['sucursal_id'] ?? null;
         $correlativoServicio = new CorrelativoServicio();
@@ -376,6 +737,7 @@ class VentaServicio
         //revisamos el estado del negocio
         $sucursal = Sucursal::findOrFail($sucursalId);
         $modo = $sucursal->negocio->modo;
+
 
         $numeracion = $correlativoServicio->obtenerNumeracion($sucursalId, $tipoComprobante);
         // throw new Exception(json_encode($data));
@@ -426,17 +788,16 @@ class VentaServicio
         if (!in_array($negocio, $negocioIds)) {
             throw new Exception("Usuario no autorizado para este negocio: {$negocio}");
         }
-
+            
         // Si el negocio tiene sucursales, validar acceso
-        $sucursalesUsuario = $user->sucursales->pluck('id')->toArray();
-
+        $sucursalesUsuario = $user->sucursales()->get()->pluck('id')->toArray();
+//throw new Exception(json_encode($sucursalesUsuario));
         if ($sucursal && !in_array($sucursal, $sucursalesUsuario)) {
             throw new Exception("Usuario no autorizado para la sucursal {$sucursal} del negocio {$negocio}");
         }
 
         // Query base
-        $query = Venta::where('negocio_id', $negocio)
-            ->with(['detalles', 'cliente', 'notas']);
+        $query = Venta::with(['detalles', 'cliente', 'notas']);
 
         if ($sucursal) {
             $query->where('sucursal_id', $sucursal);

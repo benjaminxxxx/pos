@@ -1,6 +1,4 @@
-<flux:heading size="lg" class="mb-6">{{ $isEditing ? 'Editar Negocio' : 'Nuevo Negocio' }}</flux:heading>
-
-<form wire:submit.prevent="save" class="space-y-6">
+<form wire:submit.prevent="guardarNegocio" class="space-y-6">
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
         <flux:input wire:model="nombre_legal" label="Nombre Legal" placeholder="Nombre legal del negocio" required />
         <flux:input wire:model="nombre_comercial" label="Nombre Comercial" placeholder="Nombre comercial del negocio"

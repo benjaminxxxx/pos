@@ -1,15 +1,16 @@
-<div class="container mx-auto py-6">
-    <div class="flex justify-between items-center mb-6">
-        <flux:heading>Gestión de Sucursales</flux:heading>
-        <flux:button wire:click="create" variant="primary" icon="plus">
+<div class="space-y-4">
+    <x-flex class="justify-between">
+        <x-title>
+            Gestión de Sucursales
+        </x-title>
+        <flux:button wire:click="create" icon="plus">
             Nueva Sucursal
         </flux:button>
-    </div>
+    </x-flex>
 
-    @if($showForm)
+    @if ($showForm)
         @include('livewire.dueno_tienda.sucursal_panel.form-sucursal')
     @else
         @include('livewire.dueno_tienda.sucursal_panel.lista-sucursales')
     @endif
 </div>
-

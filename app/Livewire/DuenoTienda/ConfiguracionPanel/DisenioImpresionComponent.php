@@ -2,11 +2,13 @@
 
 namespace App\Livewire\DuenoTienda\ConfiguracionPanel;
 
+use App\Models\DisenioImpresion;
 use App\Traits\LivewireAlerta;
+use Auth;
 use Livewire\Component;
 use App\Services\DisenioImpresionServicio;
 
-class DisenioImpresion extends Component
+class DisenioImpresionComponent extends Component
 {
     use LivewireAlerta;
 
@@ -36,7 +38,7 @@ class DisenioImpresion extends Component
     public function mount(DisenioImpresionServicio $servicio)
     {
         // El servicio se inyecta aquí y se usa solo para la carga inicial
-        $this->negocios = $servicio->getNegocios(auth()->id());
+        $this->negocios = Auth::user()->negocios;
         $this->tiposComprobante = $servicio->getTiposComprobante();
     }
 
@@ -153,7 +155,7 @@ class DisenioImpresion extends Component
             }
 
             // Buscar si existe configuración personalizada para este diseño
-            $existente = \App\Models\DisenioImpresion::where('negocio_id', $this->selectedNegocio)
+            $existente = DisenioImpresion::where('negocio_id', $this->selectedNegocio)
                 ->where('sucursal_id', $this->selectedSucursal)
                 ->where('disenio_id', $disenioSeleccionado)
                 ->where('activo', true)

@@ -1,17 +1,17 @@
-<div>
-    <x-loading wire:loading />
+<div class="space-y-4">
+    <x-flex class="justify-between">
+        <x-title>Gestión de Productos</x-title>
+        <flux:button wire:click="create" icon="plus">
+            Nuevo Producto
+        </flux:button>
+    </x-flex>
     <x-card>
         @if ($negocioSeleccionado)
             <x-flex class="justify-between mb-4">
                 <div>
-                    <x-h1>Gestión de Productos</x-h1>
-                    <flux:heading>Negocio: {{ $negocioSeleccionado->nombre_legal }}</flux:heading>
+
                 </div>
                 <div class="flex space-x-2">
-                    <flux:button wire:click="cambiarNegocio"
-                        variant="filled">
-                        Cambiar Negocio
-                    </flux:button>
                     <flux:button variant="primary" wire:click="create" icon="plus">
                         Nuevo Producto
                     </flux:button>
@@ -32,7 +32,5 @@
             </x-flex>
         @endif
     </x-card>
-
-    <!-- Modal para seleccionar negocio -->
-    <x-seleccionar-negocio-modal :mostrar="$mostrarModalSeleccionNegocio" :negocios="$negocios" />
+    <x-loading wire:loading />
 </div>

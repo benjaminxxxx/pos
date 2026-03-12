@@ -9,7 +9,7 @@ use DB;
 
 class CorrelativoServicio
 {
-    public static function listarPorNegocio($negocioId)
+    public static function listarPorNegocio()
     {
         $user = Auth::user();
 
@@ -19,14 +19,14 @@ class CorrelativoServicio
         }
 
         // Verificar que el negocio pertenezca al usuario
-        $negocio = $user->negocios()->where('id', $negocioId)->first();
+        $negocio = $user->negocio_activo;
 
         if (!$negocio) {
             throw new \Exception("No tienes acceso a este negocio.");
         }
 
         return Correlativo::with(['tipoComprobante', 'sucursales'])
-            ->where('negocio_id', $negocioId)
+            ->where('negocio_id', $negocio->id)
             ->get();
     }
 
@@ -38,7 +38,7 @@ class CorrelativoServicio
             throw new \Exception("Solo el dueño de tienda puede crear o editar correlativos.");
         }
 
-        $negocio = $user->negocios()->where('id', $data['negocio_id'])->first();
+        $negocio = $user->negocio_activo;
 
         if (!$negocio) {
             throw new \Exception("No tienes acceso al negocio seleccionado.");

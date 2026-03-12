@@ -1,5 +1,4 @@
-
-<div {{ $attributes->merge(['class' => 'lg:flex space-y-2 lg:space-y-0 items-center gap-4']) }}>
+<div {{ $attributes->merge(['class' => 'flex flex-wrap items-center gap-x-3 gap-y-3']) }}>
     {{ $slot }}
 </div>
 

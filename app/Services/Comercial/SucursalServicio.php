@@ -4,6 +4,7 @@ namespace App\Services\Comercial;
 
 use App\Models\Sucursal;
 use Auth;
+use Illuminate\Auth\Access\AuthorizationException;
 
 class SucursalServicio
 {
@@ -12,15 +13,22 @@ class SucursalServicio
         $user = Auth::user();
 
         if (!$user->hasRole('dueno_tienda')) {
-            throw new \Exception("Acceso no habilitado para este tipo de usuario.");
+            throw new AuthorizationException(
+                'No tienes permisos para acceder a las sucursales.'
+            );
         }
 
-        // Verificar que el negocio pertenece al dueño de tienda
-        $negocio = $user->negocios()->where('id', $negocioId)->first();
-        if (!$negocio) {
-            throw new \Exception("No tienes acceso a este negocio.");
+        $negocioActivo = $user->negocioActivo;
+
+        if (!$negocioActivo || $negocioActivo->id !== $negocioId) {
+            throw new AuthorizationException(
+                'No tienes acceso a este negocio.'
+            );
         }
 
-        return Sucursal::where('negocio_id', $negocioId)->get();
+        return Sucursal::where('negocio_id', $negocioId)
+            ->where('estado', true)
+            ->orderBy('nombre')
+            ->get();
     }
 }

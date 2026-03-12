@@ -1,71 +1,53 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import api from '@/lib/axios'
-import SeleccionarNegocio from '@/Pages/SeleccionarNegocio.vue'
 import SeleccionarSucursal from '@/Pages/SeleccionarSucursal.vue'
 import PanelVender from '@/Pages/PanelVender.vue'
 
-const negocioSeleccionado = ref(JSON.parse(localStorage.getItem('negocioSeleccionado')))
+const negocioActivo = ref(null)
 const sucursalSeleccionada = ref(JSON.parse(localStorage.getItem('sucursalSeleccionada')))
-const negocios = ref([])
 const cargando = ref(true)
 const error = ref(null)
 
-const obtenerNegocios = async () => {
+const obtenerConfiguracionVenta = async () => {
   try {
-    const response = await api.get('/mis-negocios')
-    negocios.value = response.data
+    // Obtenemos el negocio activo directamente del backend (Auth::user()->negocio_activo)
+    const response = await api.get('/mi-negocio-activo')
+    negocioActivo.value = response.data
 
-    // Validar si el negocioSeleccionado todavía existe
-    if (
-      negocioSeleccionado.value &&
-      !negocios.value.some(n => n.id === negocioSeleccionado.value.id)
-    ) {
-      cambiarNegocio()
+    if (!negocioActivo.value) {
+      error.value = 'No tienes un negocio activo. Por favor, configura tu negocio primero.'
+      return
     }
 
-    if (negocios.value.length === 1) {
-      seleccionarNegocio(negocios.value[0])
+    const sucursales = negocioActivo.value.sucursales || []
+   
+    if (sucursales.length === 0) {
+      error.value = 'Este negocio no tiene sucursales registradas.'
+      return
     }
+
+    // Si solo hay una sucursal, la seleccionamos automáticamente
+    if (sucursales.length === 1) {
+      seleccionarSucursal(sucursales[0])
+    }
+    // Si hay varias, validamos que la que está en localStorage pertenezca al negocio actual
+    else if (sucursalSeleccionada.value) {
+      const existe = sucursales.some(s => s.id === sucursalSeleccionada.value.id)
+      if (!existe) cambiarSucursal()
+    }
+
   } catch (err) {
-    console.error('Error cargando negocios:', err)
-    error.value = 'No se pudieron cargar los negocios'
+    console.error('Error cargando configuración:', err)
+    error.value = 'Error al conectar con el servidor'
   } finally {
     cargando.value = false
   }
 }
 
-const seleccionarNegocio = (negocio) => {
-  negocioSeleccionado.value = negocio
-  localStorage.setItem('negocioSeleccionado', JSON.stringify(negocio))
-
-  if (!negocio.sucursales || negocio.sucursales.length === 0) {
-    sucursalSeleccionada.value = null
-    localStorage.removeItem('sucursalSeleccionada')
-    error.value = 'Este negocio no tiene sucursales registradas. Debes crear al menos una para poder vender.'
-    return
-  }
-
-  if (negocio.sucursales.length === 1) {
-    seleccionarSucursal(negocio.sucursales[0])
-  } else {
-    sucursalSeleccionada.value = null
-    localStorage.removeItem('sucursalSeleccionada')
-  }
-}
-
-
 const seleccionarSucursal = (sucursal) => {
   sucursalSeleccionada.value = sucursal
   localStorage.setItem('sucursalSeleccionada', JSON.stringify(sucursal))
-  error.value = null
-}
-
-const cambiarNegocio = () => {
-  negocioSeleccionado.value = null
-  sucursalSeleccionada.value = null
-  localStorage.removeItem('negocioSeleccionado')
-  localStorage.removeItem('sucursalSeleccionada')
   error.value = null
 }
 
@@ -75,44 +57,32 @@ const cambiarSucursal = () => {
 }
 
 onMounted(() => {
-
-  obtenerNegocios()
+  obtenerConfiguracionVenta()
   if (window.ventaDuplicada) {
-    // Guardar venta duplicada temporalmente
     localStorage.setItem('ventaDuplicada', JSON.stringify(window.ventaDuplicada))
   }
 })
 </script>
 
 <template>
-  <div>
-    <div v-if="cargando">Cargando...</div>
-
-    <!-- Error si negocio no tiene sucursales -->
-    <div v-if="error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
-      <p class="font-semibold">{{ error }}</p>
-      <div class="mt-3 flex gap-3">
-        <button @click="cambiarNegocio"
-          class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium px-3 py-1 rounded">
-          Cambiar negocio
-        </button>
-        <a href="/mi-tienda/sucursales" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-3 py-1 rounded">
-          Crear sucursal
-        </a>
+  <div class="h-[calc(100vh-4rem)] bg-base">
+    <div v-if="cargando" class="flex justify-center p-10">
+      <div>
+        Cargando panel de ventas...
       </div>
     </div>
 
-    <!-- Paso 1: seleccionar negocio -->
-    <SeleccionarNegocio v-else-if="!negocioSeleccionado" :negocios="negocios"
-      @negocioSeleccionado="seleccionarNegocio" />
+    <div v-else-if="error" class="max-w-md mx-auto mt-10">
+      <div class="border-red-200 bg-red-50 dark:bg-red-900/20">
+        <div class="text-red-700 dark:text-red-400 font-medium">{{ error }}</div>
+        <a href="/dueno/negocios" class="mt-4">Ir a configuración</a>
+      </div>
+    </div>
 
-    <!-- Paso 2: seleccionar sucursal (si hay varias) -->
-    <SeleccionarSucursal
-      v-else-if="negocioSeleccionado && negocioSeleccionado.sucursales?.length > 1 && !sucursalSeleccionada"
-      :sucursales="negocioSeleccionado.sucursales" @sucursalSeleccionada="seleccionarSucursal" />
+    <SeleccionarSucursal v-else-if="negocioActivo.sucursales?.length >= 1 && !sucursalSeleccionada"
+      :sucursales="negocioActivo.sucursales" @sucursalSeleccionada="seleccionarSucursal" />
 
-    <!-- Paso 3: mostrar panel de ventas -->
-    <PanelVender v-else-if="negocioSeleccionado && sucursalSeleccionada" :negocio="negocioSeleccionado"
-      :sucursal="sucursalSeleccionada" @cambiarNegocio="cambiarNegocio" @cambiarSucursal="cambiarSucursal" />
+    <PanelVender v-else-if="negocioActivo && sucursalSeleccionada" :negocio="negocioActivo"
+      :sucursal="sucursalSeleccionada" @cambiarSucursal="cambiarSucursal" />
   </div>
 </template>

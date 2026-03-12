@@ -53,7 +53,20 @@ class User extends Authenticatable implements MustVerifyEmail
             'password' => 'hashed',
         ];
     }
+    protected $appends = ['negocio_activo'];
 
+    public function getNegocioActivoAttribute()
+    {
+        $uuid = session('negocio_actual_uuid');
+
+        if (!$uuid) {
+            return null;
+        }
+
+        return $this->negocios()
+            ->where('uuid', $uuid)
+            ->first();
+    }
     /**
      * Get the user's initials
      */
@@ -82,25 +95,49 @@ class User extends Authenticatable implements MustVerifyEmail
         return 'Email + Contraseña';
     }
 
-    public function negocios()
-    {
-        return $this->hasMany(Negocio::class, 'user_id', 'id');
-    }
     public function sucursales()
     {
-        return $this->hasManyThrough(
-            Sucursal::class,      // Modelo destino
-            Negocio::class,       // Modelo intermedio
-            'user_id',                        // Clave foránea en Negocio que apunta a User
-            'negocio_id',                     // Clave foránea en Sucursal que apunta a Negocio
-            'id',                             // Clave local en User
-            'id'                              // Clave local en Negocio
-        )->orderBy('negocio_id');
+        return Sucursal::whereHas('negocio', function ($q) {
+            $q->whereHas('cuenta', function ($q2) {
+                $q2->where('dueno_id', $this->id);
+            });
+        });
     }
+    /*
+        public function sucursales()
+        {
+            return $this->hasManyThrough(
+                Sucursal::class,      // Modelo destino
+                Negocio::class,       // Modelo intermedio
+                'user_id',                        // Clave foránea en Negocio que apunta a User
+                'negocio_id',                     // Clave foránea en Sucursal que apunta a Negocio
+                'id',                             // Clave local en User
+                'id'                              // Clave local en Negocio
+            )->orderBy('negocio_id');
+        }*/
     public function cuenta()
     {
         return $this->hasOne(Cuenta::class, 'dueno_id');
     }
+    public function negocios()
+    {
+        return $this->hasManyThrough(
+            Negocio::class,
+            Cuenta::class,
+            'dueno_id',
+            'cuenta_id',
+            'id',
+            'id'
+        )
+            ->select('negocios.*')
+            ->whereNull('cuentas.deleted_at');
+    }
+
+    /*
+    public function negocios()
+    {
+        return $this->hasMany(Negocio::class, 'user_id', 'id');
+    }*/
     public function proveedores()
     {
         // Si el usuario tiene rol dueno_tienda, devuelve los proveedores de su cuenta

@@ -1,6 +1,6 @@
 @props(['title' => null])
 
-<div class="rounded-lg shadow bg-white p-4 {{ $attributes->get('class') }}">
+<div class="rounded-lg shadow bg-card p-4 {{ $attributes->get('class') }}">
     @if ($title)
         <div class="border-b pb-2 mb-2 flex justify-between items-center">
             <h3 class="font-bold">{{ $title }}</h3>
