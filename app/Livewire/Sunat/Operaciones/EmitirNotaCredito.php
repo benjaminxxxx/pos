@@ -6,6 +6,7 @@ use App\Models\Venta;
 use App\Services\ComprobanteServicio;
 use App\Services\Facturacion\Notas\NotaServicio;
 use App\Services\VentaServicio;
+use App\Traits\ConNegocioSeleccionado;
 use App\Traits\LivewireAlerta;
 use Exception;
 use Livewire\Component;
@@ -14,7 +15,7 @@ use Session;
 
 class EmitirNotaCredito extends Component
 {
-    use LivewireAlerta;
+    use LivewireAlerta, ConNegocioSeleccionado;
     public $mostrarFormulario = false;
     public $catalogo9 = [];
     public $tipoNota = '01'; // Tipo de nota de crédito por defecto
@@ -30,6 +31,7 @@ class EmitirNotaCredito extends Component
     protected $listeners = ['generarNota'];
     public function mount()
     {
+        $this->cargarNegocioSeleccionado();
         $this->fechaEmision = now()->format('Y-m-d');
         $this->catalogo9 = SunatCatalogo9::where('estado',true)->get();
        
@@ -67,7 +69,7 @@ class EmitirNotaCredito extends Component
     public function generarNotaCredito()
     {
         try {
-            $negocio_id = Session::get('negocio_seleccionado');
+            $negocio_id = $this->negocioSeleccionado->id;
             if (!$negocio_id) {
                 throw new Exception('Debe seleccionar un negocio');
             }
@@ -88,10 +90,6 @@ class EmitirNotaCredito extends Component
             if ($this->tipoNota == '01') { //anulacion
                 
                 app(VentaServicio::class)->anularVenta($this->uuid);
-                /*
-                Venta::find($this->venta_id)->update([
-                    'estado' => 'anulado'
-                ]);*/
             }
 
 

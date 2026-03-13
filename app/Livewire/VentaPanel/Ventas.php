@@ -5,17 +5,16 @@ namespace App\Livewire\VentaPanel;
 use App\Models\Venta;
 use App\Services\Ventas\InformacionVenta;
 use App\Services\VentaServicio;
+use App\Traits\ConNegocioSeleccionado;
 use App\Traits\DatosUtiles\ConSucursales;
 use App\Traits\LivewireAlerta;
-use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use Livewire\WithoutUrlPagination;
 use Livewire\WithPagination;
 
 class Ventas extends Component
 {
-    use WithPagination, WithoutUrlPagination, LivewireAlerta, ConSucursales;
-    public $negocio;
+    use WithPagination, WithoutUrlPagination, LivewireAlerta, ConSucursales, ConNegocioSeleccionado;
     public $filtroSucursal;
     public $filtroCliente = '';
     public $filtroDesde;
@@ -23,7 +22,7 @@ class Ventas extends Component
     protected $listeners = ['notaGenerada', 'ventaRegularizada'];
     public function mount()
     {
-        $this->negocio = Auth::user()->negocio_activo;
+        $this->cargarNegocioSeleccionado();
     }
     public function updatedFiltroCliente()
     {

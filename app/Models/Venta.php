@@ -74,6 +74,10 @@ class Venta extends Model
         //valores temporales
         'flag_contabilizado'
     ];
+    protected static function booted()
+    {
+        static::addGlobalScope(new NegocioActivoScope());
+    }
     public function metodosPago(): HasMany
     {
         return $this->hasMany(VentaMetodoPago::class, 'venta_id');
@@ -120,8 +124,5 @@ class Venta extends Model
     {
         return $this->hasMany(Nota::class);
     }
-    protected static function booted()
-    {
-        static::addGlobalScope(new NegocioActivoScope());
-    }
+    
 }

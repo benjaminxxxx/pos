@@ -7,7 +7,7 @@
 
 @php
     // Changed table-fixed to table-auto for automatic column width
-    $tableClasses = 'w-full text-sm text-left rtl:text-right text-accent border-1 border-border' . $class;
+    $tableClasses = 'w-full text-sm text-left rtl:text-right text-accent' . $class;
  
     if ($striped) {
         $tableClasses .= ' table-striped';
