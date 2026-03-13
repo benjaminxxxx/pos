@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
@@ -23,12 +22,15 @@ return new class extends Migration
             $table->string('email')->nullable();
             $table->string('whatsapp')->nullable();
             $table->string('distrito')->nullable(); // Suponiendo que es un código
-            $table->enum('tipo_cliente_id',['empresa','persona']);
+            $table->enum('tipo_cliente_id', ['empresa', 'persona']);
             $table->string('nombre_comercial')->nullable();
             $table->integer('puntos')->default(0);
             $table->text('notas')->nullable();
             $table->foreign('tipo_documento_id')->references('codigo')->on('tipos_documentos_sunat');
-            $table->foreignId('dueno_tienda_id')->constrained('users'); // Relación con el dueño de la tienda (usuario)
+            $table->foreignId('cuenta_id')
+                ->nullable()
+                ->constrained('cuentas')
+                ->cascadeOnDelete();
             $table->timestamps();
         });
     }

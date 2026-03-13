@@ -96,7 +96,7 @@ class ClienteServicio
 
             $cliente = Cliente::findOrFail($data['cliente_id']);
 
-            if ($cliente->cuenta_id !== $cuentaId) {
+            if ((int)$cliente->cuenta_id !== (int)$cuentaId) {
                 throw new Exception("No tienes permisos para editar este cliente.");
             }
         }

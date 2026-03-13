@@ -40,7 +40,7 @@
                             <x-td class="text-left">
                                 <div class="text-sm font-medium truncate max-w-[130px]">{{ $venta->nombre_cliente }}
                                 </div>
-                                <div class="text-xs text-gray-500">{{ $venta->documento_cliente }}</div>
+                                <div class="text-xs ">{{ $venta->documento_cliente }}</div>
                             </x-td>
 
                             {{-- Fecha --}}
@@ -53,7 +53,7 @@
                                 <div class="text-sm font-medium">
                                     {{ $venta->serie_comprobante }}-{{ $venta->correlativo_comprobante }}
                                 </div>
-                                <div class="text-xs text-gray-500">
+                                <div class="text-xs ">
                                     {{ $venta->comprobante?->nombre ?? $venta->tipo_comprobante_codigo }}
                                 </div>
                             </x-td>
@@ -96,7 +96,8 @@
                                             <a href="{{ Storage::disk('public')->url($venta->sunat_xml_firmado) }}"
                                                 target="_blank" download title="XML"
                                                 class="text-blue-600 hover:underline">
-                                                <img src="{{ asset('image/xml.png') }}" width="32px" alt="Archivo XML">
+                                                <img src="{{ asset('image/xml.png') }}" width="32px"
+                                                    alt="Archivo XML">
 
                                             </a>
                                         @endif
@@ -104,7 +105,8 @@
                                             <a href="{{ Storage::disk('public')->url($venta->sunat_cdr) }}"
                                                 target="_blank" download title="CDR"
                                                 class="text-blue-600 hover:underline">
-                                                <img src="{{ asset('image/cdr.png') }}" width="32px" alt="Archivo CDR">
+                                                <img src="{{ asset('image/cdr.png') }}" width="32px"
+                                                    alt="Archivo CDR">
                                             </a>
                                         @endif
                                     @else
@@ -126,8 +128,8 @@
                                         'pendiente_sunat' => ['bg-yellow-100 text-yellow-800', 'Pendiente'],
                                         'error_sistema' => ['bg-orange-100 text-orange-800', 'Error sistema'],
                                         'error_fecha' => ['bg-orange-100 text-orange-800', 'Error fecha'],
-                                        'descartada' => ['bg-gray-100 text-gray-500', 'Descartada'],
-                                        default => ['bg-gray-100 text-gray-500', 'Sin enviar'],
+                                        'descartada' => ['bg-gray-100 text-gray-700', 'Descartada'],
+                                        default => ['bg-gray-100 text-gray-700', 'Sin enviar'],
                                     };
                                 @endphp
                                 <span
@@ -137,7 +139,7 @@
 
                                 {{-- Mensaje CDR resumido si hay error --}}
                                 @if ($venta->sunat_cdr_codigo && $venta->sunat_estado !== 'aceptada')
-                                    <div class="text-xs text-gray-400 mt-0.5">Cód: {{ $venta->sunat_cdr_codigo }}</div>
+                                    <div class="text-xs mt-0.5">Cód: {{ $venta->sunat_cdr_codigo }}</div>
                                 @endif
                             </x-td>
 
@@ -251,7 +253,218 @@
                                         @endif
                                     </div>
                                 @endif
+                                {{-- Resumen completo de la venta --}}
+                                <x-card class="mb-3">
+                                    <flux:heading size="sm">Resumen de venta</flux:heading>
 
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3 text-sm">
+
+                                        {{-- Columna 1: Comprobante --}}
+                                        <div class="space-y-1">
+                                            <p class="text-xs font-medium uppercase tracking-wide mb-2">
+                                                Comprobante</p>
+                                            <div class="flex justify-between">
+                                                <span class="">ID Venta</span>
+                                                <span
+                                                    class="font-medium">{{ $venta->id }}</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="">Serie - Número</span>
+                                                <span
+                                                    class="font-medium">{{ $venta->serie_comprobante }}-{{ $venta->correlativo_comprobante }}</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="">Tipo</span>
+                                                <span
+                                                    class="font-medium">{{ $venta->comprobante?->nombre ?? $venta->tipo_comprobante_codigo }}</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="">Fecha emisión</span>
+                                                <span class="font-medium">{{ $venta->fecha_emision }}</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="">Modo</span>
+                                                <span class="font-medium">{{ ucfirst($venta->modo_venta) }}</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="">Estado pago</span>
+                                                <span class="font-medium">{{ ucfirst($venta->estado) }}</span>
+                                            </div>
+                                            @if ($venta->serie_origen && $venta->correlativo_origen)
+                                                <div class="flex justify-between">
+                                                    <span class="">Regulariza a</span>
+                                                    <span
+                                                        class="font-medium text-blue-600">{{ $venta->serie_origen }}-{{ $venta->correlativo_origen }}</span>
+                                                </div>
+                                            @endif
+                                        </div>
+
+                                        {{-- Columna 2: Cliente --}}
+                                        <div class="space-y-1">
+                                            <p class="text-xs font-medium uppercase tracking-wide mb-2">
+                                                Cliente</p>
+                                            <div class="flex justify-between">
+                                                <span class="">ID Cliente</span>
+                                                <span class="font-medium text-right max-w-[180px] truncate"
+                                                    title="{{ $venta->cliente_id }}">
+                                                    {{ $venta->cliente_id }}
+                                                </span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="">Nombre</span>
+                                                <span class="font-medium text-right max-w-[180px] truncate"
+                                                    title="{{ $venta->nombre_cliente }}">
+                                                    {{ $venta->nombre_cliente }}
+                                                </span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="">Tipo doc.</span>
+                                                <span class="font-medium">
+                                                    {{ match ((string) $venta->tipo_documento_cliente) {
+                                                        '1' => 'DNI',
+                                                        '4' => 'Carnet Ext.',
+                                                        '6' => 'RUC',
+                                                        '7' => 'Pasaporte',
+                                                        default => $venta->tipo_documento_cliente ?? '—',
+                                                    } }}
+                                                </span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="">Documento</span>
+                                                <span class="font-medium">{{ $venta->documento_cliente }}</span>
+                                            </div>
+                                            @if ($venta->cliente_direccion)
+                                                <div class="flex justify-between gap-2">
+                                                    <span class=" shrink-0">Dirección</span>
+                                                    <span
+                                                        class="font-medium text-right text-xs">{{ $venta->cliente_direccion }}</span>
+                                                </div>
+                                            @endif
+                                            @if ($venta->cliente_distrito || $venta->cliente_provincia)
+                                                <div class="flex justify-between">
+                                                    <span class="">Ubicación</span>
+                                                    <span class="font-medium text-right text-xs">
+                                                        {{ implode(', ', array_filter([$venta->cliente_distrito, $venta->cliente_provincia, $venta->cliente_departamento])) }}
+                                                    </span>
+                                                </div>
+                                            @endif
+                                            @if ($venta->cliente_email)
+                                                <div class="flex justify-between">
+                                                    <span class="">Email</span>
+                                                    <span
+                                                        class="font-medium text-xs">{{ $venta->cliente_email }}</span>
+                                                </div>
+                                            @endif
+                                            @if ($venta->cliente_telefono)
+                                                <div class="flex justify-between">
+                                                    <span class="">Teléfono</span>
+                                                    <span class="font-medium">{{ $venta->cliente_telefono }}</span>
+                                                </div>
+                                            @endif
+                                        </div>
+
+                                        {{-- Columna 3: Montos --}}
+                                        <div class="space-y-1">
+                                            <p class="text-xs font-medium uppercase tracking-wide mb-2">
+                                                Montos</p>
+                                            @if ($venta->monto_operaciones_gravadas > 0)
+                                                <div class="flex justify-between">
+                                                    <span class="">Op. gravadas</span>
+                                                    <span class="font-medium tabular-nums">S/
+                                                        {{ number_format($venta->monto_operaciones_gravadas, 2) }}</span>
+                                                </div>
+                                            @endif
+                                            @if ($venta->monto_operaciones_exoneradas > 0)
+                                                <div class="flex justify-between">
+                                                    <span class="">Op. exoneradas</span>
+                                                    <span class="font-medium tabular-nums">S/
+                                                        {{ number_format($venta->monto_operaciones_exoneradas, 2) }}</span>
+                                                </div>
+                                            @endif
+                                            @if ($venta->monto_operaciones_inafectas > 0)
+                                                <div class="flex justify-between">
+                                                    <span class="">Op. inafectas</span>
+                                                    <span class="font-medium tabular-nums">S/
+                                                        {{ number_format($venta->monto_operaciones_inafectas, 2) }}</span>
+                                                </div>
+                                            @endif
+                                            @if ($venta->monto_operaciones_gratuitas > 0)
+                                                <div class="flex justify-between">
+                                                    <span class="">Op. gratuitas</span>
+                                                    <span class="font-medium tabular-nums">S/
+                                                        {{ number_format($venta->monto_operaciones_gratuitas, 2) }}</span>
+                                                </div>
+                                            @endif
+                                            <div class="flex justify-between">
+                                                <span class="">IGV (18%)</span>
+                                                <span class="font-medium tabular-nums">S/
+                                                    {{ number_format($venta->monto_igv, 2) }}</span>
+                                            </div>
+                                            @if ($venta->icbper > 0)
+                                                <div class="flex justify-between">
+                                                    <span class="">ICBPER</span>
+                                                    <span class="font-medium tabular-nums">S/
+                                                        {{ number_format($venta->icbper, 2) }}</span>
+                                                </div>
+                                            @endif
+                                            @if ($venta->redondeo != 0)
+                                                <div class="flex justify-between">
+                                                    <span class="">Redondeo</span>
+                                                    <span class="font-medium tabular-nums">S/
+                                                        {{ number_format($venta->redondeo, 2) }}</span>
+                                                </div>
+                                            @endif
+                                            <div class="flex justify-between border-t border-border pt-1 mt-1">
+                                                <span class=" font-medium">Total a pagar</span>
+                                                <span class="font-semibold tabular-nums text-accent">S/
+                                                    {{ number_format($venta->monto_importe_venta, 2) }}</span>
+                                            </div>
+
+                                            {{-- Estado SUNAT --}}
+                                            <div class="flex justify-between pt-2 mt-1 border-t border-gray-200">
+                                                <span class="">Estado SUNAT</span>
+                                                @php
+                                                    $estadoConfig = match ($venta->sunat_estado) {
+                                                        'aceptada' => ['bg-green-100 text-green-800', 'Aceptada'],
+                                                        'rechazada' => ['bg-red-100 text-red-800', 'Rechazada'],
+                                                        'rechazada_requiere_nuevo_correlativo' => [
+                                                            'bg-red-100 text-red-800',
+                                                            'Nuevo N° requerido',
+                                                        ],
+                                                        'pendiente_sunat' => [
+                                                            'bg-yellow-100 text-yellow-800',
+                                                            'Pendiente',
+                                                        ],
+                                                        'error_sistema' => [
+                                                            'bg-orange-100 text-orange-800',
+                                                            'Error sistema',
+                                                        ],
+                                                        'error_fecha' => [
+                                                            'bg-orange-100 text-orange-800',
+                                                            'Error fecha',
+                                                        ],
+                                                        'descartada' => ['bg-gray-100 text-gray-800', 'Descartada'],
+                                                        default => ['bg-gray-100  text-gray-800', 'Sin enviar'],
+                                                    };
+                                                @endphp
+                                                <span
+                                                    class="px-2 inline-flex text-xs leading-5 font-medium rounded-full {{ $estadoConfig[0] }}">
+                                                    {{ $estadoConfig[1] }}
+                                                </span>
+                                            </div>
+
+                                            @if ($venta->sunat_cdr_descripcion && $venta->sunat_estado !== 'aceptada')
+                                                <div
+                                                    class="text-xs mt-1 px-2 py-1.5 rounded border-l-2
+                    {{ str_contains($venta->sunat_estado ?? '', 'error') || str_contains($venta->sunat_estado ?? '', 'rechazada')
+                        ? 'bg-red-50 border-red-400 text-red-700'
+                        : 'bg-yellow-50 border-yellow-400 text-yellow-700' }}">
+                                                    {{ $venta->sunat_cdr_descripcion }}
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </x-card>
                                 {{-- Productos --}}
                                 <x-card class="mb-3">
                                     <flux:heading size="sm">Detalle de productos</flux:heading>
@@ -336,7 +549,8 @@
                                                                     <a href="{{ Storage::disk('public')->url($nota->sunat_cdr) }}"
                                                                         target="_blank" download
                                                                         class="text-blue-600 hover:underline">
-                                                                        <img src="{{ asset('image/cdr.png') }}" width="32px" alt="Archivo CDR">
+                                                                        <img src="{{ asset('image/cdr.png') }}"
+                                                                            width="32px" alt="Archivo CDR">
                                                                     </a>
                                                                 @endif
                                                             </div>

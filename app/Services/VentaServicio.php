@@ -3,6 +3,7 @@
 
 namespace App\Services;
 
+use App\Models\Cliente;
 use App\Models\DetalleVenta;
 use App\Models\Negocio;
 use App\Models\ProductoEntrada;
@@ -27,6 +28,61 @@ class VentaServicio
 {
     public static function regularizar(Venta $ventaOrigen, array $opciones): Venta
     {
+
+        // ── 1. OBTENER DATOS FRESCOS DEL CLIENTE PRIMERO ─────────────────────
+        $clienteFresco = null;
+
+        if ($ventaOrigen->cliente_id) {
+            $clienteFresco = Cliente::find($ventaOrigen->cliente_id);
+        }
+
+        // Factura requiere RUC
+        if ($ventaOrigen->tipo_comprobante_codigo === '01') {
+
+            $tipoDoc = $clienteFresco
+                ? (string) $clienteFresco->tipo_documento_id
+                : (string) $ventaOrigen->tipo_documento_cliente;
+
+            $numeroDoc = $clienteFresco
+                ? $clienteFresco->numero_documento
+                : $ventaOrigen->documento_cliente;
+
+            if ((int) $tipoDoc !== 6) {
+                throw new Exception(
+                    "La factura requiere RUC. El cliente tiene tipo de documento '{$tipoDoc}'. " .
+                    "Corrija el cliente antes de regularizar."
+                );
+            }
+
+            if (!preg_match('/^\d{11}$/', $numeroDoc)) {
+                throw new Exception(
+                    "El RUC '{$numeroDoc}' no es válido. Debe tener 11 dígitos. " .
+                    "Corrija el cliente antes de regularizar."
+                );
+            }
+        }
+
+        if (
+            $ventaOrigen->tipo_comprobante_codigo === '03' &&
+            $ventaOrigen->monto_importe_venta > 700 &&
+            (!$clienteFresco || $clienteFresco->numero_documento === '00000000')
+        ) {
+            throw new Exception(
+                "La boleta supera S/ 700 y requiere cliente identificado. " .
+                "Corrija el cliente antes de regularizar."
+            );
+        }
+
+        // Fecha dentro del plazo
+        $nuevaFecha = new \DateTime($opciones['nueva_fecha_emision']);
+        $limite = (new \DateTime())->modify('-3 days');
+
+        if ($nuevaFecha < $limite) {
+            throw new Exception(
+                "La fecha {$opciones['nueva_fecha_emision']} excede los 3 días permitidos."
+            );
+        }
+
         // Marcar origen como descartada
         $ventaOrigen->update(['sunat_estado' => 'descartada']);
 
@@ -38,7 +94,7 @@ class VentaServicio
         );
 
         // Clonar venta con nueva fecha y referencia al origen
-        $nuevaVenta = DB::transaction(function () use ($ventaOrigen, $numeracion, $opciones) {
+        $nuevaVenta = DB::transaction(function () use ($ventaOrigen, $numeracion, $opciones,$clienteFresco) {
 
             $nueva = $ventaOrigen->replicate();
             $nueva->uuid = \Str::uuid();
@@ -59,6 +115,22 @@ class VentaServicio
             $nueva->serie_origen = $ventaOrigen->serie_comprobante;
             $nueva->correlativo_origen = $ventaOrigen->correlativo_comprobante;
             $nueva->motivo_regularizacion = $opciones['motivo_regularizacion'];
+
+            // Reemplazar con datos frescos si existe el cliente
+            if ($clienteFresco) {
+                $nueva->nombre_cliente = $clienteFresco->nombre_completo ?? $clienteFresco->nombre_comercial;
+                $nueva->documento_cliente = $clienteFresco->numero_documento;
+                $nueva->tipo_documento_cliente = $clienteFresco->tipo_documento_id;
+                $nueva->cliente_departamento = $clienteFresco->departamento;
+                $nueva->cliente_provincia = $clienteFresco->provincia;
+                $nueva->cliente_distrito = $clienteFresco->distrito;
+                $nueva->cliente_direccion = $clienteFresco->direccion;
+                $nueva->cliente_email = $clienteFresco->email;
+                $nueva->cliente_telefono = $clienteFresco->telefono;
+                $nueva->cliente_urbanizacion = null;
+                $nueva->cliente_cod_local = '0000';
+                $nueva->cliente_ubigueo = null;
+            }
 
             $nueva->save();
 
@@ -788,10 +860,10 @@ class VentaServicio
         if (!in_array($negocio, $negocioIds)) {
             throw new Exception("Usuario no autorizado para este negocio: {$negocio}");
         }
-            
+
         // Si el negocio tiene sucursales, validar acceso
         $sucursalesUsuario = $user->sucursales()->get()->pluck('id')->toArray();
-//throw new Exception(json_encode($sucursalesUsuario));
+        //throw new Exception(json_encode($sucursalesUsuario));
         if ($sucursal && !in_array($sucursal, $sucursalesUsuario)) {
             throw new Exception("Usuario no autorizado para la sucursal {$sucursal} del negocio {$negocio}");
         }
