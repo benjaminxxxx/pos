@@ -87,7 +87,7 @@ class GestionClientes extends Component
             $this->mostrarFormulario = false;
         } catch (\Throwable $th) {
             report($th);
-            $this->alert('error', 'Error al guardar el cliente, revisar reporte interno');
+            $this->alert('error', $th->getMessage());
         }
     }
     private function resetFormulario()
@@ -184,7 +184,7 @@ class GestionClientes extends Component
             $clientes = $query->paginate(20);
 
         } catch (\Throwable $th) {
-            $this->alert('error', 'Error al listar los clientes, revisar reporte interno');
+            $this->alert('error', $th->getMessage());
             report($th);
             $clientes = new LengthAwarePaginator([], 0, 20, 1, [
                 'path' => request()->url(),

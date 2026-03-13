@@ -257,7 +257,7 @@ const registrarCliente = async () => {
 
     } catch (errorData) {
         errorMensaje.value =
-            errorData.response?.data?.message ?? "Error al registrar cliente.";
+            errorData.response?.data?.error ?? "Error al registrar cliente.";
     }
 };
 

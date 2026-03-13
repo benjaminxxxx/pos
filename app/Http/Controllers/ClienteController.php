@@ -82,8 +82,7 @@ class ClienteController extends Controller
 
             return response()->json($cliente, 201);
         } catch (\Throwable $th) {
-            report($th);
-            return response()->json(['error' => 'Error al registrar el cliente'], 500);
+            return response()->json(['error' => $th->getMessage()], 500);
         }
     }
     public function sunatPorRuc(Request $request)

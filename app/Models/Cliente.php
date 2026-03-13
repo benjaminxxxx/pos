@@ -28,7 +28,8 @@ class Cliente extends Model
         'nombre_comercial',
         'puntos',
         'notas',
-        'dueno_tienda_id', // El ID del dueño de la tienda
+        'dueno_tienda_id', // OBSOLETO, REMPLAZADO POR CUENTA_ID
+        'cuenta_id'
     ];
 
     // Relación con la tabla 'tipos_documentos_sunat' (tipo de documento)
@@ -37,10 +38,5 @@ class Cliente extends Model
         return $this->belongsTo(TipoDocumentoSunat::class, 'tipo_documento_id', 'codigo');
     }
 
-    // Relación con el usuario (dueño de la tienda)
-    public function duenoTienda()
-    {
-        return $this->belongsTo(User::class, 'dueno_tienda_id');
-    }
 
 }
