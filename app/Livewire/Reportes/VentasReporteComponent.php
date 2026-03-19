@@ -22,6 +22,7 @@ class VentasReporteComponent extends Component
     {
         $this->filters = $newFilters;
     }
+    
 
     public function render()
     {
