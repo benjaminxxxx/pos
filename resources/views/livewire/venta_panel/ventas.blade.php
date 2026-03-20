@@ -109,6 +109,15 @@
                                                     alt="Archivo CDR">
                                             </a>
                                         @endif
+                                    @elseif ($venta->tipo_comprobante_codigo == 'ticket')
+                                        @if ($venta->voucher_pdf)
+                                            <a href="{{ Storage::disk('public')->url($venta->voucher_pdf) }}"
+                                                target="_blank" download title="Voucher"
+                                                class="text-blue-600 hover:underline">
+                                                <img src="{{ asset('image/pdf.png') }}" width="32px" alt="PDF">
+
+                                            </a>
+                                        @endif
                                     @else
                                         <span class="text-xs text-gray-300 italic">—</span>
                                     @endif
@@ -265,8 +274,7 @@
                                                 Comprobante</p>
                                             <div class="flex justify-between">
                                                 <span class="">ID Venta</span>
-                                                <span
-                                                    class="font-medium">{{ $venta->id }}</span>
+                                                <span class="font-medium">{{ $venta->id }}</span>
                                             </div>
                                             <div class="flex justify-between">
                                                 <span class="">Serie - Número</span>
