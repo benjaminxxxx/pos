@@ -17,7 +17,8 @@
 
         <flux:input wire:model="direccion" label="Dirección" required />
 
-        <flux:input wire:model="codigo_pais" label="Código País" placeholder="PE" required />
+        <flux:input wire:model="codigo_pais" label="Código de Establecimiento (SUNAT)" placeholder="0000"
+            required />
 
         <flux:input wire:model="usuario_sol" label="Usuario SOL" required />
 

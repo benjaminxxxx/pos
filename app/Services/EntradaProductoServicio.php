@@ -1,22 +1,19 @@
 <?php
 
 namespace App\Services;
+
 use App\Models\ProductoEntrada;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
-
 
 class EntradaProductoServicio
 {
-    /**
-     * Obtener listado de entradas (con filtros opcionales).
-     *
-     * @param array $filters
-     * @return Collection
-     */
+    public function __construct(private readonly StockService $stockService)
+    {
+    }
+
     public function list(array $filters = []): Collection
     {
         $query = ProductoEntrada::query();
@@ -24,37 +21,33 @@ class EntradaProductoServicio
         if (!empty($filters['producto_id'])) {
             $query->where('producto_id', $filters['producto_id']);
         }
-
+        if (!empty($filters['sucursal_id'])) {
+            $query->where('sucursal_id', $filters['sucursal_id']);
+        }
         if (!empty($filters['desde'])) {
-            $query->whereDate('fecha', '>=', $filters['desde']);
+            $query->whereDate('fecha_ingreso', '>=', $filters['desde']);
         }
-
         if (!empty($filters['hasta'])) {
-            $query->whereDate('fecha', '<=', $filters['hasta']);
+            $query->whereDate('fecha_ingreso', '<=', $filters['hasta']);
         }
 
-        return $query->orderBy('fecha', 'desc')->get();
+        return $query->orderBy('fecha_ingreso', 'desc')->get();
     }
 
-    /**
-     * Buscar una entrada por id.
-     *
-     * @param int $id
-     * @return ProductoEntrada|null
-     */
     public function find(int $id): ?ProductoEntrada
     {
         return ProductoEntrada::find($id);
     }
 
     /**
-     * Crear nueva ProductoEntrada. Lanza ValidationException si falla validación.
+     * Crea una entrada y aumenta el stock. Es idempotente cuando viene
+     * acompañada de referencia_id + referencia_tipo (ej. reparaciones que
+     * reingresan repuesto): si ya existe una entrada para esa referencia
+     * + producto + sucursal, se retorna sin duplicar el movimiento.
      *
-     * @param array $data
-     * @return ProductoEntrada
      * @throws ValidationException
      */
-    public function crear(array $data): ProductoEntrada
+    public function generarEntrada(array $data): ProductoEntrada
     {
         $validator = Validator::make($data, $this->rules());
 
@@ -62,82 +55,68 @@ class EntradaProductoServicio
             throw new ValidationException($validator);
         }
 
-        return DB::transaction(function () use ($validator) {
-            $validated = $validator->validated();
+        $validated = $validator->validated();
 
-            // stock_disponible inicialmente igual a cantidad ingresada
+        return DB::transaction(function () use ($validated) {
+
+            if (!empty($validated['referencia_id']) && !empty($validated['referencia_tipo'])) {
+                $existente = ProductoEntrada::where('referencia_id', $validated['referencia_id'])
+                    ->where('referencia_tipo', $validated['referencia_tipo'])
+                    ->where('producto_id', $validated['producto_id'])
+                    ->where('sucursal_id', $validated['sucursal_id'])
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($existente) {
+                    return $existente;
+                }
+            }
+
             $validated['stock_disponible'] = $validated['cantidad'];
             $validated['created_by'] = auth()->id();
 
-            return ProductoEntrada::create($validated);
+            $entrada = ProductoEntrada::create($validated);
+
+            $this->stockService->incrementar(
+                $entrada->producto_id,
+                $entrada->sucursal_id,
+                $entrada->cantidad
+            );
+
+            return $entrada;
         });
     }
 
     /**
-     * Actualizar una entrada existente. Lanza ValidationException si falla validación.
-     *
-     * @param int $id
-     * @param array $data
-     * @return ProductoEntrada
-     * @throws ValidationException|ModelNotFoundException
+     * Anula una entrada (solo para corregir un error de captura inmediato,
+     * no como flujo normal de negocio) y revierte el stock que aportó.
      */
-    public function update(int $id, array $data): ProductoEntrada
+    public function anular(int $id): void
     {
-        $entrada = $this->findOrFail($id);
+        DB::transaction(function () use ($id) {
+            $entrada = ProductoEntrada::lockForUpdate()->findOrFail($id);
 
-        $validator = Validator::make($data, $this->rules($id));
+            $this->stockService->decrementar(
+                $entrada->producto_id,
+                $entrada->sucursal_id,
+                $entrada->stock_disponible
+            );
 
-        if ($validator->fails()) {
-            throw new ValidationException($validator);
-        }
-
-        DB::transaction(function () use ($entrada, $validator) {
-            $entrada->update($validator->validated());
+            $entrada->delete();
         });
-
-        return $entrada->refresh();
     }
 
-    /**
-     * Eliminar una entrada.
-     *
-     * @param int $id
-     * @return bool
-     * @throws ModelNotFoundException
-     */
-    public function delete(int $id): bool
-    {
-        $entrada = $this->findOrFail($id);
-        return $entrada->delete();
-    }
-
-    /**
-     * Obtener reglas de validación. $id es opcional para reglas únicas cuando aplica.
-     *
-     * @param int|null $id
-     * @return array
-     */
-    protected function rules(?int $id = null): array
+    protected function rules(): array
     {
         return [
-            'fecha_ingreso' => 'required|date',
-            'producto_id' => 'required|integer|exists:productos,id',
-            'sucursal_id' => 'required|integer|exists:sucursales,id',
-            'tipo_entrada' => 'required|string|max:30',
-            'cantidad' => 'required|numeric|min:0.001',
-            'costo_unitario' => 'required|numeric|min:0',
+            'fecha_ingreso'     => 'required|date',
+            'producto_id'       => 'required|integer|exists:productos,id',
+            'sucursal_id'       => 'required|integer|exists:sucursales,id',
+            'tipo_entrada'      => 'required|string|max:30',
+            'cantidad'          => 'required|numeric|min:0.001',
+            'costo_unitario'    => 'required|numeric|min:0',
+            'referencia_id'     => 'nullable|integer|required_with:referencia_tipo',
+            'referencia_tipo'   => 'nullable|string|max:50|required_with:referencia_id',
         ];
-    }
-
-    /**
-     * Buscar entrada o lanzar ModelNotFoundException.
-     *
-     * @param int $id
-     * @return ProductoEntrada
-     * @throws ModelNotFoundException
-     */
-    protected function findOrFail(int $id): ProductoEntrada
-    {
-        return ProductoEntrada::findOrFail($id);
     }
 }

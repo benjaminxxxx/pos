@@ -12,6 +12,7 @@ class ProductoSalidaDetalle extends Model
         'producto_salida_id',
         'producto_entrada_id',
         'cantidad',
+        'subtotal',
         'costo_unitario',
     ];
 

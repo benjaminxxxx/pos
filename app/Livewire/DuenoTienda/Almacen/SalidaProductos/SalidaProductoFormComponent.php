@@ -30,17 +30,22 @@ class SalidaProductoFormComponent extends Component
         $this->sucursales = $this->negocioSeleccionado->sucursales;
         $this->productos = $this->negocioSeleccionado->productos;
 
-        // 👇 Si solo hay una sucursal, se asigna automáticamente
-        if ($this->sucursales->count() > 0) {
-            $this->form['sucursal_id'] = $this->sucursales->first()->id;
-        }
-
-        // Lo mismo para producto si quieres
-        if ($this->productos->count() > 0) {
-            $this->form['producto_id'] = $this->productos->first()->id;
-        }
-
-        $this->form['tipo_salida'] = 'POR AJUSTE DE INVENTARIO';
+        // Establecer valores iniciales por primera vez
+        $this->resetForm();
+    }
+    /**
+     * Resetea el formulario garantizando la reasignación de los valores por defecto.
+     */
+    public function resetForm()
+    {
+        $this->form = [
+            'sucursal_id' => $this->sucursales->first()?->id ?? null,
+            'producto_id' => $this->productos->first()?->id ?? null,
+            'tipo_salida' => 'POR AJUSTE DE INVENTARIO',
+            'cantidad' => null,
+            'costo_unitario' => null,
+            'fecha_salida' => null,
+        ];
     }
     public function registrarSalidaProducto()
     {
@@ -55,18 +60,16 @@ class SalidaProductoFormComponent extends Component
                 'tipo_salida' => $this->form['tipo_salida'],
                 'cantidad' => $this->form['cantidad'],
                 'costo_unitario' => $this->form['costo_unitario'],
-                'fecha_salida' => $this->form['fecha_salida'],
-                'referencia_id' => null,
-                'referencia_tipo' => null,
+                'fecha_salida' => $this->form['fecha_salida']
             ];
-            
+
             app(SalidaProductoServicio::class)->generarSalida($data);
 
             $this->alert('success', 'Registro de salida exitoso.');
             $this->mostrarFormularioSalidaProducto = false;
             $this->dispatch('refrescarSalidaProductos');
             // Limpia el formulario y cierra modal
-            $this->reset('form');
+            $this->resetForm();
             $this->alert('success', 'Registro de salida exitoso.');
         } catch (InvalidArgumentException $th) {
             $this->alert('error', $th->getMessage());

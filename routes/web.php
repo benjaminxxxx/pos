@@ -102,6 +102,10 @@ Route::middleware(['auth', 'role:dueno_tienda'])->prefix('mi-tienda')->group(fun
     Route::get('/compras/realizar_compras', function () {
         return view('livewire.dueno_tienda.compras.index-realizar_compras');
     })->name('dueno_tienda.realizar_compras');
+
+     Route::get('/compras/compras_realizadas', function () {
+        return view('livewire.dueno_tienda.compras.index_compras_realizadas');
+    })->name('dueno_tienda.compras_realizadas');
 });
 
 Route::get('/seleccionar-negocio', [SeleccionarNegocioController::class, 'index'])

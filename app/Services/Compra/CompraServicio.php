@@ -9,6 +9,7 @@ use App\Models\ProductoEntrada;
 use App\Models\Proveedor;
 use App\Models\TipoMovimiento;
 use App\Services\Caja\MovimientoCajaServicio;
+use App\Services\EntradaProductoServicio;
 use DB;
 use Exception;
 use Illuminate\Support\Facades\Validator;
@@ -17,6 +18,11 @@ use Illuminate\Support\Arr;
 
 class CompraServicio
 {
+    public function __construct(
+        private readonly EntradaProductoServicio $entradaServicio,
+        private readonly MovimientoCajaServicio $movimientoCajaServicio,
+    ) {
+    }
     /**
      * Registra una nueva compra y sus detalles, asegurando la inmutabilidad histórica.
      *
@@ -92,7 +98,7 @@ class CompraServicio
             if (!$tipoCompra) {
                 throw new Exception('No existe el tipo de movimiento compra_sistema');
             }
-            
+
             if ($compra->total > 0 && $compra->forma_pago == 'CONTADO') {
 
                 app(MovimientoCajaServicio::class)->registrar([
@@ -176,32 +182,23 @@ class CompraServicio
         return $detallesProcesados;
     }
 
-    protected function registrarEntradaDesdeCompra(Compra $compra, array $detallesProcesados)
+    protected function registrarEntradaDesdeCompra(Compra $compra, array $detallesProcesados): void
     {
         foreach ($detallesProcesados as $detalle) {
 
             $factor = $detalle['factor_conversion'] ?? 1;
             $tipoComprobante = strtoupper($compra->tipo_comprobante ?? 'FACTURA');
 
-            // ✅ Determinar si el costo incluye IGV o no
             $costoUnitarioBase = (float) $detalle['costo_unitario'];
             $porcentajeIgv = (float) ($detalle['porcentaje_igv'] ?? 0);
-            $costoUnitarioFinal = $costoUnitarioBase;
 
-            if ($tipoComprobante === 'FACTURA') {
-                // Precio sin IGV (ya viene sin IGV en este caso)
-                $costoUnitarioFinal = $costoUnitarioBase / $factor;
-            } elseif ($tipoComprobante === 'BOLETA') {
-                // El precio incluye IGV, lo retiramos si quieres manejar costo base real
-                // o puedes conservarlo según política contable
-                $costoUnitarioFinal = ($costoUnitarioBase / (1 + ($porcentajeIgv / 100))) / $factor;
-            } else {
-                // Ticket, informal, sin IGV ni crédito fiscal
-                $costoUnitarioFinal = $costoUnitarioBase / $factor;
-            }
+            $costoUnitarioFinal = match ($tipoComprobante) {
+                'BOLETA' => ($costoUnitarioBase / (1 + ($porcentajeIgv / 100))) / $factor,
+                default => $costoUnitarioBase / $factor, // FACTURA, TICKET, etc.
+            };
 
-            // ✅ Registrar la entrada de producto
-            ProductoEntrada::create([
+            // ✅ Delega en el servicio: valida, crea la entrada Y aumenta el stock
+            $this->entradaServicio->generarEntrada([
                 'producto_id' => $detalle['producto_id'],
                 'sucursal_id' => $compra->sucursal_id,
                 'tipo_entrada' => 'COMPRA',
@@ -210,7 +207,6 @@ class CompraServicio
                 'fecha_ingreso' => $compra->fecha_comprobante,
                 'referencia_id' => $compra->id,
                 'referencia_tipo' => Compra::class,
-                'created_by' => auth()->id(),
             ]);
         }
     }

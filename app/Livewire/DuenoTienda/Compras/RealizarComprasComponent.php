@@ -2,6 +2,7 @@
 
 namespace App\Livewire\DuenoTienda\Compras;
 
+use App\Exceptions\StockInsuficienteException;
 use App\Services\Compra\CompraServicio;
 use App\Traits\DatosUtiles\ConProductos;
 use App\Traits\DatosUtiles\ConProveedores;
@@ -65,23 +66,23 @@ class RealizarComprasComponent extends Component
             $costoUnitarioTotal = (float) $p['costo_unitario']; // Precio final incluido IGV
             $descPorcentaje = (float) ($p['descuento_porcentaje'] ?? 0);
             $igvPorcentaje = (float) ($p['porcentaje_igv'] ?? 0) / 100;
-            
+
             // 1. Calcular el Costo Unitario NETO (Base Imponible por unidad)
             $factor = 1 + $igvPorcentaje;
             $baseImponibleUnitario = $igvPorcentaje > 0 ? ($costoUnitarioTotal / $factor) : $costoUnitarioTotal;
-            
+
             // 2. Subtotal Bruto (Base Imponible sin descuento)
             $subtotalBruto = $baseImponibleUnitario * $cantidad;
-            
+
             // 3. Descuento aplicado a la Base Imponible
             $descuentoMonto = $subtotalBruto * ($descPorcentaje / 100);
-            
+
             // 4. Subtotal Neto (Base Imponible con descuento)
             $neto = $subtotalBruto - $descuentoMonto;
-            
+
             // 5. IGV
             $igvMonto = $neto * $igvPorcentaje;
-            
+
             // 6. Total de la línea (Neto + IGV)
             $totalLinea = $neto + $igvMonto;
 
@@ -111,7 +112,7 @@ class RealizarComprasComponent extends Component
             $factor = 1 + $igvPorcentaje;
             // El costo_unitario que se guarda en la base de datos debe ser la base imponible por unidad.
             $costoUnitarioNeto = $igvPorcentaje > 0 ? ((float) $detalle['costo_unitario'] / $factor) : (float) $detalle['costo_unitario'];
-            
+
             return [
                 'producto_id' => $detalle['producto_id'],
                 'cantidad' => $detalle['cantidad'],
@@ -123,13 +124,13 @@ class RealizarComprasComponent extends Component
                 'porcentaje_igv' => $detalle['porcentaje_igv'],
             ];
         }, $this->productosAgregados);
-        
+
         $data = [
             // Cabecera
             'cuenta_id' => $this->cuentaId,
             'sucursal_id' => $this->sucursalSeleccionada,
             'proveedor_id' => $this->proveedorSeleccionado,
-            
+
             // Comprobante
             'tipo_comprobante' => strtoupper($this->tipoComprobante),
             'numero_comprobante' => $this->numeroComprobante,
@@ -145,26 +146,25 @@ class RealizarComprasComponent extends Component
             'igv' => $this->igv,
             'total' => $this->total, // Total de la factura
             'estado_pago' => $this->estadoPago,
-            
+
             // Detalles (ya contienen el costo unitario neto)
             'detalles' => $detallesFormateados,
         ];
-        
-        try {
-            DB::beginTransaction();
-            $compra = $servicio->registrarCompra($data);
-            DB::commit();
 
-            $this->alert('success',"Compra N° {$compra->id} registrada con éxito.");
+        try {
+
+            $compra = $servicio->registrarCompra($data);
+
+            $this->alert('success', "Compra N° {$compra->id} registrada con éxito.");
             $this->reset(['productosAgregados', 'numeroComprobante', 'proveedorSeleccionado']);
             $this->calcularTotales();
 
         } catch (ValidationException $e) {
-            DB::rollBack();
             $this->alert('error', 'Verifique los datos ingresados: ' . implode(', ', $e->validator->errors()->all()));
+        } catch (StockInsuficienteException $e) {
+            $this->alert('error', $e->getMessage());
         } catch (\Exception $e) {
-            DB::rollBack();
-            $this->alert('error',$e->getMessage());
+            $this->alert('error', $e->getMessage());
         }
     }
 

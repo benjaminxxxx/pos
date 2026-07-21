@@ -49,61 +49,63 @@
             @endcan
 
             @role('dueno_tienda')
-                {{-- Mi Negocio --}}
-                <flux:sidebar.group expandable heading="Mi Negocio" icon="building-office"
-                    :open="request()->routeIs(['dueno_tienda.negocios', 'dueno_tienda.sucursales', 'dueno_tienda.clientes', 'dueno_tienda.correlativos', 'dueno_tienda.proveedores'])">
-                    <flux:sidebar.item href="{{ route('dueno_tienda.negocios') }}"
-                        :current="request()->routeIs('dueno_tienda.negocios')">Mis Negocios</flux:sidebar.item>
-                    <flux:sidebar.item href="{{ route('dueno_tienda.sucursales') }}"
-                        :current="request()->routeIs('dueno_tienda.sucursales')">Sucursales</flux:sidebar.item>
-                    <flux:sidebar.item href="{{ route('dueno_tienda.clientes') }}"
-                        :current="request()->routeIs('dueno_tienda.clientes')">Mis Clientes</flux:sidebar.item>
-                    <flux:sidebar.item href="{{ route('dueno_tienda.proveedores') }}"
-                        :current="request()->routeIs('dueno_tienda.proveedores')">Proveedores</flux:sidebar.item>
-                    <flux:sidebar.item href="{{ route('dueno_tienda.correlativos') }}"
-                        :current="request()->routeIs('dueno_tienda.correlativos')">Correlativos</flux:sidebar.item>
-                </flux:sidebar.group>
+            {{-- Mi Negocio --}}
+            <flux:sidebar.group expandable heading="Mi Negocio" icon="building-office"
+                :open="request()->routeIs(['dueno_tienda.negocios', 'dueno_tienda.sucursales', 'dueno_tienda.clientes', 'dueno_tienda.correlativos', 'dueno_tienda.proveedores'])">
+                <flux:sidebar.item href="{{ route('dueno_tienda.negocios') }}"
+                    :current="request()->routeIs('dueno_tienda.negocios')">Mis Negocios</flux:sidebar.item>
+                <flux:sidebar.item href="{{ route('dueno_tienda.sucursales') }}"
+                    :current="request()->routeIs('dueno_tienda.sucursales')">Sucursales</flux:sidebar.item>
+                <flux:sidebar.item href="{{ route('dueno_tienda.clientes') }}"
+                    :current="request()->routeIs('dueno_tienda.clientes')">Mis Clientes</flux:sidebar.item>
+                <flux:sidebar.item href="{{ route('dueno_tienda.proveedores') }}"
+                    :current="request()->routeIs('dueno_tienda.proveedores')">Proveedores</flux:sidebar.item>
+                <flux:sidebar.item href="{{ route('dueno_tienda.correlativos') }}"
+                    :current="request()->routeIs('dueno_tienda.correlativos')">Correlativos</flux:sidebar.item>
+            </flux:sidebar.group>
 
-                {{-- Compras --}}
-                <flux:sidebar.group expandable heading="Compras" icon="shopping-cart"
-                    :open="request()->routeIs('dueno_tienda.realizar_compras')">
-                    <flux:sidebar.item href="{{ route('dueno_tienda.realizar_compras') }}"
-                        :current="request()->routeIs('dueno_tienda.realizar_compras')">Registrar Compra</flux:sidebar.item>
-                </flux:sidebar.group>
+            {{-- Compras --}}
+            <flux:sidebar.group expandable heading="Compras" icon="shopping-cart"
+                :open="request()->routeIs('dueno_tienda.realizar_compras')">
+                <flux:sidebar.item href="{{ route('dueno_tienda.realizar_compras') }}"
+                    :current="request()->routeIs('dueno_tienda.realizar_compras')">Registrar Compra</flux:sidebar.item>
+                <flux:sidebar.item href="{{ route('dueno_tienda.compras_realizadas') }}"
+                    :current="request()->routeIs('dueno_tienda.compras_realizadas')">Compras Registradas</flux:sidebar.item>
+            </flux:sidebar.group>
 
-                {{-- Inventario --}}
-                <flux:sidebar.group expandable heading="Inventario" icon="archive-box"
-                    :open="request()->routeIs(['dueno_tienda.productos', 'dueno_tienda.servicios', 'dueno_tienda.entrada_productos', 'dueno_tienda.salida_productos'])">
-                    <flux:sidebar.item href="{{ route('dueno_tienda.productos') }}"
-                        :current="request()->routeIs('dueno_tienda.productos')">Productos</flux:sidebar.item>
-                    {{-- request()->routeIs('dueno_tienda.servicios')">Servicios --}}
-                    <flux:sidebar.item href="{{ route('dueno_tienda.entrada_productos') }}"
-                        :current="request()->routeIs('dueno_tienda.entrada_productos')">Entrada Productos
-                    </flux:sidebar.item>
-                    <flux:sidebar.item href="{{ route('dueno_tienda.salida_productos') }}"
-                        :current="request()->routeIs('dueno_tienda.salida_productos')">Salida Productos</flux:sidebar.item>
-                </flux:sidebar.group>
+            {{-- Inventario --}}
+            <flux:sidebar.group expandable heading="Inventario" icon="archive-box"
+                :open="request()->routeIs(['dueno_tienda.productos', 'dueno_tienda.servicios', 'dueno_tienda.entrada_productos', 'dueno_tienda.salida_productos'])">
+                <flux:sidebar.item href="{{ route('dueno_tienda.productos') }}"
+                    :current="request()->routeIs('dueno_tienda.productos')">Productos</flux:sidebar.item>
+                {{-- request()->routeIs('dueno_tienda.servicios')">Servicios --}}
+                <flux:sidebar.item href="{{ route('dueno_tienda.entrada_productos') }}"
+                    :current="request()->routeIs('dueno_tienda.entrada_productos')">Entrada Productos
+                </flux:sidebar.item>
+                <flux:sidebar.item href="{{ route('dueno_tienda.salida_productos') }}"
+                    :current="request()->routeIs('dueno_tienda.salida_productos')">Salida Productos</flux:sidebar.item>
+            </flux:sidebar.group>
 
-                {{-- Movimientos --}}
-                <flux:sidebar.group expandable heading="Movimientos" icon="currency-dollar"
-                    :open="request()->routeIs(['dueno_tienda.registrar_movimiento', 'dueno_tienda.resumen_mensual_movimientos', 'dueno_tienda.movimientos'])">
-                    <flux:sidebar.item href="{{ route('dueno_tienda.movimientos') }}"
-                        :current="request()->routeIs('dueno_tienda.movimientos')">Ver Movimientos</flux:sidebar.item>
-                    <flux:sidebar.item href="{{ route('dueno_tienda.registrar_movimiento') }}"
-                        :current="request()->routeIs('dueno_tienda.registrar_movimiento')">Registrar Movimiento
-                    </flux:sidebar.item>
-                    <flux:sidebar.item href="{{ route('dueno_tienda.resumen_mensual_movimientos') }}"
-                        :current="request()->routeIs('dueno_tienda.resumen_mensual_movimientos')">Resumen Mensual
-                    </flux:sidebar.item>
-                </flux:sidebar.group>
+            {{-- Movimientos --}}
+            <flux:sidebar.group expandable heading="Movimientos" icon="currency-dollar"
+                :open="request()->routeIs(['dueno_tienda.registrar_movimiento', 'dueno_tienda.resumen_mensual_movimientos', 'dueno_tienda.movimientos'])">
+                <flux:sidebar.item href="{{ route('dueno_tienda.movimientos') }}"
+                    :current="request()->routeIs('dueno_tienda.movimientos')">Ver Movimientos</flux:sidebar.item>
+                <flux:sidebar.item href="{{ route('dueno_tienda.registrar_movimiento') }}"
+                    :current="request()->routeIs('dueno_tienda.registrar_movimiento')">Registrar Movimiento
+                </flux:sidebar.item>
+                <flux:sidebar.item href="{{ route('dueno_tienda.resumen_mensual_movimientos') }}"
+                    :current="request()->routeIs('dueno_tienda.resumen_mensual_movimientos')">Resumen Mensual
+                </flux:sidebar.item>
+            </flux:sidebar.group>
 
-                {{-- Configuración --}}
-                <flux:sidebar.group expandable heading="Configuración" icon="cog-6-tooth"
-                    :open="request()->routeIs('dueno_tienda.configuracion.disenio_impresion')">
-                    <flux:sidebar.item href="{{ route('dueno_tienda.configuracion.disenio_impresion') }}"
-                        :current="request()->routeIs('dueno_tienda.configuracion.disenio_impresion')">Diseños de Impresión
-                    </flux:sidebar.item>
-                </flux:sidebar.group>
+            {{-- Configuración --}}
+            <flux:sidebar.group expandable heading="Configuración" icon="cog-6-tooth"
+                :open="request()->routeIs('dueno_tienda.configuracion.disenio_impresion')">
+                <flux:sidebar.item href="{{ route('dueno_tienda.configuracion.disenio_impresion') }}"
+                    :current="request()->routeIs('dueno_tienda.configuracion.disenio_impresion')">Diseños de Impresión
+                </flux:sidebar.item>
+            </flux:sidebar.group>
             @endrole
         </flux:sidebar.nav>
 
@@ -155,7 +157,7 @@
             </flux:menu>
 
         </flux:dropdown>
-        
+
     </flux:sidebar>
 
 

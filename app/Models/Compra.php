@@ -71,7 +71,7 @@ class Compra extends Model
         'monto_pagado' => 'decimal:2',
         'tipo_cambio' => 'decimal:4', // 💡 Castear con la precisión definida en la migración
     ];
-    
+
     // 💡 Puedes agregar $timestamps = true; si no está implícito, pero por defecto lo está.
 
     // =======================================================
@@ -112,5 +112,18 @@ class Compra extends Model
     public function actualizador(): BelongsTo
     {
         return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    // En Compra.php
+    public function scopeDelNegocioActivo($query): void
+    {
+        $uuid = session('negocio_actual_uuid');
+        $ids = Sucursal::whereHas(
+            'negocio',
+            fn($q) =>
+            $q->where('uuid', $uuid)
+        )->pluck('id');
+
+        $query->whereIn('sucursal_id', $ids);
     }
 }

@@ -21,6 +21,7 @@ class ProductoSalida extends Model
         'fecha_salida',
         'referencia_id',
         'referencia_tipo',
+        'cantidad_pendiente',
         'created_by',
         'estado',
     ];
@@ -28,6 +29,7 @@ class ProductoSalida extends Model
     protected $casts = [
         'fecha_salida' => 'date',
         'cantidad' => 'float',
+        'cantidad_pendiente' => 'float',
         'costo_unitario' => 'float',
     ];
 

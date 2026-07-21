@@ -60,7 +60,7 @@ class EntradaProductoFormComponent extends Component
                 'fecha_ingreso' => $this->form['fecha_ingreso'],
             ];
 
-            app(EntradaProductoServicio::class)->crear($data);
+            app(EntradaProductoServicio::class)->generarEntrada($data);
 
             $this->alert('success', 'Registro de entrada exitoso.');
             $this->mostrarFormularioEntradaProducto = false;

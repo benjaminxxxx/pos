@@ -180,8 +180,8 @@
 
             <!-- Totales -->
             <div class="mt-6 text-right space-y-1 text-base p-4 border-t border-gray-200 bg-gray-50 rounded-b-xl dark:bg-gray-700 dark:border-gray-600">
-                <div><span class="font-semibold">Subtotal Neto:</span> S/. <span x-text="subtotal.toFixed(2)"></span></div>
-                <div><span class="font-semibold">IGV (Impuesto):</span> S/. <span x-text="igv.toFixed(2)"></span></div>
+                <div class="text-muted-foreground"><span class="font-semibold ">Subtotal Neto:</span> S/. <span x-text="subtotal.toFixed(2)"></span></div>
+                <div class="text-muted-foreground"><span class="font-semibold">IGV (Impuesto):</span> S/. <span x-text="igv.toFixed(2)"></span></div>
                 <div class="font-bold text-xl text-amber-600">TOTAL: S/. <span x-text="total.toFixed(2)"></span></div>
             </div>
         </x-card>

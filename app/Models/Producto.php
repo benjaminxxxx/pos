@@ -38,6 +38,14 @@ class Producto extends Model
         'tipo_afectacion_igv',
     ];
     /**
+     * Get the stocks for the product.
+     */
+    public function stocks()
+    {
+        return $this->hasMany(Stock::class, 'producto_id');
+    }
+
+    /**
      * Boot the model.
      */
     protected static function boot()
@@ -94,13 +102,6 @@ class Producto extends Model
         return $this->hasMany(Presentacion::class, 'producto_id');
     }
 
-    /**
-     * Get the stocks for the product.
-     */
-    public function stocks()
-    {
-        return $this->hasMany(Stock::class, 'producto_id');
-    }
 
     /**
      * Check if the product has sales.

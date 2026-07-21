@@ -74,7 +74,16 @@ class GestionNegocios extends Component
         'modo' => 'required|in:desarrollo,produccion',
         'certificado' => 'nullable|file|max:2048', // sin validar mimes
         'logo_factura' => 'nullable|file|mimes:jpg,jpeg,png',
-        'codigo_pais' => 'required'
+        'codigo_pais' => 'required|digits:4'
+    ];
+    protected $messages = [
+        'nombre_legal.required' => 'El nombre legal es obligatorio.',
+        'ruc.required' => 'El RUC es obligatorio.',
+        'ruc.size' => 'El RUC debe tener exactamente 11 dígitos.',
+        'modo.in' => 'El modo seleccionado no es válido.',
+        'codigo_pais.required' => 'El código de establecimiento es obligatorio para SUNAT.',
+        'codigo_pais.digits' => 'El código de establecimiento debe ser un número de 4 dígitos (ej: 0000).',
+        'logo_factura.mimes' => 'El logo debe ser un archivo de imagen (jpg, jpeg, png).',
     ];
 
     public function mount()
